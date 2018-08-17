@@ -505,15 +505,99 @@ var Shaders = {
 };
 /* =========================================================================
  *
- *  demo.ts
+ *  cv_colorSpace.ts
+ *  color space transformation
+ *
+ * ========================================================================= */
+var EcognitaMathLib;
+(function (EcognitaMathLib) {
+    //hsv space transform to rgb space
+    //h(0~360) sva(0~1)
+    function HSV2RGB(h, s, v, a) {
+        if (s > 1 || v > 1 || a > 1) {
+            return;
+        }
+        var th = h % 360;
+        var i = Math.floor(th / 60);
+        var f = th / 60 - i;
+        var m = v * (1 - s);
+        var n = v * (1 - s * f);
+        var k = v * (1 - s * (1 - f));
+        var color = new Array();
+        if (!(s > 0) && !(s < 0)) {
+            color.push(v, v, v, a);
+        }
+        else {
+            var r = new Array(v, n, m, m, k, v);
+            var g = new Array(k, v, v, n, m, m);
+            var b = new Array(m, m, k, v, v, n);
+            color.push(r[i], g[i], b[i], a);
+        }
+        return color;
+    }
+    EcognitaMathLib.HSV2RGB = HSV2RGB;
+})(EcognitaMathLib || (EcognitaMathLib = {}));
+/* =========================================================================
+ *
+ *  webgl_model.ts
+ *  simple 3d model for webgl
+ *
+ * ========================================================================= */
+/// <reference path="./cv_colorSpace.ts" />
+var EcognitaMathLib;
+(function (EcognitaMathLib) {
+    var TorusModel = /** @class */ (function () {
+        function TorusModel(vcrs, hcrs, vr, hr) {
+            this.verCrossSectionSmooth = vcrs;
+            this.horCrossSectionSmooth = hcrs;
+            this.verRadius = vr;
+            this.horRadius = hr;
+            this.data = new Array();
+            this.index = new Array();
+            this.preCalculate();
+        }
+        TorusModel.prototype.preCalculate = function () {
+            //calculate pos and col
+            for (var i = 0; i <= this.verCrossSectionSmooth; i++) {
+                var verIncrement = Math.PI * 2 / this.verCrossSectionSmooth * i;
+                var verX = Math.cos(verIncrement);
+                var verY = Math.sin(verIncrement);
+                for (var ii = 0; ii <= this.horCrossSectionSmooth; ii++) {
+                    var horIncrement = Math.PI * 2 / this.horCrossSectionSmooth * ii;
+                    var horX = (verX * this.verRadius + this.horRadius) * Math.cos(horIncrement);
+                    var horY = verY * this.verRadius;
+                    var horZ = (verX * this.verRadius + this.horRadius) * Math.sin(horIncrement);
+                    this.data.push(horX, horY, horZ);
+                    //hsv2rgb
+                    var rgba = EcognitaMathLib.HSV2RGB(360 / this.horCrossSectionSmooth * ii, 1, 1, 1);
+                    this.data.push(rgba[0], rgba[1], rgba[2], rgba[3]);
+                }
+            }
+            //calculate index
+            for (i = 0; i < this.verCrossSectionSmooth; i++) {
+                for (ii = 0; ii < this.horCrossSectionSmooth; ii++) {
+                    verIncrement = (this.horCrossSectionSmooth + 1) * i + ii;
+                    this.index.push(verIncrement, verIncrement + this.horCrossSectionSmooth + 1, verIncrement + 1);
+                    this.index.push(verIncrement + this.horCrossSectionSmooth + 1, verIncrement + this.horCrossSectionSmooth + 2, verIncrement + 1);
+                }
+            }
+        };
+        return TorusModel;
+    }());
+    EcognitaMathLib.TorusModel = TorusModel;
+})(EcognitaMathLib || (EcognitaMathLib = {}));
+/* =========================================================================
+ *
+ *  demo3.ts
  *  test some webgl demo
  *
  * ========================================================================= */
-/// <reference path="./webgl_matrix.ts" />
-/// <reference path="./webgl_utils.ts" />
-/// <reference path="./webgl_shaders.ts" />
+/// <reference path="../lib/webgl_matrix.ts" />
+/// <reference path="../lib/webgl_utils.ts" />
+/// <reference path="../lib/webgl_shaders.ts" />
+/// <reference path="../lib/webgl_model.ts" />
 var canvas = document.getElementById('canvas');
-canvas.width = 300;
+canvas.width = 500;
 canvas.height = 300;
 try {
     var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
@@ -521,23 +605,42 @@ try {
 catch (e) { }
 if (!gl)
     throw new Error("Could not initialise WebGL");
-gl.clearColor(0.0, 0.0, 0.0, 1.0);
-gl.clearDepth(1.0);
-gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "demo-vert", "demo-frag");
+var cnt = 0;
+var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "demo1-vert", "demo1-frag");
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
+var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
+var torusData = new EcognitaMathLib.TorusModel(32, 32, 1, 2);
 vbo.addAttribute("position", 3, gl.FLOAT, false);
-vbo.init(3);
-vbo.copy([0.0, 1.0, 0.0, 1.0, 0.0, 0.0, -1.0, 0.0, 0.0]);
+vbo.addAttribute("color", 4, gl.FLOAT, false);
+vbo.init(torusData.data.length / 7);
+vbo.copy(torusData.data);
 vbo.bind(shader);
+ibo.init(torusData.index);
+ibo.bind();
 var m = new EcognitaMathLib.WebGLMatrix();
 var mMatrix = m.identity(m.create());
-var vMatrix = m.viewMatrix([0.0, 1.0, 3.0], [0, 0, 0], [0, 1, 0]);
-var pMatrix = m.perspectiveMatrix(90, canvas.width / canvas.height, 0.1, 100);
-var mvpMatrix = m.multiply(pMatrix, vMatrix);
-mvpMatrix = m.multiply(mvpMatrix, mMatrix);
+var vMatrix = m.viewMatrix([0.0, 0.0, 20], [0, 0, 0], [0, 1, 0]);
+var pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
+var tmpMatrix = m.multiply(pMatrix, vMatrix);
+var mvpMatrix = m.identity(m.create());
 shader.bind();
 var uniLocation = shader.uniformIndex('mvpMatrix');
-gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
-vbo.draw(gl.TRIANGLES);
-vbo.release();
+//depth test and cull face
+gl.enable(gl.DEPTH_TEST);
+gl.depthFunc(gl.LEQUAL);
+gl.enable(gl.CULL_FACE);
+(function () {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    cnt++;
+    var rad = (cnt % 360) * Math.PI / 180;
+    //draw square
+    mMatrix = m.identity(mMatrix);
+    mMatrix = m.rotate(mMatrix, rad, [0, 1, 1]);
+    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+    gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+    ibo.draw(gl.TRIANGLES);
+    gl.flush();
+    setTimeout(arguments.callee, 1000 / 30);
+})();

@@ -4,9 +4,9 @@
  *  test some webgl demo
  *  
  * ========================================================================= */
-/// <reference path="./webgl_matrix.ts" />
-/// <reference path="./webgl_utils.ts" />
-/// <reference path="./webgl_shaders.ts" />
+/// <reference path="../lib/webgl_matrix.ts" />
+/// <reference path="../lib/webgl_utils.ts" />
+/// <reference path="../lib/webgl_shaders.ts" />
 
 var canvas = <any>document.getElementById('canvas');
 canvas.width = 300;

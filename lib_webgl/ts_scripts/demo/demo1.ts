@@ -1,12 +1,12 @@
 /* =========================================================================
  *
- *  demo2.ts
+ *  demo1.ts
  *  test some webgl demo
  *  
  * ========================================================================= */
-/// <reference path="./webgl_matrix.ts" />
-/// <reference path="./webgl_utils.ts" />
-/// <reference path="./webgl_shaders.ts" />
+/// <reference path="../lib/webgl_matrix.ts" />
+/// <reference path="../lib/webgl_utils.ts" />
+/// <reference path="../lib/webgl_shaders.ts" />
 
 var canvas = <any>document.getElementById('canvas');
 canvas.width = 300;
@@ -28,30 +28,22 @@ vbo.addAttribute("position", 3, gl.FLOAT, false);
 vbo.addAttribute("color", 4, gl.FLOAT, false);
 vbo.init(3);
 
-vbo.copy(([0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-           1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0,
-          -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0]));
+vbo.copy([0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0,
+          1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0,
+         -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0]);
 
 vbo.bind(shader);
 var m = new EcognitaMathLib.WebGLMatrix();
 
 var mMatrix = m.identity(m.create());
-var vMatrix = m.viewMatrix([0.0, 0.0, 3.0], [0, 0, 0], [0, 1, 0]);
+var vMatrix = m.viewMatrix([0.0, 1.0, 3.0], [0, 0, 0], [0, 1, 0]);
 var pMatrix = m.perspectiveMatrix(90, canvas.width / canvas.height, 0.1, 100);
-var tmpMatrix = m.multiply(pMatrix, vMatrix);
-mMatrix =m.translate(mMatrix,[1.5,0.0,0.0]);
-var mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+var mvpMatrix = m.multiply(pMatrix, vMatrix);
+mvpMatrix =m.multiply(mvpMatrix, mMatrix);
 
 shader.bind();
 var uniLocation =shader.uniformIndex('mvpMatrix');
-//draw first triangle
-gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
-vbo.draw(gl.TRIANGLES);
 
-//draw second triangle
-mMatrix =m.identity(mMatrix);
-mMatrix =m.translate(mMatrix,[-1.5,0.0,0.0]);
-mvpMatrix = m.multiply(tmpMatrix, mMatrix);
 gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
 vbo.draw(gl.TRIANGLES);
 vbo.release();

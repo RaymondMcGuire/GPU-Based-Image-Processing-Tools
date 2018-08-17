@@ -2,7 +2,7 @@
 
 import os
 
-ShaderDir = "shaders"
+ShaderDir = "../shaders"
 MaxLen = 80;
 
 entries = []
@@ -39,4 +39,4 @@ for file in os.listdir(ShaderDir):
     
     entries.append("    '{}':\n{}".format(file.replace('.glsl', ''), source))
 
-open("./webgl_shaders.ts", 'w').write("var Shaders = {\n" + ",\n\n".join(entries) + "\n}")
+open("../lib/webgl_shaders.ts", 'w').write("var Shaders = {\n" + ",\n\n".join(entries) + "\n}")
