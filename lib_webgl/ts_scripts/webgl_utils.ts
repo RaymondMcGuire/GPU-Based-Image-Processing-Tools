@@ -193,7 +193,7 @@ module EcognitaMathLib {
             this.elementSize = 0;
         }
 
-        bind() {
+        bind(shader:any) {
             gl.bindBuffer(gl.ARRAY_BUFFER, this.glName);
 
             for (var i = 0; i < this.attributes.length; ++i) {
@@ -240,7 +240,7 @@ module EcognitaMathLib {
             gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
         }
 
-        draw (shader:any, mode:any, length?:number) {
+        draw (mode:any, length?:number) {
             gl.drawArrays(mode, 0, length ? length : this.length);
         }
     }

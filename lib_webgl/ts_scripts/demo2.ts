@@ -32,7 +32,7 @@ vbo.copy(new Float32Array([0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0,
                            1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0,
                           -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0]));
 
-vbo.bind();
+vbo.bind(shader);
 var m = new EcognitaMathLib.WebGLMatrix();
 
 var mMatrix = m.identity(m.create());
@@ -46,12 +46,12 @@ shader.bind();
 var uniLocation =shader.uniformIndex('mvpMatrix');
 //draw first triangle
 gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
-vbo.draw(shader, gl.TRIANGLES);
+vbo.draw(gl.TRIANGLES);
 
 //draw second triangle
 mMatrix =m.identity(mMatrix);
 mMatrix =m.translate(mMatrix,[-1.5,0.0,0.0]);
 mvpMatrix = m.multiply(tmpMatrix, mMatrix);
 gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
-vbo.draw(shader, gl.TRIANGLES);
+vbo.draw(gl.TRIANGLES);
 vbo.release();

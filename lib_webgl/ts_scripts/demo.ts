@@ -23,7 +23,7 @@ gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 var shader     = new EcognitaMathLib.WebGL_Shader(Shaders, "demo-vert", "demo-frag");
 
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
-vbo.bind();
+vbo.bind(shader);
 vbo.addAttribute("position", 3, gl.FLOAT, false);
 vbo.init(3);
 vbo.copy(new Float32Array([0.0, 1.0, 0.0,1.0, 0.0, 0.0,-1.0, 0.0, 0.0]));
@@ -40,5 +40,5 @@ shader.bind();
 var uniLocation =shader.uniformIndex('mvpMatrix');
 
 gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
-vbo.draw(shader, gl.TRIANGLES);
+vbo.draw(gl.TRIANGLES);
 vbo.release();
