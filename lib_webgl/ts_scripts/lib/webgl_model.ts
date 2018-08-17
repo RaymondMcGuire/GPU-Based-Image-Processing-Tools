@@ -15,17 +15,17 @@
         //px py pz cr cg cb ca
         data:Array<number>;
         index:Array<number>;
-        constructor(vcrs:number,hcrs:number,vr:number,hr:number) {
+        constructor(vcrs:number,hcrs:number,vr:number,hr:number,need_normal:boolean) {
             this.verCrossSectionSmooth = vcrs;
             this.horCrossSectionSmooth = hcrs;
             this.verRadius = vr;
             this.horRadius = hr;
             this.data = new Array<number>();
             this.index = new Array<number>();
-            this.preCalculate();
+            this.preCalculate(need_normal);
         }
 
-        private preCalculate(){
+        private preCalculate(need_normal:boolean){
 
             //calculate pos and col
             for(var i = 0;i<=this.verCrossSectionSmooth;i++){
@@ -39,6 +39,11 @@
                    var horZ = (verX* this.verRadius + this.horRadius) * Math.sin(horIncrement);
                    this.data.push(horX,horY,horZ);
 
+                   if(need_normal){
+                        var nx = verX * Math.cos(horIncrement);
+                        var nz = verX * Math.sin(horIncrement);
+                        this.data.push(nx,verY,nz);
+                   }
                    //hsv2rgb
                    var rgba = HSV2RGB(360/this.horCrossSectionSmooth *ii, 1, 1, 1);
                    this.data.push(rgba[0],rgba[1],rgba[2],rgba[3]);

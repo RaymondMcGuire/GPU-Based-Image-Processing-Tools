@@ -1,12 +1,13 @@
 /* =========================================================================
  *
- *  demo4.ts
+ *  demo6.ts
  *  test some webgl demo
  *  
  * ========================================================================= */
 /// <reference path="../lib/webgl_matrix.ts" />
 /// <reference path="../lib/webgl_utils.ts" />
 /// <reference path="../lib/webgl_shaders.ts" />
+/// <reference path="../lib/webgl_model.ts" />
 
 var canvas = <any>document.getElementById('canvas');
 canvas.width = 500;
@@ -19,36 +20,42 @@ if (!gl)
 
 var cnt =0;
 
-var shader     = new EcognitaMathLib.WebGL_Shader(Shaders, "demo1-vert", "demo1-frag");
+var shader     = new EcognitaMathLib.WebGL_Shader(Shaders, "directionLighting-vert", "directionLighting-frag");
 
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
+var torusData = new EcognitaMathLib.TorusModel(32,32,1,2,true);
 
 vbo.addAttribute("position", 3, gl.FLOAT, false);
+vbo.addAttribute("normal", 3, gl.FLOAT, false);
 vbo.addAttribute("color", 4, gl.FLOAT, false);
-vbo.init(4);
-
-vbo.copy([0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-          1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0,
-         -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0,
-          0.0,-1.0, 0.0, 1.0, 1.0, 1.0, 1.0]);
+vbo.init(torusData.data.length/10);
+vbo.copy(torusData.data);
 vbo.bind(shader);
 
-ibo.init([0,1,2,
-          1,2,3]);
+ibo.init(torusData.index);
 ibo.bind();
 
 var m = new EcognitaMathLib.WebGLMatrix();
 
 var mMatrix = m.identity(m.create());
-var vMatrix = m.viewMatrix([0.0, 0.0, 5.0], [0, 0, 0], [0, 1, 0]);
+var vMatrix = m.viewMatrix([0.0, 0.0, 20], [0, 0, 0], [0, 1, 0]);
 var pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
 var tmpMatrix = m.multiply(pMatrix, vMatrix);
 var mvpMatrix =m.identity(m.create());
+var invMatrix = m.identity(m.create());
 
 shader.bind();
-var uniLocation =shader.uniformIndex('mvpMatrix');
+var uniLocation = new Array<any>();
+uniLocation.push(shader.uniformIndex('mvpMatrix'));
+uniLocation.push(shader.uniformIndex('invMatrix'));
+uniLocation.push(shader.uniformIndex('lightDirection'));
 
+var lightDirection = [-0.5, 0.5, 0.5];
+//depth test and cull face
+gl.enable(gl.DEPTH_TEST);
+gl.depthFunc(gl.LEQUAL);
+gl.enable(gl.CULL_FACE);
 (function(){
 
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -60,9 +67,14 @@ var uniLocation =shader.uniformIndex('mvpMatrix');
 
         //draw square
         mMatrix =m.identity(mMatrix);
-        mMatrix =m.rotate(mMatrix,rad,[0,1,0]);
+        mMatrix =m.rotate(mMatrix,rad,[0,1,1]);
         mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-        gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+        invMatrix = m.inverse(mMatrix);
+
+        gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
+        gl.uniformMatrix4fv(uniLocation[1], false, invMatrix);
+        gl.uniform3fv(uniLocation[2], lightDirection);
+
         ibo.draw(gl.TRIANGLES);
         gl.flush();
         setTimeout(arguments.callee, 1000 / 30);
