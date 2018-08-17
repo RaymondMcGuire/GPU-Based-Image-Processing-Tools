@@ -80,4 +80,4 @@ var uniLocation =shader.uniformIndex('mvpMatrix');
         vbo.draw(shader, gl.TRIANGLES);
         gl.flush();
         setTimeout(arguments.callee, 1000 / 30);
-    })();
+})();

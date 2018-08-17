@@ -46,3 +46,4 @@ var uniLocation =shader.uniformIndex('mvpMatrix');
 
 gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
 vbo.draw(shader, gl.TRIANGLES);
+vbo.release();

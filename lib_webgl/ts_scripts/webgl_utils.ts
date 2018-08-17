@@ -182,6 +182,7 @@ module EcognitaMathLib {
         }
     }
 
+    //add attribute -> init -> copy -> bind -> draw -> release
     export class WebGL_VertexBuffer{
         attributes:any;
         elementSize:number;
@@ -194,6 +195,24 @@ module EcognitaMathLib {
 
         bind() {
             gl.bindBuffer(gl.ARRAY_BUFFER, this.glName);
+
+            for (var i = 0; i < this.attributes.length; ++i) {
+                this.attributes[i].index = gl.getAttribLocation(shader.program, this.attributes[i].name);
+                if (this.attributes[i].index >= 0) {
+                    var attr = this.attributes[i];
+                    gl.enableVertexAttribArray(attr.index);
+                    gl.vertexAttribPointer(attr.index, attr.size, attr.type, attr.norm, this.elementSize, attr.offset);
+                }
+            }
+        }
+
+        release(){
+            for (var i = 0; i < this.attributes.length; ++i) {
+                if (this.attributes[i].index >= 0) {
+                    gl.disableVertexAttribArray(this.attributes[i].index);
+                    this.attributes[i].index = -1;
+                }
+            }
         }
 
         addAttribute (name:any, size:any, type:any, norm:any) {
@@ -222,23 +241,7 @@ module EcognitaMathLib {
         }
 
         draw (shader:any, mode:any, length?:number) {
-            for (var i = 0; i < this.attributes.length; ++i) {
-                this.attributes[i].index = gl.getAttribLocation(shader.program, this.attributes[i].name);
-                if (this.attributes[i].index >= 0) {
-                    var attr = this.attributes[i];
-                    gl.enableVertexAttribArray(attr.index);
-                    gl.vertexAttribPointer(attr.index, attr.size, attr.type, attr.norm, this.elementSize, attr.offset);
-                }
-            }
-            
             gl.drawArrays(mode, 0, length ? length : this.length);
-            
-            for (var i = 0; i < this.attributes.length; ++i) {
-                if (this.attributes[i].index >= 0) {
-                    gl.disableVertexAttribArray(this.attributes[i].index);
-                    this.attributes[i].index = -1;
-                }
-            }
         }
     }
 }

@@ -265,10 +265,6 @@ var EcognitaMathLib;
  * ========================================================================= */
 var EcognitaMathLib;
 (function (EcognitaMathLib) {
-    // export function InitWebGLUtils(p_gl:any,p_multiBufExt:any){
-    //     gl = p_gl;
-    //     multiBufExt = p_multiBufExt;
-    // }
     function GetGLTypeSize(type) {
         switch (type) {
             case gl.BYTE:
@@ -409,6 +405,7 @@ var EcognitaMathLib;
         return WebGL_Shader;
     }());
     EcognitaMathLib.WebGL_Shader = WebGL_Shader;
+    //add attribute -> init -> copy -> bind -> draw -> release
     var WebGL_VertexBuffer = /** @class */ (function () {
         function WebGL_VertexBuffer() {
             this.attributes = [];
@@ -416,6 +413,22 @@ var EcognitaMathLib;
         }
         WebGL_VertexBuffer.prototype.bind = function () {
             gl.bindBuffer(gl.ARRAY_BUFFER, this.glName);
+            for (var i = 0; i < this.attributes.length; ++i) {
+                this.attributes[i].index = gl.getAttribLocation(shader.program, this.attributes[i].name);
+                if (this.attributes[i].index >= 0) {
+                    var attr = this.attributes[i];
+                    gl.enableVertexAttribArray(attr.index);
+                    gl.vertexAttribPointer(attr.index, attr.size, attr.type, attr.norm, this.elementSize, attr.offset);
+                }
+            }
+        };
+        WebGL_VertexBuffer.prototype.release = function () {
+            for (var i = 0; i < this.attributes.length; ++i) {
+                if (this.attributes[i].index >= 0) {
+                    gl.disableVertexAttribArray(this.attributes[i].index);
+                    this.attributes[i].index = -1;
+                }
+            }
         };
         WebGL_VertexBuffer.prototype.addAttribute = function (name, size, type, norm) {
             this.attributes.push({
@@ -440,21 +453,7 @@ var EcognitaMathLib;
             gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
         };
         WebGL_VertexBuffer.prototype.draw = function (shader, mode, length) {
-            for (var i = 0; i < this.attributes.length; ++i) {
-                this.attributes[i].index = gl.getAttribLocation(shader.program, this.attributes[i].name);
-                if (this.attributes[i].index >= 0) {
-                    var attr = this.attributes[i];
-                    gl.enableVertexAttribArray(attr.index);
-                    gl.vertexAttribPointer(attr.index, attr.size, attr.type, attr.norm, this.elementSize, attr.offset);
-                }
-            }
             gl.drawArrays(mode, 0, length ? length : this.length);
-            for (var i = 0; i < this.attributes.length; ++i) {
-                if (this.attributes[i].index >= 0) {
-                    gl.disableVertexAttribArray(this.attributes[i].index);
-                    this.attributes[i].index = -1;
-                }
-            }
         };
         return WebGL_VertexBuffer;
     }());
@@ -485,7 +484,7 @@ var Shaders = {
 };
 /* =========================================================================
  *
- *  demo3.ts
+ *  demo1.ts
  *  test some webgl demo
  *
  * ========================================================================= */
@@ -501,7 +500,9 @@ try {
 catch (e) { }
 if (!gl)
     throw new Error("Could not initialise WebGL");
-var cnt = 0;
+gl.clearColor(0.0, 0.0, 0.0, 1.0);
+gl.clearDepth(1.0);
+gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "demo1-vert", "demo1-frag");
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
 vbo.addAttribute("position", 3, gl.FLOAT, false);
@@ -513,42 +514,12 @@ vbo.copy(new Float32Array([0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0,
 vbo.bind();
 var m = new EcognitaMathLib.WebGLMatrix();
 var mMatrix = m.identity(m.create());
-var vMatrix = m.viewMatrix([0.0, 0.0, 3.0], [0, 0, 0], [0, 1, 0]);
+var vMatrix = m.viewMatrix([0.0, 1.0, 3.0], [0, 0, 0], [0, 1, 0]);
 var pMatrix = m.perspectiveMatrix(90, canvas.width / canvas.height, 0.1, 100);
-var tmpMatrix = m.multiply(pMatrix, vMatrix);
-mMatrix = m.translate(mMatrix, [1.5, 0.0, 0.0]);
-var mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+var mvpMatrix = m.multiply(pMatrix, vMatrix);
+mvpMatrix = m.multiply(mvpMatrix, mMatrix);
 shader.bind();
 var uniLocation = shader.uniformIndex('mvpMatrix');
-(function () {
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clearDepth(1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    cnt++;
-    var rad = (cnt % 360) * Math.PI / 180;
-    var x = Math.cos(rad);
-    var y = Math.sin(rad);
-    //draw first triangle animation
-    mMatrix = m.identity(mMatrix);
-    mMatrix = m.translate(mMatrix, [x, y + 1.0, 0.0]);
-    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-    gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
-    vbo.draw(shader, gl.TRIANGLES);
-    //draw second triangle animation
-    mMatrix = m.identity(mMatrix);
-    mMatrix = m.translate(mMatrix, [1.0, -1.0, 0.0]);
-    mMatrix = m.rotate(mMatrix, rad, [0, 1, 0]);
-    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-    gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
-    vbo.draw(shader, gl.TRIANGLES);
-    //draw third triangle animation
-    var s = Math.sin(rad) + 1.0;
-    mMatrix = m.identity(mMatrix);
-    mMatrix = m.translate(mMatrix, [-1.0, -1.0, 0.0]);
-    mMatrix = m.scale(mMatrix, [s, s, 0.0]);
-    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-    gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
-    vbo.draw(shader, gl.TRIANGLES);
-    gl.flush();
-    setTimeout(arguments.callee, 1000 / 30);
-})();
+gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+vbo.draw(shader, gl.TRIANGLES);
+vbo.release();

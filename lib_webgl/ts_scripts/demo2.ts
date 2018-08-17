@@ -54,3 +54,4 @@ mMatrix =m.translate(mMatrix,[-1.5,0.0,0.0]);
 mvpMatrix = m.multiply(tmpMatrix, mMatrix);
 gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
 vbo.draw(shader, gl.TRIANGLES);
+vbo.release();
