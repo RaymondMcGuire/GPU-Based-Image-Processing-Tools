@@ -23,10 +23,11 @@ gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 var shader     = new EcognitaMathLib.WebGL_Shader(Shaders, "demo-vert", "demo-frag");
 
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
-vbo.bind(shader);
+
 vbo.addAttribute("position", 3, gl.FLOAT, false);
 vbo.init(3);
-vbo.copy(new Float32Array([0.0, 1.0, 0.0,1.0, 0.0, 0.0,-1.0, 0.0, 0.0]));
+vbo.copy([0.0, 1.0, 0.0,1.0, 0.0, 0.0,-1.0, 0.0, 0.0]);
+vbo.bind(shader);
 
 var m = new EcognitaMathLib.WebGLMatrix();
 

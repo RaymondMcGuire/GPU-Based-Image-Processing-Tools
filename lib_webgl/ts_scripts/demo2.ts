@@ -28,9 +28,9 @@ vbo.addAttribute("position", 3, gl.FLOAT, false);
 vbo.addAttribute("color", 4, gl.FLOAT, false);
 vbo.init(3);
 
-vbo.copy(new Float32Array([0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0,
-                           1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0,
-                          -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0]));
+vbo.copy(([0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0,
+           1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0,
+          -1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0]));
 
 vbo.bind(shader);
 var m = new EcognitaMathLib.WebGLMatrix();

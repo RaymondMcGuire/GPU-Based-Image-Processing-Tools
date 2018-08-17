@@ -235,13 +235,38 @@ module EcognitaMathLib {
         }
 
         copy(data:any) {
+            data = new Float32Array(data);
             if (data.byteLength != this.length*this.elementSize)
                 throw new Error("Resizing VBO during copy strongly discouraged");
             gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
         }
 
         draw (mode:any, length?:number) {
             gl.drawArrays(mode, 0, length ? length : this.length);
+        }
+    }
+
+    export class WebGL_IndexBuffer{
+        attributes:any;
+        glName:any;
+        length:number;
+        constructor() {}
+
+        bind() {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glName);
+        }
+
+        init(index:any) {
+            this.length = index.length;
+            this.glName = gl.createBuffer();
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glName);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Int16Array(index), gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        }
+
+        draw (mode:any, length?:number) {
+            gl.drawElements(mode, length ? length : this.length, gl.UNSIGNED_SHORT, 0);
         }
     }
 }
