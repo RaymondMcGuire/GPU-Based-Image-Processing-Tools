@@ -519,6 +519,49 @@ var Shaders = {
         '    float diffuse = clamp(dot(invLight,normal),0.1,1.0);\n' +
         '    vColor = color*vec4(vec3(diffuse),1.0);\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'dir_ambient-frag': 'precision mediump float;\n\n' +
+        'varying vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	gl_FragColor = vColor;\n' +
+        '}\n',
+    'dir_ambient-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec3 normal;\n\n' +
+        'uniform mat4 mvpMatrix;\n' +
+        'uniform mat4 invMatrix;\n' +
+        'uniform vec3 lightDirection;\n' +
+        'uniform vec4 ambientColor;\n' +
+        'varying vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '    vec3 invLight = normalize(invMatrix*vec4(lightDirection,0)).xyz;\n' +
+        '    float diffuse = clamp(dot(invLight,normal),0.1,1.0);\n' +
+        '    vColor = color*vec4(vec3(diffuse),1.0) +ambientColor;\n' +
+        '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'specular-frag': 'precision mediump float;\n\n' +
+        'varying vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	gl_FragColor = vColor;\n' +
+        '}\n',
+    'specular-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec3 normal;\n\n' +
+        'uniform mat4 mvpMatrix;\n' +
+        'uniform mat4 invMatrix;\n\n' +
+        'uniform vec3 lightDirection;\n' +
+        'uniform vec3 eyeDirection;\n' +
+        'uniform vec4 ambientColor;\n' +
+        'varying vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '    vec3 invLight = normalize(invMatrix*vec4(lightDirection,0.0)).xyz;\n' +
+        '    vec3 invEye = normalize(invMatrix* vec4(eyeDirection,0.0)).xyz;\n' +
+        '    vec3 halfLE = normalize(invLight+invEye);\n\n' +
+        '    float diffuse = clamp(dot(invLight,normal),0.0,1.0);\n' +
+        '    float specular = pow(clamp(dot(normal,halfLE),0.0,1.0),50.0);\n' +
+        '    vec4 light = color*vec4(vec3(diffuse),1.0)+vec4(vec3(specular),1.0);\n' +
+        '    vColor = light + ambientColor;\n' +
+        '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n'
 };
 /* =========================================================================
@@ -611,7 +654,7 @@ var EcognitaMathLib;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
- *  demo6.ts
+ *  demo8.ts
  *  test some webgl demo
  *
  * ========================================================================= */
@@ -629,7 +672,7 @@ catch (e) { }
 if (!gl)
     throw new Error("Could not initialise WebGL");
 var cnt = 0;
-var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "directionLighting-vert", "directionLighting-frag");
+var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "specular-vert", "specular-frag");
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
 var torusData = new EcognitaMathLib.TorusModel(32, 32, 1, 2, true);
@@ -653,7 +696,11 @@ var uniLocation = new Array();
 uniLocation.push(shader.uniformIndex('mvpMatrix'));
 uniLocation.push(shader.uniformIndex('invMatrix'));
 uniLocation.push(shader.uniformIndex('lightDirection'));
+uniLocation.push(shader.uniformIndex('ambientColor'));
+uniLocation.push(shader.uniformIndex('eyeDirection'));
 var lightDirection = [-0.5, 0.5, 0.5];
+var ambientColor = [0.1, 0.1, 0.1, 1.0];
+var eyeDirection = [0.0, 0.0, 20.0];
 //depth test and cull face
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
@@ -672,6 +719,8 @@ gl.enable(gl.CULL_FACE);
     gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
     gl.uniformMatrix4fv(uniLocation[1], false, invMatrix);
     gl.uniform3fv(uniLocation[2], lightDirection);
+    gl.uniform4fv(uniLocation[3], ambientColor);
+    gl.uniform3fv(uniLocation[4], eyeDirection);
     ibo.draw(gl.TRIANGLES);
     gl.flush();
     setTimeout(arguments.callee, 1000 / 30);
