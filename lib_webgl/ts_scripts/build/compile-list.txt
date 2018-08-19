@@ -1,4 +1,4 @@
-../demo/demo6.ts
+../demo/demo8.ts
 ../lib/cv_colorSpace.ts
 ../lib/webgl_matrix.ts
 ../lib/webgl_shaders.ts
