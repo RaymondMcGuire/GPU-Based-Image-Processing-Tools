@@ -1,5 +1,20 @@
 /* =========================================================================
  *
+ *  cv_imread.ts
+ *  read the image file
+ *
+ * ========================================================================= */
+var EcognitaMathLib;
+(function (EcognitaMathLib) {
+    function imread(file) {
+        var img = new Image();
+        img.src = file;
+        return img;
+    }
+    EcognitaMathLib.imread = imread;
+})(EcognitaMathLib || (EcognitaMathLib = {}));
+/* =========================================================================
+ *
  *  webgl_matrix.ts
  *  a matrix library devdeloped for webgl
  *  part of source code referenced by minMatrix.js
@@ -283,32 +298,18 @@ var EcognitaMathLib;
     }
     EcognitaMathLib.GetGLTypeSize = GetGLTypeSize;
     var WebGL_Texture = /** @class */ (function () {
-        function WebGL_Texture(width, height, channels, isFloat, isLinear, isClamped, texels) {
-            var coordMode = isClamped ? gl.CLAMP_TO_EDGE : gl.REPEAT;
+        function WebGL_Texture(channels, isFloat, texels) {
             this.type = isFloat ? gl.FLOAT : gl.UNSIGNED_BYTE;
             this.format = [gl.LUMINANCE, gl.RG, gl.RGB, gl.RGBA][channels - 1];
-            this.width = width;
-            this.height = height;
             this.glName = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, this.glName);
-            gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.width, this.height, 0, this.format, this.type, texels);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, coordMode);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, coordMode);
-            this.setSmooth(isLinear);
-            this.boundUnit = -1;
+            this.bind(this.glName);
+            gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, texels);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            this.bind(null);
+            this.texture = this.glName;
         }
-        WebGL_Texture.prototype.setSmooth = function (smooth) {
-            var interpMode = smooth ? gl.LINEAR : gl.NEAREST;
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, interpMode);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, interpMode);
-        };
-        WebGL_Texture.prototype.copy = function (texels) {
-            gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.width, this.height, 0, this.format, this.type, texels);
-        };
-        WebGL_Texture.prototype.bind = function (unit) {
-            gl.activeTexture(gl.TEXTURE0 + unit);
-            gl.bindTexture(gl.TEXTURE_2D, this.glName);
-            this.boundUnit = unit;
+        WebGL_Texture.prototype.bind = function (tex) {
+            gl.bindTexture(gl.TEXTURE_2D, tex);
         };
         return WebGL_Texture;
     }());
@@ -539,6 +540,67 @@ var Shaders = {
         '    vColor = color*vec4(vec3(diffuse),1.0) +ambientColor;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'phong-frag': 'precision mediump float;\n\n' +
+        'uniform mat4 invMatrix;\n' +
+        'uniform vec3 lightDirection;\n' +
+        'uniform vec3 eyeDirection;\n' +
+        'uniform vec4 ambientColor;\n' +
+        'varying vec4 vColor;\n' +
+        'varying vec3 vNormal;\n\n' +
+        'void main(void){\n' +
+        '	vec3 invLight = normalize(invMatrix*vec4(lightDirection,0.0)).xyz;\n' +
+        '	vec3 invEye = normalize(invMatrix*vec4(eyeDirection,0.0)).xyz;\n' +
+        '	vec3 halfLE = normalize(invLight+invEye);\n' +
+        '	float diffuse = clamp(dot(vNormal,invLight),0.0,1.0);\n' +
+        '	float specular = pow(clamp(dot(vNormal,halfLE),0.0,1.0),50.0);\n' +
+        '	vec4 destColor = vColor * vec4(vec3(diffuse),1.0) + vec4(vec3(specular),1.0) + ' +
+        'ambientColor;\n' +
+        '	gl_FragColor = destColor;\n' +
+        '}\n',
+    'phong-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec3 normal;\n\n' +
+        'uniform mat4 mvpMatrix;\n\n' +
+        'varying vec4 vColor;\n' +
+        'varying vec3 vNormal;\n\n' +
+        'void main(void){\n' +
+        '    vNormal = normal;\n' +
+        '    vColor = color;\n' +
+        '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'pointLighting-frag': 'precision mediump float;\n\n' +
+        'uniform mat4 invMatrix;\n' +
+        'uniform vec3 lightPosition;\n' +
+        'uniform vec3 eyeDirection;\n' +
+        'uniform vec4 ambientColor;\n\n' +
+        'varying vec4 vColor;\n' +
+        'varying vec3 vNormal;\n' +
+        'varying vec3 vPosition;\n\n' +
+        'void main(void){\n' +
+        '	vec3 lightVec = lightPosition -vPosition;\n' +
+        '	vec3 invLight = normalize(invMatrix*vec4(lightVec,0.0)).xyz;\n' +
+        '	vec3 invEye = normalize(invMatrix*vec4(eyeDirection,0.0)).xyz;\n' +
+        '	vec3 halfLE = normalize(invLight+invEye);\n' +
+        '	float diffuse = clamp(dot(vNormal,invLight),0.0,1.0);\n' +
+        '	float specular = pow(clamp(dot(vNormal,halfLE),0.0,1.0),50.0);\n' +
+        '	vec4 destColor = vColor * vec4(vec3(diffuse),1.0) + vec4(vec3(specular),1.0) + ' +
+        'ambientColor;\n' +
+        '	gl_FragColor = destColor;\n' +
+        '}\n',
+    'pointLighting-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec3 normal;\n\n' +
+        'uniform mat4 mvpMatrix;\n' +
+        'uniform mat4 mMatrix;\n\n' +
+        'varying vec3 vPosition;\n' +
+        'varying vec4 vColor;\n' +
+        'varying vec3 vNormal;\n\n' +
+        'void main(void){\n' +
+        '    vPosition = (mMatrix*vec4(position,1.0)).xyz;\n' +
+        '    vNormal = normal;\n' +
+        '    vColor = color;\n' +
+        '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'specular-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +
         'void main(void){\n' +
@@ -562,6 +624,25 @@ var Shaders = {
         '    vec4 light = color*vec4(vec3(diffuse),1.0)+vec4(vec3(specular),1.0);\n' +
         '    vColor = light + ambientColor;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'texture-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'varying vec4      vColor;\n' +
+        'varying vec2      vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '    vec4 smpColor = texture2D(texture, vTextureCoord);\n' +
+        '    gl_FragColor  = vColor * smpColor;\n' +
+        '}\n',
+    'texture-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec2 textureCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec4 vColor;\n' +
+        'varying   vec2 vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '    vColor        = color;\n' +
+        '    vTextureCoord = textureCoord;\n' +
+        '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n'
 };
 /* =========================================================================
@@ -651,13 +732,57 @@ var EcognitaMathLib;
         return TorusModel;
     }());
     EcognitaMathLib.TorusModel = TorusModel;
+    var ShpereModel = /** @class */ (function () {
+        function ShpereModel(vcrs, hcrs, rad, need_normal) {
+            this.verCrossSectionSmooth = vcrs;
+            this.horCrossSectionSmooth = hcrs;
+            this.Radius = rad;
+            this.data = new Array();
+            this.index = new Array();
+            this.preCalculate(need_normal);
+        }
+        ShpereModel.prototype.preCalculate = function (need_normal) {
+            //calculate pos and col
+            for (var i = 0; i <= this.verCrossSectionSmooth; i++) {
+                var verIncrement = Math.PI * 2 / this.verCrossSectionSmooth * i;
+                var verX = Math.cos(verIncrement);
+                var verY = Math.sin(verIncrement);
+                for (var ii = 0; ii <= this.horCrossSectionSmooth; ii++) {
+                    var horIncrement = Math.PI * 2 / this.horCrossSectionSmooth * ii;
+                    var horX = verY * this.Radius * Math.cos(horIncrement);
+                    var horY = verX * this.Radius;
+                    var horZ = verY * this.Radius * Math.sin(horIncrement);
+                    this.data.push(horX, horY, horZ);
+                    if (need_normal) {
+                        var nx = verY * Math.cos(horIncrement);
+                        var nz = verY * Math.sin(horIncrement);
+                        this.data.push(nx, verX, nz);
+                    }
+                    //hsv2rgb
+                    var rgba = EcognitaMathLib.HSV2RGB(360 / this.horCrossSectionSmooth * ii, 1, 1, 1);
+                    this.data.push(rgba[0], rgba[1], rgba[2], rgba[3]);
+                }
+            }
+            //calculate index
+            for (i = 0; i < this.verCrossSectionSmooth; i++) {
+                for (ii = 0; ii < this.horCrossSectionSmooth; ii++) {
+                    verIncrement = (this.horCrossSectionSmooth + 1) * i + ii;
+                    this.index.push(verIncrement, verIncrement + 1, verIncrement + this.horCrossSectionSmooth + 2);
+                    this.index.push(verIncrement, verIncrement + this.horCrossSectionSmooth + 2, verIncrement + this.horCrossSectionSmooth + 1);
+                }
+            }
+        };
+        return ShpereModel;
+    }());
+    EcognitaMathLib.ShpereModel = ShpereModel;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
- *  demo8.ts
+ *  demo11.ts
  *  test some webgl demo
  *
  * ========================================================================= */
+/// <reference path="../lib/cv_imread.ts" />
 /// <reference path="../lib/webgl_matrix.ts" />
 /// <reference path="../lib/webgl_utils.ts" />
 /// <reference path="../lib/webgl_shaders.ts" />
@@ -672,55 +797,63 @@ catch (e) { }
 if (!gl)
     throw new Error("Could not initialise WebGL");
 var cnt = 0;
-var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "specular-vert", "specular-frag");
+var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "texture-vert", "texture-frag");
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
-var torusData = new EcognitaMathLib.TorusModel(32, 32, 1, 2, true);
+var tex = null;
 vbo.addAttribute("position", 3, gl.FLOAT, false);
-vbo.addAttribute("normal", 3, gl.FLOAT, false);
 vbo.addAttribute("color", 4, gl.FLOAT, false);
-vbo.init(torusData.data.length / 10);
-vbo.copy(torusData.data);
+vbo.addAttribute("textureCoord", 2, gl.FLOAT, false);
+var data = [
+    -1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
+    1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
+    -1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0,
+    1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+];
+var index = [
+    0, 1, 2,
+    3, 2, 1
+];
+vbo.init(4);
+vbo.copy(data);
 vbo.bind(shader);
-ibo.init(torusData.index);
+ibo.init(index);
 ibo.bind();
 var m = new EcognitaMathLib.WebGLMatrix();
+var eyeDirection = [0.0, 2.0, 5.0];
 var mMatrix = m.identity(m.create());
-var vMatrix = m.viewMatrix([0.0, 0.0, 20], [0, 0, 0], [0, 1, 0]);
+var vMatrix = m.viewMatrix(eyeDirection, [0, 0, 0], [0, 1, 0]);
 var pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
 var tmpMatrix = m.multiply(pMatrix, vMatrix);
 var mvpMatrix = m.identity(m.create());
-var invMatrix = m.identity(m.create());
 shader.bind();
 var uniLocation = new Array();
 uniLocation.push(shader.uniformIndex('mvpMatrix'));
-uniLocation.push(shader.uniformIndex('invMatrix'));
-uniLocation.push(shader.uniformIndex('lightDirection'));
-uniLocation.push(shader.uniformIndex('ambientColor'));
-uniLocation.push(shader.uniformIndex('eyeDirection'));
-var lightDirection = [-0.5, 0.5, 0.5];
-var ambientColor = [0.1, 0.1, 0.1, 1.0];
-var eyeDirection = [0.0, 0.0, 20.0];
+uniLocation.push(shader.uniformIndex('texture'));
 //depth test and cull face
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
-gl.enable(gl.CULL_FACE);
+gl.activeTexture(gl.TEXTURE0);
+var texture = null;
+var img = EcognitaMathLib.imread("./img/encognita.ico");
+img.onload = function () {
+    tex = new EcognitaMathLib.WebGL_Texture(4, false, img);
+};
 (function () {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     cnt++;
     var rad = (cnt % 360) * Math.PI / 180;
-    //draw square
+    if (tex != null) {
+        tex.bind(tex.texture);
+        gl.uniform1i(uniLocation[1], 0);
+    }
     mMatrix = m.identity(mMatrix);
-    mMatrix = m.rotate(mMatrix, rad, [0, 1, 1]);
+    mMatrix = m.rotate(mMatrix, rad, [0, 1, 0]);
     mvpMatrix = m.multiply(tmpMatrix, mMatrix);
     invMatrix = m.inverse(mMatrix);
     gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
-    gl.uniformMatrix4fv(uniLocation[1], false, invMatrix);
-    gl.uniform3fv(uniLocation[2], lightDirection);
-    gl.uniform4fv(uniLocation[3], ambientColor);
-    gl.uniform3fv(uniLocation[4], eyeDirection);
     ibo.draw(gl.TRIANGLES);
     gl.flush();
     setTimeout(arguments.callee, 1000 / 30);
