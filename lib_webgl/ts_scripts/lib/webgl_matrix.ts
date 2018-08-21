@@ -1,8 +1,9 @@
 /* =========================================================================
  *
  *  webgl_matrix.ts
- *  a matrix library devdeloped for webgl
+ *  a matrix library developed for webgl
  *  part of source code referenced by minMatrix.js
+ *  https://wgld.org/d/library/l001.html
  * ========================================================================= */
 module EcognitaMathLib {
     export class WebGLMatrix {

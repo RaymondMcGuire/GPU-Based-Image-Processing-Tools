@@ -1,23 +1,9 @@
 /* =========================================================================
  *
- *  cv_imread.ts
- *  read the image file
- *
- * ========================================================================= */
-var EcognitaMathLib;
-(function (EcognitaMathLib) {
-    function imread(file) {
-        var img = new Image();
-        img.src = file;
-        return img;
-    }
-    EcognitaMathLib.imread = imread;
-})(EcognitaMathLib || (EcognitaMathLib = {}));
-/* =========================================================================
- *
  *  webgl_matrix.ts
- *  a matrix library devdeloped for webgl
+ *  a matrix library developed for webgl
  *  part of source code referenced by minMatrix.js
+ *  https://wgld.org/d/library/l001.html
  * ========================================================================= */
 var EcognitaMathLib;
 (function (EcognitaMathLib) {
@@ -271,6 +257,106 @@ var EcognitaMathLib;
         return WebGLMatrix;
     }());
     EcognitaMathLib.WebGLMatrix = WebGLMatrix;
+})(EcognitaMathLib || (EcognitaMathLib = {}));
+/* =========================================================================
+ *
+ *  webgl_quaternion.ts
+ *  a quaternion library developed for webgl
+ *  part of source code referenced by minMatrix.js
+ *  https://wgld.org/d/library/l001.html
+ * ========================================================================= */
+var EcognitaMathLib;
+(function (EcognitaMathLib) {
+    var WebGLQuaternion = /** @class */ (function () {
+        function WebGLQuaternion() {
+        }
+        WebGLQuaternion.prototype.create = function () { return new Float32Array(4); };
+        WebGLQuaternion.prototype.identity = function (qat) {
+            qat[0] = 0;
+            qat[1] = 0;
+            qat[2] = 0;
+            qat[3] = 1;
+            return qat;
+        };
+        WebGLQuaternion.prototype.inverse = function (qat) {
+            var out_qat = this.create();
+            out_qat[0] = -qat[0];
+            out_qat[1] = -qat[1];
+            out_qat[2] = -qat[2];
+            out_qat[3] = qat[3];
+            return out_qat;
+        };
+        WebGLQuaternion.prototype.normalize = function (qat) {
+            var x = qat[0], y = qat[1], z = qat[2], w = qat[3];
+            var l = Math.sqrt(x * x + y * y + z * z + w * w);
+            if (l === 0) {
+                qat[0] = 0;
+                qat[1] = 0;
+                qat[2] = 0;
+                qat[3] = 0;
+            }
+            else {
+                l = 1 / l;
+                qat[0] = x * l;
+                qat[1] = y * l;
+                qat[2] = z * l;
+                qat[3] = w * l;
+            }
+            return qat;
+        };
+        //q1(v1,w1) q2(v2,w2)
+        //v(Im) =  xi + yj + zk
+        //w(Re)
+        //q1q2 = (v1 x v2 + w2v1 + w1v2,w1w2 - v1・v2)
+        WebGLQuaternion.prototype.multiply = function (qat1, qat2) {
+            var out_qat = this.create();
+            var ax = qat1[0], ay = qat1[1], az = qat1[2], aw = qat1[3];
+            var bx = qat2[0], by = qat2[1], bz = qat2[2], bw = qat2[3];
+            out_qat[0] = ax * bw + aw * bx + ay * bz - az * by;
+            out_qat[1] = ay * bw + aw * by + az * bx - ax * bz;
+            out_qat[2] = az * bw + aw * bz + ax * by - ay * bx;
+            out_qat[3] = aw * bw - ax * bx - ay * by - az * bz;
+            return out_qat;
+        };
+        WebGLQuaternion.prototype.rotate = function (angle, axis) {
+            var sq = Math.sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+            if (!sq) {
+                console.log("need a axis value");
+                return undefined;
+            }
+            var a = axis[0], b = axis[1], c = axis[2];
+            if (sq != 1) {
+                sq = 1 / sq;
+                a *= sq;
+                b *= sq;
+                c *= sq;
+            }
+            var s = Math.sin(angle * 0.5);
+            var out_qat = this.create();
+            out_qat[0] = a * s;
+            out_qat[1] = b * s;
+            out_qat[2] = c * s;
+            out_qat[3] = Math.cos(angle * 0.5);
+            return out_qat;
+        };
+        //P' = qPq^(-1)
+        WebGLQuaternion.prototype.ToV3 = function (p_v3, q) {
+            var out_p = new Array(3);
+            var inv_q = this.inverse(q);
+            var in_p = this.create();
+            in_p[0] = p_v3[0];
+            in_p[1] = p_v3[1];
+            in_p[2] = p_v3[2];
+            var p_invq = this.multiply(inv_q, in_p);
+            var q_p_invq = this.multiply(p_invq, q);
+            out_p[0] = q_p_invq[0];
+            out_p[1] = q_p_invq[1];
+            out_p[2] = q_p_invq[2];
+            return out_p;
+        };
+        return WebGLQuaternion;
+    }());
+    EcognitaMathLib.WebGLQuaternion = WebGLQuaternion;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
@@ -778,12 +864,12 @@ var EcognitaMathLib;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
- *  demo11.ts
+ *  demo12.ts
  *  test some webgl demo
  *
  * ========================================================================= */
-/// <reference path="../lib/cv_imread.ts" />
 /// <reference path="../lib/webgl_matrix.ts" />
+/// <reference path="../lib/webgl_quaternion.ts" />
 /// <reference path="../lib/webgl_utils.ts" />
 /// <reference path="../lib/webgl_shaders.ts" />
 /// <reference path="../lib/webgl_model.ts" />
@@ -797,64 +883,82 @@ catch (e) { }
 if (!gl)
     throw new Error("Could not initialise WebGL");
 var cnt = 0;
-var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "texture-vert", "texture-frag");
+var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "pointLighting-vert", "pointLighting-frag");
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
-var tex = null;
+var torusData = new EcognitaMathLib.TorusModel(64, 64, 0.5, 1.5, true);
 vbo.addAttribute("position", 3, gl.FLOAT, false);
+vbo.addAttribute("normal", 3, gl.FLOAT, false);
 vbo.addAttribute("color", 4, gl.FLOAT, false);
-vbo.addAttribute("textureCoord", 2, gl.FLOAT, false);
-var data = [
-    -1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
-    1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
-    -1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0,
-    1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
-];
-var index = [
-    0, 1, 2,
-    3, 2, 1
-];
-vbo.init(4);
-vbo.copy(data);
+vbo.init(torusData.data.length / 10);
+vbo.copy(torusData.data);
 vbo.bind(shader);
-ibo.init(index);
+ibo.init(torusData.index);
 ibo.bind();
 var m = new EcognitaMathLib.WebGLMatrix();
-var eyeDirection = [0.0, 2.0, 5.0];
+var q = new EcognitaMathLib.WebGLQuaternion();
 var mMatrix = m.identity(m.create());
-var vMatrix = m.viewMatrix(eyeDirection, [0, 0, 0], [0, 1, 0]);
-var pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
-var tmpMatrix = m.multiply(pMatrix, vMatrix);
+var vMatrix = m.identity(m.create());
+var pMatrix = m.identity(m.create());
+var tmpMatrix = m.identity(m.create());
 var mvpMatrix = m.identity(m.create());
+var invMatrix = m.identity(m.create());
 shader.bind();
 var uniLocation = new Array();
 uniLocation.push(shader.uniformIndex('mvpMatrix'));
-uniLocation.push(shader.uniformIndex('texture'));
+uniLocation.push(shader.uniformIndex('mMatrix'));
+uniLocation.push(shader.uniformIndex('invMatrix'));
+uniLocation.push(shader.uniformIndex('lightPosition'));
+uniLocation.push(shader.uniformIndex('eyeDirection'));
+uniLocation.push(shader.uniformIndex('ambientColor'));
+var lightPosition = [15.0, 10.0, 15.0];
+var ambientColor = [0.1, 0.1, 0.1, 1.0];
+var xQuaternion = q.identity(q.create());
+var camPosition = [0.0, 0.0, 10.0];
+var camUpDirection = [0.0, 1.0, 0.0];
 //depth test and cull face
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
-gl.activeTexture(gl.TEXTURE0);
-var texture = null;
-var img = EcognitaMathLib.imread("./img/encognita.ico");
-img.onload = function () {
-    tex = new EcognitaMathLib.WebGL_Texture(4, false, img);
-};
+gl.enable(gl.CULL_FACE);
 (function () {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     cnt++;
-    var rad = (cnt % 360) * Math.PI / 180;
-    if (tex != null) {
-        tex.bind(tex.texture);
-        gl.uniform1i(uniLocation[1], 0);
-    }
+    var rad = (cnt % 180) * Math.PI / 90;
+    var rad2 = (cnt % 720) * Math.PI / 360;
+    xQuaternion = q.rotate(rad2, [1, 0, 0]);
+    camPosition = q.ToV3([0.0, 0.0, 10.0], xQuaternion);
+    camUpDirection = q.ToV3([0.0, 1.0, 0.0], xQuaternion);
+    vMatrix = m.viewMatrix(camPosition, [0, 0, 0], camUpDirection);
+    pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
+    tmpMatrix = m.multiply(pMatrix, vMatrix);
     mMatrix = m.identity(mMatrix);
     mMatrix = m.rotate(mMatrix, rad, [0, 1, 0]);
     mvpMatrix = m.multiply(tmpMatrix, mMatrix);
     invMatrix = m.inverse(mMatrix);
     gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation[1], false, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
+    gl.uniform3fv(uniLocation[3], lightPosition);
+    gl.uniform3fv(uniLocation[4], camPosition);
+    gl.uniform4fv(uniLocation[5], ambientColor);
     ibo.draw(gl.TRIANGLES);
     gl.flush();
     setTimeout(arguments.callee, 1000 / 30);
 })();
+/* =========================================================================
+ *
+ *  cv_imread.ts
+ *  read the image file
+ *
+ * ========================================================================= */
+var EcognitaMathLib;
+(function (EcognitaMathLib) {
+    function imread(file) {
+        var img = new Image();
+        img.src = file;
+        return img;
+    }
+    EcognitaMathLib.imread = imread;
+})(EcognitaMathLib || (EcognitaMathLib = {}));

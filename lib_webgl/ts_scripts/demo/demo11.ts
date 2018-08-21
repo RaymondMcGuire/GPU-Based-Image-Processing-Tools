@@ -94,7 +94,6 @@ img.onload = function(){
         mMatrix =m.identity(mMatrix);
         mMatrix =m.rotate(mMatrix,rad,[0,1,0]);
         mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-        invMatrix = m.inverse(mMatrix);
 
         gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
         ibo.draw(gl.TRIANGLES);

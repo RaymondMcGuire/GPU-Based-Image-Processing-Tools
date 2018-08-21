@@ -1,7 +1,8 @@
-../demo/demo11.ts
+../demo/demo12.ts
 ../lib/cv_imread.ts
 ../lib/cv_colorSpace.ts
 ../lib/webgl_matrix.ts
+../lib/webgl_quaternion.ts
 ../lib/webgl_shaders.ts
 ../lib/webgl_model.ts
 ../lib/webgl_utils.ts
