@@ -1,5 +1,20 @@
 /* =========================================================================
  *
+ *  cv_imread.ts
+ *  read the image file
+ *
+ * ========================================================================= */
+var EcognitaMathLib;
+(function (EcognitaMathLib) {
+    function imread(file) {
+        var img = new Image();
+        img.src = file;
+        return img;
+    }
+    EcognitaMathLib.imread = imread;
+})(EcognitaMathLib || (EcognitaMathLib = {}));
+/* =========================================================================
+ *
  *  webgl_matrix.ts
  *  a matrix library developed for webgl
  *  part of source code referenced by minMatrix.js
@@ -922,6 +937,7 @@ var EcognitaMathLib;
     }());
     EcognitaMathLib.ShpereModel = ShpereModel;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
+/// <reference path="../lib/cv_imread.ts" />
 /// <reference path="../lib/webgl_matrix.ts" />
 /// <reference path="../lib/webgl_quaternion.ts" />
 /// <reference path="../lib/webgl_utils.ts" />
@@ -941,18 +957,36 @@ if (!gl)
 var mc = new Hammer(canvas);
 mc.add(new Hammer.Pan({ direction: Hammer.DIRECTION_ALL, threshold: 0 }));
 mc.on("pan", mouseDrag);
-var cnt = 0;
-var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "pointLighting-vert", "pointLighting-frag");
+var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "texture-vert", "texture-frag");
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
-var torusData = new EcognitaMathLib.TorusModel(64, 64, 0.5, 1.5, true);
+var tex0 = null;
+var tex1 = null;
+var img1 = EcognitaMathLib.imread("./img/tex0.png");
+img1.onload = function () {
+    tex0 = new EcognitaMathLib.WebGL_Texture(4, false, img1);
+};
+var img2 = EcognitaMathLib.imread("./img/tex1.png");
+img2.onload = function () {
+    tex1 = new EcognitaMathLib.WebGL_Texture(4, false, img2);
+};
 vbo.addAttribute("position", 3, gl.FLOAT, false);
-vbo.addAttribute("normal", 3, gl.FLOAT, false);
 vbo.addAttribute("color", 4, gl.FLOAT, false);
-vbo.init(torusData.data.length / 10);
-vbo.copy(torusData.data);
+vbo.addAttribute("textureCoord", 2, gl.FLOAT, false);
+var data = [
+    -1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
+    1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
+    -1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0,
+    1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
+];
+var index = [
+    0, 1, 2,
+    3, 2, 1
+];
+vbo.init(4);
+vbo.copy(data);
 vbo.bind(shader);
-ibo.init(torusData.index);
+ibo.init(index);
 ibo.bind();
 var m = new EcognitaMathLib.WebGLMatrix();
 var q = new EcognitaMathLib.WebGLQuaternion();
@@ -962,22 +996,12 @@ var pMatrix = m.identity(m.create());
 var tmpMatrix = m.identity(m.create());
 var mvpMatrix = m.identity(m.create());
 var invMatrix = m.identity(m.create());
+var qMatrix = m.identity(m.create());
+var xQuaternion = q.identity(q.create());
 shader.bind();
 var uniLocation = new Array();
 uniLocation.push(shader.uniformIndex('mvpMatrix'));
-uniLocation.push(shader.uniformIndex('mMatrix'));
-uniLocation.push(shader.uniformIndex('invMatrix'));
-uniLocation.push(shader.uniformIndex('lightPosition'));
-uniLocation.push(shader.uniformIndex('eyeDirection'));
-uniLocation.push(shader.uniformIndex('ambientColor'));
-var lightPosition = [15.0, 10.0, 15.0];
-var ambientColor = [0.1, 0.1, 0.1, 1.0];
-var xQuaternion = q.identity(q.create());
-var camPosition = [0.0, 0.0, 10.0];
-var camUpDirection = [0.0, 1.0, 0.0];
-vMatrix = m.viewMatrix(camPosition, [0, 0, 0], camUpDirection);
-pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
-tmpMatrix = m.multiply(pMatrix, vMatrix);
+uniLocation.push(shader.uniformIndex('texture'));
 var lastPosX = 0;
 var lastPosY = 0;
 var isDragging = false;
@@ -1007,45 +1031,54 @@ function mouseDrag(ev) {
         isDragging = false;
     }
 }
-//depth test and cull face
+//depth test and blend
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
-gl.enable(gl.CULL_FACE);
+gl.enable(gl.BLEND);
+gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
 (function () {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    cnt++;
-    var rad = (cnt % 180) * Math.PI / 90;
-    var qMatrix = m.identity(m.create());
     qMatrix = q.ToMat4x4(xQuaternion);
+    var camPosition = [0.0, 5.0, 10.0];
+    var camUpDirection = [0.0, 1.0, 0.0];
+    //camera view matrix
+    vMatrix = m.viewMatrix(camPosition, [0, 0, 0], camUpDirection);
+    //billboard matrix
+    invMatrix = m.viewMatrix([0, 0, 0], camPosition, camUpDirection);
+    //user input -> cam rotate
+    vMatrix = m.multiply(vMatrix, qMatrix);
+    invMatrix = m.multiply(invMatrix, qMatrix);
+    //get billboard inv matrix
+    invMatrix = m.inverse(invMatrix);
+    //calculate vp matrix
+    pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
+    tmpMatrix = m.multiply(pMatrix, vMatrix);
+    //tex1 active
+    if (tex1 != null) {
+        gl.activeTexture(gl.TEXTURE1);
+        tex1.bind(tex1.texture);
+        gl.uniform1i(uniLocation[1], 1);
+    }
     mMatrix = m.identity(mMatrix);
-    mMatrix = m.multiply(qMatrix, mMatrix);
-    mMatrix = m.rotate(mMatrix, rad, [0, 1, 0]);
+    mMatrix = m.rotate(mMatrix, Math.PI / 2, [1, 0, 0]);
+    mMatrix = m.scale(mMatrix, [3.0, 3.0, 1.0]);
     mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-    invMatrix = m.inverse(mMatrix);
     gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
-    gl.uniformMatrix4fv(uniLocation[1], false, mMatrix);
-    gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
-    gl.uniform3fv(uniLocation[3], lightPosition);
-    gl.uniform3fv(uniLocation[4], camPosition);
-    gl.uniform4fv(uniLocation[5], ambientColor);
+    ibo.draw(gl.TRIANGLES);
+    //tex0 active
+    if (tex0 != null) {
+        gl.activeTexture(gl.TEXTURE0);
+        tex0.bind(tex0.texture);
+        gl.uniform1i(uniLocation[1], 0);
+    }
+    mMatrix = m.identity(mMatrix);
+    mMatrix = m.translate(mMatrix, [0.0, 1.0, 0.0]);
+    mMatrix = m.multiply(mMatrix, invMatrix);
+    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
     ibo.draw(gl.TRIANGLES);
     gl.flush();
     setTimeout(arguments.callee, 1000 / 30);
 })();
-/* =========================================================================
- *
- *  cv_imread.ts
- *  read the image file
- *
- * ========================================================================= */
-var EcognitaMathLib;
-(function (EcognitaMathLib) {
-    function imread(file) {
-        var img = new Image();
-        img.src = file;
-        return img;
-    }
-    EcognitaMathLib.imread = imread;
-})(EcognitaMathLib || (EcognitaMathLib = {}));

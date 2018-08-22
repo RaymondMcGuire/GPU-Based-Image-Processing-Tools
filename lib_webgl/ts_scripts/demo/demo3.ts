@@ -42,7 +42,8 @@ mMatrix =m.translate(mMatrix,[1.5,0.0,0.0]);
 var mvpMatrix = m.multiply(tmpMatrix, mMatrix);
 
 shader.bind();
-var uniLocation =shader.uniformIndex('mvpMatrix');
+var uniLocation = new Array<any>();
+uniLocation.push(shader.uniformIndex('mvpMatrix'));
 
 (function(){
 
@@ -59,7 +60,7 @@ var uniLocation =shader.uniformIndex('mvpMatrix');
         mMatrix =m.identity(mMatrix);
         mMatrix =m.translate(mMatrix,[x,y+1.0,0.0]);
         mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-        gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+        gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
         vbo.draw(gl.TRIANGLES);
     
         //draw second triangle animation
@@ -67,7 +68,7 @@ var uniLocation =shader.uniformIndex('mvpMatrix');
         mMatrix =m.translate(mMatrix,[1.0,-1.0,0.0]);
         mMatrix =m.rotate(mMatrix,rad,[0,1,0]);
         mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-        gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+        gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
         vbo.draw(gl.TRIANGLES);
     
         //draw third triangle animation
@@ -76,7 +77,7 @@ var uniLocation =shader.uniformIndex('mvpMatrix');
         mMatrix =m.translate(mMatrix,[-1.0,-1.0,0.0]);
         mMatrix =m.scale(mMatrix,[s,s,0.0]);
         mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-        gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+        gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
         vbo.draw(gl.TRIANGLES);
         gl.flush();
         setTimeout(arguments.callee, 1000 / 30);

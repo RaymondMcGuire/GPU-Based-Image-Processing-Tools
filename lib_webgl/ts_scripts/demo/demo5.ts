@@ -44,7 +44,8 @@ var tmpMatrix = m.multiply(pMatrix, vMatrix);
 var mvpMatrix =m.identity(m.create());
 
 shader.bind();
-var uniLocation =shader.uniformIndex('mvpMatrix');
+var uniLocation = new Array<any>();
+uniLocation.push(shader.uniformIndex('mvpMatrix'));
 
 //depth test and cull face
 gl.enable(gl.DEPTH_TEST);
@@ -63,7 +64,7 @@ gl.enable(gl.CULL_FACE);
         mMatrix =m.identity(mMatrix);
         mMatrix =m.rotate(mMatrix,rad,[0,1,1]);
         mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-        gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+        gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
         ibo.draw(gl.TRIANGLES);
         gl.flush();
         setTimeout(arguments.callee, 1000 / 30);

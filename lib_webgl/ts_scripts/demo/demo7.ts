@@ -53,7 +53,7 @@ uniLocation.push(shader.uniformIndex('lightDirection'));
 uniLocation.push(shader.uniformIndex('ambientColor'));
 
 var lightDirection = [-0.5, 0.5, 0.5];
-\var ambientColor = [0.1, 0.1, 0.1, 1.0];
+var ambientColor = [0.1, 0.1, 0.1, 1.0];
 //depth test and cull face
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
