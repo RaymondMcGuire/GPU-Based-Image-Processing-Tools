@@ -354,6 +354,66 @@ var EcognitaMathLib;
             out_p[2] = q_p_invq[2];
             return out_p;
         };
+        WebGLQuaternion.prototype.ToMat4x4 = function (q) {
+            var out_mat = new Float32Array(16);
+            var x = q[0], y = q[1], z = q[2], w = q[3];
+            var x2 = x + x, y2 = y + y, z2 = z + z;
+            var xx = x * x2, xy = x * y2, xz = x * z2;
+            var yy = y * y2, yz = y * z2, zz = z * z2;
+            var wx = w * x2, wy = w * y2, wz = w * z2;
+            out_mat[0] = 1 - (yy + zz);
+            out_mat[1] = xy - wz;
+            out_mat[2] = xz + wy;
+            out_mat[3] = 0;
+            out_mat[4] = xy + wz;
+            out_mat[5] = 1 - (xx + zz);
+            out_mat[6] = yz - wx;
+            out_mat[7] = 0;
+            out_mat[8] = xz - wy;
+            out_mat[9] = yz + wx;
+            out_mat[10] = 1 - (xx + yy);
+            out_mat[11] = 0;
+            out_mat[12] = 0;
+            out_mat[13] = 0;
+            out_mat[14] = 0;
+            out_mat[15] = 1;
+            return out_mat;
+        };
+        WebGLQuaternion.prototype.slerp = function (qtn1, qtn2, time) {
+            if (time < 0 || time > 1) {
+                console.log("parameter time's setting is wrong!");
+                return undefined;
+            }
+            var out_q = this.create();
+            var ht = qtn1[0] * qtn2[0] + qtn1[1] * qtn2[1] + qtn1[2] * qtn2[2] + qtn1[3] * qtn2[3];
+            var hs = 1.0 - ht * ht;
+            if (hs <= 0.0) {
+                out_q[0] = qtn1[0];
+                out_q[1] = qtn1[1];
+                out_q[2] = qtn1[2];
+                out_q[3] = qtn1[3];
+            }
+            else {
+                hs = Math.sqrt(hs);
+                if (Math.abs(hs) < 0.0001) {
+                    out_q[0] = (qtn1[0] * 0.5 + qtn2[0] * 0.5);
+                    out_q[1] = (qtn1[1] * 0.5 + qtn2[1] * 0.5);
+                    out_q[2] = (qtn1[2] * 0.5 + qtn2[2] * 0.5);
+                    out_q[3] = (qtn1[3] * 0.5 + qtn2[3] * 0.5);
+                }
+                else {
+                    var ph = Math.acos(ht);
+                    var pt = ph * time;
+                    var t0 = Math.sin(ph - pt) / hs;
+                    var t1 = Math.sin(pt) / hs;
+                    out_q[0] = qtn1[0] * t0 + qtn2[0] * t1;
+                    out_q[1] = qtn1[1] * t0 + qtn2[1] * t1;
+                    out_q[2] = qtn1[2] * t0 + qtn2[2] * t1;
+                    out_q[3] = qtn1[3] * t0 + qtn2[3] * t1;
+                }
+            }
+            return out_q;
+        };
         return WebGLQuaternion;
     }());
     EcognitaMathLib.WebGLQuaternion = WebGLQuaternion;
@@ -862,12 +922,6 @@ var EcognitaMathLib;
     }());
     EcognitaMathLib.ShpereModel = ShpereModel;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
-/* =========================================================================
- *
- *  demo12.ts
- *  test some webgl demo
- *
- * ========================================================================= */
 /// <reference path="../lib/webgl_matrix.ts" />
 /// <reference path="../lib/webgl_quaternion.ts" />
 /// <reference path="../lib/webgl_utils.ts" />
@@ -882,6 +936,11 @@ try {
 catch (e) { }
 if (!gl)
     throw new Error("Could not initialise WebGL");
+//event listener
+//using hammer library
+var mc = new Hammer(canvas);
+mc.add(new Hammer.Pan({ direction: Hammer.DIRECTION_ALL, threshold: 0 }));
+mc.on("pan", mouseDrag);
 var cnt = 0;
 var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "pointLighting-vert", "pointLighting-frag");
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
@@ -916,6 +975,38 @@ var ambientColor = [0.1, 0.1, 0.1, 1.0];
 var xQuaternion = q.identity(q.create());
 var camPosition = [0.0, 0.0, 10.0];
 var camUpDirection = [0.0, 1.0, 0.0];
+vMatrix = m.viewMatrix(camPosition, [0, 0, 0], camUpDirection);
+pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
+tmpMatrix = m.multiply(pMatrix, vMatrix);
+var lastPosX = 0;
+var lastPosY = 0;
+var isDragging = false;
+function mouseDrag(ev) {
+    var elem = ev.target;
+    if (!isDragging) {
+        isDragging = true;
+        lastPosX = elem.offsetLeft;
+        lastPosY = elem.offsetTop;
+    }
+    var posX = ev.center.x - lastPosX;
+    var posY = ev.center.y - lastPosY;
+    var cw = canvas.width;
+    var ch = canvas.height;
+    var wh = 1 / Math.sqrt(cw * cw + ch * ch);
+    var x = posX - cw * 0.5;
+    var y = posY - ch * 0.5;
+    var sq = Math.sqrt(x * x + y * y);
+    var r = sq * 2.0 * Math.PI * wh;
+    if (sq != 1) {
+        sq = 1 / sq;
+        x *= sq;
+        y *= sq;
+    }
+    xQuaternion = q.rotate(r, [y, x, 0.0]);
+    if (ev.isFinal) {
+        isDragging = false;
+    }
+}
 //depth test and cull face
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
@@ -926,14 +1017,10 @@ gl.enable(gl.CULL_FACE);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     cnt++;
     var rad = (cnt % 180) * Math.PI / 90;
-    var rad2 = (cnt % 720) * Math.PI / 360;
-    xQuaternion = q.rotate(rad2, [1, 0, 0]);
-    camPosition = q.ToV3([0.0, 0.0, 10.0], xQuaternion);
-    camUpDirection = q.ToV3([0.0, 1.0, 0.0], xQuaternion);
-    vMatrix = m.viewMatrix(camPosition, [0, 0, 0], camUpDirection);
-    pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
-    tmpMatrix = m.multiply(pMatrix, vMatrix);
+    var qMatrix = m.identity(m.create());
+    qMatrix = q.ToMat4x4(xQuaternion);
     mMatrix = m.identity(mMatrix);
+    mMatrix = m.multiply(qMatrix, mMatrix);
     mMatrix = m.rotate(mMatrix, rad, [0, 1, 0]);
     mvpMatrix = m.multiply(tmpMatrix, mMatrix);
     invMatrix = m.inverse(mMatrix);

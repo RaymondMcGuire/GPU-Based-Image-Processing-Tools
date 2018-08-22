@@ -91,7 +91,7 @@ module EcognitaMathLib {
         }
 
         ToMat4x4(q:Float32Array){
-            let out_mat = new Array<number>(16);
+            let out_mat = new Float32Array(16);
             var x = q[0], y = q[1], z = q[2], w = q[3];
             var x2 = x + x, y2 = y + y, z2 = z + z;
             var xx = x * x2, xy = x * y2, xz = x * z2;
