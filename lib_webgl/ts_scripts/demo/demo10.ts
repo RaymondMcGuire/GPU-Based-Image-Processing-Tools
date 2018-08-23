@@ -24,7 +24,7 @@ var shader     = new EcognitaMathLib.WebGL_Shader(Shaders, "pointLighting-vert",
 
 var vbo_torus = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo_torus = new EcognitaMathLib.WebGL_IndexBuffer();
-var torusData = new EcognitaMathLib.TorusModel(64,64,0.5,1.5,true);
+var torusData = new EcognitaMathLib.TorusModel(64,64,0.5,1.5,undefined,true);
 vbo_torus.addAttribute("position", 3, gl.FLOAT, false);
 vbo_torus.addAttribute("normal", 3, gl.FLOAT, false);
 vbo_torus.addAttribute("color", 4, gl.FLOAT, false);
@@ -37,7 +37,7 @@ ibo_torus.bind();
 
 var vbo_sphere = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo_sphere = new EcognitaMathLib.WebGL_IndexBuffer();
-var sphereData= new EcognitaMathLib.ShpereModel(64,64,2.0,true);
+var sphereData= new EcognitaMathLib.ShpereModel(64,64,2.0,undefined,true);
 vbo_sphere.addAttribute("position", 3, gl.FLOAT, false);
 vbo_sphere.addAttribute("normal", 3, gl.FLOAT, false);
 vbo_sphere.addAttribute("color", 4, gl.FLOAT, false);

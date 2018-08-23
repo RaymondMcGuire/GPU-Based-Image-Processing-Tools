@@ -24,7 +24,7 @@ var shader     = new EcognitaMathLib.WebGL_Shader(Shaders, "demo1-vert", "demo1-
 
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
-var torusData = new EcognitaMathLib.TorusModel(32,32,1,2,false);
+var torusData = new EcognitaMathLib.TorusModel(32,32,1,2,undefined,false);
 
 vbo.addAttribute("position", 3, gl.FLOAT, false);
 vbo.addAttribute("color", 4, gl.FLOAT, false);

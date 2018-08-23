@@ -1,6 +1,6 @@
 /* =========================================================================
  *
- *  demo15.ts
+ *  demo17.ts
  *  test some webgl demo
  *  
  * ========================================================================= */
@@ -21,44 +21,35 @@ try {
 if (!gl)
     throw new Error("Could not initialise WebGL");
 
-var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "texture-vert", "texture-frag");
-
+//debug the info for point size range 
+var pointSizeRange = gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE);
+console.log('pointSizeRange:' + pointSizeRange[0] + ' to ' + pointSizeRange[1]);
+var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "pointSprite-vert", "pointSprite-frag");
+var pointSphere = new EcognitaMathLib.ShpereModel(16,16,2,undefined,false);
+//point shpere
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
-var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
-var tex0 = null;
-var tex1 = null;
-
-var img1 = EcognitaMathLib.imread("./img/tex0.png");
-img1.onload = function(){
-    tex0 = new EcognitaMathLib.WebGL_Texture(4,false,img1);
-};
-var img2 = EcognitaMathLib.imread("./img/tex1.png");
-img2.onload = function(){
-    tex1 = new EcognitaMathLib.WebGL_Texture(4,false,img2);
-};
 
 vbo.addAttribute("position", 3, gl.FLOAT, false);
 vbo.addAttribute("color", 4, gl.FLOAT, false);
-vbo.addAttribute("textureCoord", 2, gl.FLOAT, false);
 
-var data = [
-    -1.0,  1.0,  0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
-     1.0,  1.0,  0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
-    -1.0, -1.0,  0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0,
-     1.0, -1.0,  0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
-];
-
-var index = [
-    0, 1, 2,
-    3, 2, 1
-];
-
-vbo.init(4);
-vbo.copy(data);
+vbo.init(pointSphere.data.length/7);
+vbo.copy(pointSphere.data);
 vbo.bind(shader);
 
-ibo.init(index);
-ibo.bind();
+//line
+var vbo_line = new EcognitaMathLib.WebGL_VertexBuffer();
+
+vbo_line.addAttribute("position", 3, gl.FLOAT, false);
+vbo_line.addAttribute("color", 4, gl.FLOAT, false);
+
+var lineData =[-1.0, -1.0,  0.0, 1.0, 1.0, 1.0, 1.0,
+                1.0, -1.0,  0.0, 1.0, 0.0, 0.0, 1.0,
+               -1.0,  1.0,  0.0, 0.0, 1.0, 0.0, 1.0,
+                1.0,  1.0,  0.0, 0.0, 0.0, 1.0, 1.0
+                ];
+vbo_line.init(4);
+vbo_line.copy(lineData);
+vbo_line.bind(shader);
 
 var m = new EcognitaMathLib.WebGLMatrix();
 var q = new EcognitaMathLib.WebGLQuaternion();
@@ -68,7 +59,6 @@ var vMatrix = m.identity(m.create());
 var pMatrix = m.identity(m.create());
 var tmpMatrix = m.identity(m.create());
 var mvpMatrix =m.identity(m.create());
-var invMatrix = m.identity(m.create());
 var qMatrix   = m.identity(m.create());
 
 var xQuaternion = q.identity(q.create());
@@ -76,13 +66,12 @@ var xQuaternion = q.identity(q.create());
 shader.bind();
 var uniLocation = new Array<any>();
 uniLocation.push(shader.uniformIndex('mvpMatrix'));
+uniLocation.push(shader.uniformIndex('pointSize'));
 uniLocation.push(shader.uniformIndex('texture'));
-
 
 var lastPosX = 0;
 var lastPosY = 0;
 var isDragging = false;
-//event listener
 var hammer = new EcognitaMathLib.Hammer_Utils(canvas);
 hammer.on_pan = function(ev){
 	var elem = ev.target;
@@ -115,68 +104,65 @@ hammer.on_pan = function(ev){
 }
 hammer.enablePan();
 
-//depth test and blend
+//depth test
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
 gl.enable(gl.BLEND);
 gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
+
+var cnt = 0;
+
+var tex =null;
+var img = EcognitaMathLib.imread("./img/encognita.ico");
+img.onload = function(){
+    tex = new EcognitaMathLib.WebGL_Texture(4,false,img);
+};
 
 (function(){
 
         gl.clearColor(0.0, 0.0, 0.0, 1.0);
         gl.clearDepth(1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    
+
+        cnt++;
+        var rad = (cnt%360)*Math.PI/180;
         qMatrix = q.ToMat4x4(xQuaternion);
 
         var camPosition = [0.0,5.0,10.0];
         var camUpDirection = [0.0,1.0,0.0];
 
-        //camera view matrix
         vMatrix = m.viewMatrix(camPosition, [0, 0, 0], camUpDirection);
-        //billboard matrix
-        invMatrix = m.viewMatrix( [0, 0, 0],camPosition, camUpDirection);
-
-        //user input -> cam rotate
         vMatrix = m.multiply(vMatrix,qMatrix);
-        invMatrix = m.multiply(invMatrix,qMatrix);
-        //get billboard inv matrix
-        //cam->"a" direction rotate theta == billboard ->"-a" direction rotate theta
-        invMatrix = m.inverse(invMatrix);
-
-        //calculate vp matrix
         pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
         tmpMatrix =m.multiply(pMatrix, vMatrix);
 
-        //tex1 active
-        if(tex1!=null){
-            gl.activeTexture(gl.TEXTURE1);
-            tex1.bind(tex1.texture);
-            gl.uniform1i(uniLocation[1], 1);
+        var pointSize = 32*Math.sin(cnt/50);
+        
+        if(tex!=null){
+            gl.activeTexture(gl.TEXTURE0);
+            tex.bind(tex.texture);
         }
 
+        mMatrix = m.identity(mMatrix);
+        mMatrix = m.rotate(mMatrix,rad, [0, 1, 0]);
+        mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+
+        gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
+        gl.uniform1f(uniLocation[1], pointSize);
+        gl.uniform1i(uniLocation[2], 0);
+
+        vbo.bind(shader);
+        vbo.draw(gl.POINTS);
+
+        //draw line
         mMatrix = m.identity(mMatrix);
         mMatrix = m.rotate(mMatrix,Math.PI / 2, [1, 0, 0]);
         mMatrix = m.scale(mMatrix, [3.0, 3.0, 1.0]);
         mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-
         gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
-        ibo.draw(gl.TRIANGLES);
+        vbo_line.bind(shader);
+        vbo_line.draw(gl.LINES);
 
-        //tex0 active
-        if(tex0!=null){
-            gl.activeTexture(gl.TEXTURE0);
-            tex0.bind(tex0.texture);
-            gl.uniform1i(uniLocation[1], 0);
-        }
-
-        mMatrix = m.identity(mMatrix);
-        mMatrix = m.translate(mMatrix,[0.0, 1.0, 0.0]);
-        mMatrix = m.multiply(mMatrix, invMatrix);
-        mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-
-        gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
-        ibo.draw(gl.TRIANGLES);
 
         gl.flush();
         setTimeout(arguments.callee, 1000 / 30);

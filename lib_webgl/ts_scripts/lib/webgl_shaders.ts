@@ -121,6 +121,27 @@ var Shaders = {
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
 
+    'point-frag':
+        'precision mediump float;\n'    +
+        'varying vec4      vColor;\n\n' +
+
+        'void main(void){\n'            +
+        '    gl_FragColor = vColor;\n'  +
+        '}\n',
+
+    'point-vert':
+        'attribute vec3 position;\n'                             +
+        'attribute vec4 color;\n'                                +
+        'uniform   mat4 mvpMatrix;\n'                            +
+        'uniform   float pointSize;\n'                           +
+        'varying   vec4 vColor;\n\n'                             +
+
+        'void main(void){\n'                                     +
+        '    vColor        = color;\n'                           +
+        '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
+        '    gl_PointSize  = pointSize;\n'                       +
+        '}\n',
+
     'pointLighting-frag':
         'precision mediump float;\n\n'                                                     +
 
@@ -164,6 +185,72 @@ var Shaders = {
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
 
+    'pointSprite-frag':
+        'precision mediump float;\n\n'                       +
+
+        'uniform sampler2D texture;\n'                       +
+        'varying vec4      vColor;\n\n'                      +
+
+        'void main(void){\n'                                 +
+        '    vec4 smpColor = vec4(1.0);\n'                   +
+        '    smpColor = texture2D(texture,gl_PointCoord);\n' +
+        '    if(smpColor.a == 0.0){\n'                       +
+        '        discard;\n'                                 +
+        '    }else{\n'                                       +
+        '        gl_FragColor = vColor * smpColor;\n'        +
+        '    }\n'                                            +
+        '}\n',
+
+    'pointSprite-vert':
+        'attribute vec3 position;\n'                             +
+        'attribute vec4 color;\n'                                +
+        'uniform   mat4 mvpMatrix;\n'                            +
+        'uniform   float pointSize;\n'                           +
+        'varying   vec4 vColor;\n\n'                             +
+
+        'void main(void){\n'                                     +
+        '    vColor        = color;\n'                           +
+        '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
+        '    gl_PointSize  = pointSize;\n'                       +
+        '}\n',
+
+    'renderToTexture-frag':
+        'precision mediump float;\n\n'                          +
+
+        'uniform sampler2D texture;\n'                          +
+        'varying vec4      vColor;\n'                           +
+        'varying vec2      vTextureCoord;\n\n'                  +
+
+        'void main(void){\n'                                    +
+        '	vec4 smpColor = texture2D(texture, vTextureCoord);\n' +
+        '	gl_FragColor  = vColor * smpColor;\n'                 +
+        '}\n',
+
+    'renderToTexture-vert':
+        'attribute vec3 position;\n'                                                 +
+        'attribute vec3 normal;\n'                                                   +
+        'attribute vec4 color;\n'                                                    +
+        'attribute vec2 textureCoord;\n'                                             +
+        'uniform   mat4 mMatrix;\n'                                                  +
+        'uniform   mat4 mvpMatrix;\n'                                                +
+        'uniform   mat4 invMatrix;\n'                                                +
+        'uniform   vec3 lightDirection;\n'                                           +
+        'uniform   bool useLight;\n'                                                 +
+        'varying   vec4 vColor;\n'                                                   +
+        'varying   vec2 vTextureCoord;\n\n'                                          +
+
+        'void main(void){\n'                                                         +
+        '	if(useLight){\n'                                                           +
+        '		vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '		float diffuse  = clamp(dot(normal, invLight), 0.2, 1.0);\n'               +
+        '		vColor         = vec4(color.xyz * vec3(diffuse), 1.0);\n'                 +
+        '	}else{\n'                                                                  +
+        '		vColor         = color;\n'                                                +
+        '	}\n'                                                                       +
+        '	vTextureCoord  = textureCoord;\n'                                          +
+        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n'                       +
+        '}\n',
+
     'specular-frag':
         'precision mediump float;\n\n' +
 
@@ -196,6 +283,51 @@ var Shaders = {
         '    vec4 light = color*vec4(vec3(diffuse),1.0)+vec4(vec3(specular),1.0);\n' +
         '    vColor = light + ambientColor;\n'                                       +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n'                    +
+        '}\n',
+
+    'stencilBufferOutline-frag':
+        'precision mediump float;\n\n'                      +
+
+        'uniform sampler2D texture;\n'                      +
+        'uniform bool      useTexture;\n'                   +
+        'varying vec4      vColor;\n'                       +
+        'varying vec2      vTextureCoord;\n\n'              +
+
+        'void main(void){\n'                                +
+        '	vec4 smpColor = vec4(1.0);\n'                     +
+        '	if(useTexture){\n'                                +
+        '		smpColor = texture2D(texture, vTextureCoord);\n' +
+        '	}\n'                                              +
+        '	gl_FragColor = vColor * smpColor;\n'              +
+        '}\n',
+
+    'stencilBufferOutline-vert':
+        'attribute vec3 position;\n'                                                 +
+        'attribute vec3 normal;\n'                                                   +
+        'attribute vec4 color;\n'                                                    +
+        'attribute vec2 textureCoord;\n'                                             +
+        'uniform   mat4 mvpMatrix;\n'                                                +
+        'uniform   mat4 invMatrix;\n'                                                +
+        'uniform   vec3 lightDirection;\n'                                           +
+        'uniform   bool useLight;\n'                                                 +
+        'uniform   bool outline;\n'                                                  +
+        'varying   vec4 vColor;\n'                                                   +
+        'varying   vec2 vTextureCoord;\n\n'                                          +
+
+        'void main(void){\n'                                                         +
+        '	if(useLight){\n'                                                           +
+        '		vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '		float diffuse  = clamp(dot(normal, invLight), 0.1, 1.0);\n'               +
+        '		vColor         = color * vec4(vec3(diffuse), 1.0);\n'                     +
+        '	}else{\n'                                                                  +
+        '		vColor         = color;\n'                                                +
+        '	}\n'                                                                       +
+        '	vTextureCoord      = textureCoord;\n'                                      +
+        '	vec3 oPosition     = position;\n'                                          +
+        '	if(outline){\n'                                                            +
+        '		oPosition     += normal * 0.1;\n'                                         +
+        '	}\n'                                                                       +
+        '	gl_Position = mvpMatrix * vec4(oPosition, 1.0);\n'                         +
         '}\n',
 
     'texture-frag':

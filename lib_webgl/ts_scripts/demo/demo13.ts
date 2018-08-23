@@ -5,11 +5,12 @@
  *  
  * ========================================================================= */
 /// <reference path="../lib/webgl_matrix.ts" />
+/// <reference path="../lib/extra_utils.ts" />
 /// <reference path="../lib/webgl_quaternion.ts" />
 /// <reference path="../lib/webgl_utils.ts" />
 /// <reference path="../lib/webgl_shaders.ts" />
 /// <reference path="../lib/webgl_model.ts" />
-declare var Hammer:any;
+
 var canvas = <any>document.getElementById('canvas');
 canvas.width = 500;
 canvas.height = 300;
@@ -19,19 +20,12 @@ try {
 if (!gl)
     throw new Error("Could not initialise WebGL");
 
-//event listener
-//using hammer library
-var mc = new Hammer(canvas);
-mc.add( new Hammer.Pan({ direction: Hammer.DIRECTION_ALL, threshold: 0 }) );
-mc.on("pan", mouseDrag);
-
-var cnt =0;
-
+	var cnt =0;
 var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "pointLighting-vert", "pointLighting-frag");
 
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
-var torusData = new EcognitaMathLib.TorusModel(64,64,0.5,1.5,true);
+var torusData = new EcognitaMathLib.TorusModel(64,64,0.5,1.5,undefined,true);
 
 vbo.addAttribute("position", 3, gl.FLOAT, false);
 vbo.addAttribute("normal", 3, gl.FLOAT, false);
@@ -78,7 +72,9 @@ tmpMatrix =m.multiply(pMatrix, vMatrix);
 var lastPosX = 0;
 var lastPosY = 0;
 var isDragging = false;
-function mouseDrag(ev){
+
+var hammer = new EcognitaMathLib.Hammer_Utils(canvas);
+hammer.on_pan =function(ev){
 	var elem = ev.target;
 	if (!isDragging ) {
 		isDragging = true;
@@ -107,6 +103,7 @@ function mouseDrag(ev){
         isDragging = false;
   	}
 }
+hammer.enablePan();
 
 //depth test and cull face
 gl.enable(gl.DEPTH_TEST);

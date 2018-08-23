@@ -24,7 +24,7 @@ var shader     = new EcognitaMathLib.WebGL_Shader(Shaders, "phong-vert", "phong-
 
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
-var torusData = new EcognitaMathLib.TorusModel(64,64,1.5,3.0,true);
+var torusData = new EcognitaMathLib.TorusModel(64,64,1.5,3.0,undefined,true);
 
 vbo.addAttribute("position", 3, gl.FLOAT, false);
 vbo.addAttribute("normal", 3, gl.FLOAT, false);

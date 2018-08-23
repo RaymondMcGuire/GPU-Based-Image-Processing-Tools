@@ -1,4 +1,4 @@
-TITLE Init Environment
+TITLE Environment Setting
 @echo off
 echo complie shader
 python compile-shaders.py
@@ -8,4 +8,4 @@ echo compile typescript
 tsc --out ../../scripts/main.js @compile-list.txt
 
 echo.
-echo Finished Environment Init
+echo Finished Environment Setting

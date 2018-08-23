@@ -15,6 +15,34 @@ var EcognitaMathLib;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
+ *  extra_utils.ts
+ *  simple utils from extra library
+ *
+ * ========================================================================= */
+var EcognitaMathLib;
+(function (EcognitaMathLib) {
+    var Hammer_Utils = /** @class */ (function () {
+        //event listener dom,
+        function Hammer_Utils(canvas) {
+            //event listener
+            //using hammer library
+            this.hm = new Hammer(canvas);
+            this.on_pan = undefined;
+        }
+        Hammer_Utils.prototype.enablePan = function () {
+            if (this.on_pan == undefined) {
+                console.log("please setting the PAN function!");
+                return;
+            }
+            this.hm.add(new Hammer.Pan({ direction: Hammer.DIRECTION_ALL, threshold: 0 }));
+            this.hm.on("pan", this.on_pan);
+        };
+        return Hammer_Utils;
+    }());
+    EcognitaMathLib.Hammer_Utils = Hammer_Utils;
+})(EcognitaMathLib || (EcognitaMathLib = {}));
+/* =========================================================================
+ *
  *  webgl_matrix.ts
  *  a matrix library developed for webgl
  *  part of source code referenced by minMatrix.js
@@ -729,6 +757,21 @@ var Shaders = {
         '    vColor = color;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'point-frag': 'precision mediump float;\n' +
+        'varying vec4      vColor;\n\n' +
+        'void main(void){\n' +
+        '    gl_FragColor = vColor;\n' +
+        '}\n',
+    'point-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   float pointSize;\n' +
+        'varying   vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '    vColor        = color;\n' +
+        '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
+        '    gl_PointSize  = pointSize;\n' +
+        '}\n',
     'pointLighting-frag': 'precision mediump float;\n\n' +
         'uniform mat4 invMatrix;\n' +
         'uniform vec3 lightPosition;\n' +
@@ -762,6 +805,58 @@ var Shaders = {
         '    vColor = color;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'pointSprite-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'varying vec4      vColor;\n\n' +
+        'void main(void){\n' +
+        '    vec4 smpColor = vec4(1.0);\n' +
+        '    smpColor = texture2D(texture,gl_PointCoord);\n' +
+        '    if(smpColor.a == 0.0){\n' +
+        '        discard;\n' +
+        '    }else{\n' +
+        '        gl_FragColor = vColor * smpColor;\n' +
+        '    }\n' +
+        '}\n',
+    'pointSprite-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   float pointSize;\n' +
+        'varying   vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '    vColor        = color;\n' +
+        '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
+        '    gl_PointSize  = pointSize;\n' +
+        '}\n',
+    'renderToTexture-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'varying vec4      vColor;\n' +
+        'varying vec2      vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '	vec4 smpColor = texture2D(texture, vTextureCoord);\n' +
+        '	gl_FragColor  = vColor * smpColor;\n' +
+        '}\n',
+    'renderToTexture-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec2 textureCoord;\n' +
+        'uniform   mat4 mMatrix;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   mat4 invMatrix;\n' +
+        'uniform   vec3 lightDirection;\n' +
+        'uniform   bool useLight;\n' +
+        'varying   vec4 vColor;\n' +
+        'varying   vec2 vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '	if(useLight){\n' +
+        '		vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '		float diffuse  = clamp(dot(normal, invLight), 0.2, 1.0);\n' +
+        '		vColor         = vec4(color.xyz * vec3(diffuse), 1.0);\n' +
+        '	}else{\n' +
+        '		vColor         = color;\n' +
+        '	}\n' +
+        '	vTextureCoord  = textureCoord;\n' +
+        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'specular-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +
         'void main(void){\n' +
@@ -785,6 +880,44 @@ var Shaders = {
         '    vec4 light = color*vec4(vec3(diffuse),1.0)+vec4(vec3(specular),1.0);\n' +
         '    vColor = light + ambientColor;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'stencilBufferOutline-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'uniform bool      useTexture;\n' +
+        'varying vec4      vColor;\n' +
+        'varying vec2      vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '	vec4 smpColor = vec4(1.0);\n' +
+        '	if(useTexture){\n' +
+        '		smpColor = texture2D(texture, vTextureCoord);\n' +
+        '	}\n' +
+        '	gl_FragColor = vColor * smpColor;\n' +
+        '}\n',
+    'stencilBufferOutline-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec2 textureCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   mat4 invMatrix;\n' +
+        'uniform   vec3 lightDirection;\n' +
+        'uniform   bool useLight;\n' +
+        'uniform   bool outline;\n' +
+        'varying   vec4 vColor;\n' +
+        'varying   vec2 vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '	if(useLight){\n' +
+        '		vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '		float diffuse  = clamp(dot(normal, invLight), 0.1, 1.0);\n' +
+        '		vColor         = color * vec4(vec3(diffuse), 1.0);\n' +
+        '	}else{\n' +
+        '		vColor         = color;\n' +
+        '	}\n' +
+        '	vTextureCoord      = textureCoord;\n' +
+        '	vec3 oPosition     = position;\n' +
+        '	if(outline){\n' +
+        '		oPosition     += normal * 0.1;\n' +
+        '	}\n' +
+        '	gl_Position = mvpMatrix * vec4(oPosition, 1.0);\n' +
         '}\n',
     'texture-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
@@ -850,16 +983,18 @@ var EcognitaMathLib;
 var EcognitaMathLib;
 (function (EcognitaMathLib) {
     var TorusModel = /** @class */ (function () {
-        function TorusModel(vcrs, hcrs, vr, hr, need_normal) {
+        function TorusModel(vcrs, hcrs, vr, hr, color, need_normal, need_texture) {
+            if (need_texture === void 0) { need_texture = false; }
             this.verCrossSectionSmooth = vcrs;
             this.horCrossSectionSmooth = hcrs;
             this.verRadius = vr;
             this.horRadius = hr;
             this.data = new Array();
             this.index = new Array();
-            this.preCalculate(need_normal);
+            this.preCalculate(color, need_normal, need_texture);
         }
-        TorusModel.prototype.preCalculate = function (need_normal) {
+        TorusModel.prototype.preCalculate = function (color, need_normal, need_texture) {
+            if (need_texture === void 0) { need_texture = false; }
             //calculate pos and col
             for (var i = 0; i <= this.verCrossSectionSmooth; i++) {
                 var verIncrement = Math.PI * 2 / this.verCrossSectionSmooth * i;
@@ -877,8 +1012,22 @@ var EcognitaMathLib;
                         this.data.push(nx, verY, nz);
                     }
                     //hsv2rgb
-                    var rgba = EcognitaMathLib.HSV2RGB(360 / this.horCrossSectionSmooth * ii, 1, 1, 1);
-                    this.data.push(rgba[0], rgba[1], rgba[2], rgba[3]);
+                    if (color == undefined) {
+                        var rgba = EcognitaMathLib.HSV2RGB(360 / this.horCrossSectionSmooth * ii, 1, 1, 1);
+                        this.data.push(rgba[0], rgba[1], rgba[2], rgba[3]);
+                    }
+                    else {
+                        this.data.push(color[0], color[1], color[2], color[3]);
+                    }
+                    if (need_texture) {
+                        var rs = 1 / this.horCrossSectionSmooth * ii;
+                        var rt = 1 / this.verCrossSectionSmooth * i + 0.5;
+                        if (rt > 1.0) {
+                            rt -= 1.0;
+                        }
+                        rt = 1.0 - rt;
+                        this.data.push(rs, rt);
+                    }
                 }
             }
             //calculate index
@@ -894,18 +1043,20 @@ var EcognitaMathLib;
     }());
     EcognitaMathLib.TorusModel = TorusModel;
     var ShpereModel = /** @class */ (function () {
-        function ShpereModel(vcrs, hcrs, rad, need_normal) {
+        function ShpereModel(vcrs, hcrs, rad, color, need_normal, need_texture) {
+            if (need_texture === void 0) { need_texture = false; }
             this.verCrossSectionSmooth = vcrs;
             this.horCrossSectionSmooth = hcrs;
             this.Radius = rad;
             this.data = new Array();
             this.index = new Array();
-            this.preCalculate(need_normal);
+            this.preCalculate(color, need_normal, need_texture);
         }
-        ShpereModel.prototype.preCalculate = function (need_normal) {
+        ShpereModel.prototype.preCalculate = function (color, need_normal, need_texture) {
+            if (need_texture === void 0) { need_texture = false; }
             //calculate pos and col
             for (var i = 0; i <= this.verCrossSectionSmooth; i++) {
-                var verIncrement = Math.PI * 2 / this.verCrossSectionSmooth * i;
+                var verIncrement = Math.PI / this.verCrossSectionSmooth * i;
                 var verX = Math.cos(verIncrement);
                 var verY = Math.sin(verIncrement);
                 for (var ii = 0; ii <= this.horCrossSectionSmooth; ii++) {
@@ -920,8 +1071,16 @@ var EcognitaMathLib;
                         this.data.push(nx, verX, nz);
                     }
                     //hsv2rgb
-                    var rgba = EcognitaMathLib.HSV2RGB(360 / this.horCrossSectionSmooth * ii, 1, 1, 1);
-                    this.data.push(rgba[0], rgba[1], rgba[2], rgba[3]);
+                    if (color == undefined) {
+                        var rgba = EcognitaMathLib.HSV2RGB(360 / this.horCrossSectionSmooth * ii, 1, 1, 1);
+                        this.data.push(rgba[0], rgba[1], rgba[2], rgba[3]);
+                    }
+                    else {
+                        this.data.push(color[0], color[1], color[2], color[3]);
+                    }
+                    if (need_texture) {
+                        this.data.push(1 - 1 / this.horCrossSectionSmooth * ii, 1 / this.verCrossSectionSmooth * i);
+                    }
                 }
             }
             //calculate index
@@ -936,58 +1095,119 @@ var EcognitaMathLib;
         return ShpereModel;
     }());
     EcognitaMathLib.ShpereModel = ShpereModel;
+    var CubeModel = /** @class */ (function () {
+        function CubeModel(side, color, need_normal, need_texture) {
+            if (need_texture === void 0) { need_texture = false; }
+            this.side = side;
+            this.data = new Array();
+            this.index = [
+                0, 1, 2, 0, 2, 3,
+                4, 5, 6, 4, 6, 7,
+                8, 9, 10, 8, 10, 11,
+                12, 13, 14, 12, 14, 15,
+                16, 17, 18, 16, 18, 19,
+                20, 21, 22, 20, 22, 23
+            ];
+            var hs = side * 0.5;
+            var pos = [
+                -hs, -hs, hs, hs, -hs, hs, hs, hs, hs, -hs, hs, hs,
+                -hs, -hs, -hs, -hs, hs, -hs, hs, hs, -hs, hs, -hs, -hs,
+                -hs, hs, -hs, -hs, hs, hs, hs, hs, hs, hs, hs, -hs,
+                -hs, -hs, -hs, hs, -hs, -hs, hs, -hs, hs, -hs, -hs, hs,
+                hs, -hs, -hs, hs, hs, -hs, hs, hs, hs, hs, -hs, hs,
+                -hs, -hs, -hs, -hs, -hs, hs, -hs, hs, hs, -hs, hs, -hs
+            ];
+            var normal = [
+                -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0,
+                -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0,
+                -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0,
+                -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0,
+                1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0,
+                -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0
+            ];
+            var col = new Array();
+            for (var i = 0; i < pos.length / 3; i++) {
+                if (color != undefined) {
+                    var tc = color;
+                }
+                else {
+                    tc = EcognitaMathLib.HSV2RGB(360 / pos.length / 3 * i, 1, 1, 1);
+                }
+                col.push(tc[0], tc[1], tc[2], tc[3]);
+            }
+            var st = [
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0
+            ];
+            var cubeVertexNum = 24;
+            for (var i = 0; i < cubeVertexNum; i++) {
+                //pos
+                this.data.push(pos[i * 3 + 0], pos[i * 3 + 1], pos[i * 3 + 2]);
+                //normal
+                if (need_normal) {
+                    this.data.push(normal[i * 3 + 0], normal[i * 3 + 1], normal[i * 3 + 2]);
+                }
+                //color
+                this.data.push(col[i * 4 + 0], col[i * 4 + 1], col[i * 4 + 2], col[i * 4 + 3]);
+                //texture
+                if (need_texture) {
+                    this.data.push(st[i * 2 + 0], st[i * 2 + 1]);
+                }
+            }
+        }
+        return CubeModel;
+    }());
+    EcognitaMathLib.CubeModel = CubeModel;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
+/* =========================================================================
+ *
+ *  demo19.ts
+ *  test some webgl demo
+ *
+ * ========================================================================= */
 /// <reference path="../lib/cv_imread.ts" />
+/// <reference path="../lib/extra_utils.ts" />
 /// <reference path="../lib/webgl_matrix.ts" />
 /// <reference path="../lib/webgl_quaternion.ts" />
 /// <reference path="../lib/webgl_utils.ts" />
 /// <reference path="../lib/webgl_shaders.ts" />
 /// <reference path="../lib/webgl_model.ts" />
 var canvas = document.getElementById('canvas');
-canvas.width = 500;
-canvas.height = 300;
+canvas.width = 512;
+canvas.height = 512;
 try {
-    var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    var gl = canvas.getContext("webgl", { stencil: true }) || canvas.getContext("experimental-webgl", { stencil: true });
 }
 catch (e) { }
 if (!gl)
     throw new Error("Could not initialise WebGL");
-//event listener
-//using hammer library
-var mc = new Hammer(canvas);
-mc.add(new Hammer.Pan({ direction: Hammer.DIRECTION_ALL, threshold: 0 }));
-mc.on("pan", mouseDrag);
-var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "texture-vert", "texture-frag");
-var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
-var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
-var tex0 = null;
-var tex1 = null;
-var img1 = EcognitaMathLib.imread("./img/tex0.png");
-img1.onload = function () {
-    tex0 = new EcognitaMathLib.WebGL_Texture(4, false, img1);
-};
-var img2 = EcognitaMathLib.imread("./img/tex1.png");
-img2.onload = function () {
-    tex1 = new EcognitaMathLib.WebGL_Texture(4, false, img2);
-};
-vbo.addAttribute("position", 3, gl.FLOAT, false);
-vbo.addAttribute("color", 4, gl.FLOAT, false);
-vbo.addAttribute("textureCoord", 2, gl.FLOAT, false);
-var data = [
-    -1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0,
-    1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0,
-    -1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0,
-    1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0
-];
-var index = [
-    0, 1, 2,
-    3, 2, 1
-];
-vbo.init(4);
-vbo.copy(data);
-vbo.bind(shader);
-ibo.init(index);
-ibo.bind();
+var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "renderToTexture-vert", "renderToTexture-frag");
+var cubeData = new EcognitaMathLib.CubeModel(2.0, [1.0, 1.0, 1.0, 1.0], true, true);
+var vbo_cube = new EcognitaMathLib.WebGL_VertexBuffer();
+var ibo_cube = new EcognitaMathLib.WebGL_IndexBuffer();
+vbo_cube.addAttribute("position", 3, gl.FLOAT, false);
+vbo_cube.addAttribute("normal", 3, gl.FLOAT, false);
+vbo_cube.addAttribute("color", 4, gl.FLOAT, false);
+vbo_cube.addAttribute("textureCoord", 2, gl.FLOAT, false);
+vbo_cube.init(cubeData.data.length / 12);
+vbo_cube.copy(cubeData.data);
+ibo_cube.init(cubeData.index);
+ibo_cube.bind();
+var earthData = new EcognitaMathLib.ShpereModel(64, 64, 1, [1, 1, 1, 1], true, true);
+var vbo_earth = new EcognitaMathLib.WebGL_VertexBuffer();
+var ibo_earth = new EcognitaMathLib.WebGL_IndexBuffer();
+vbo_earth.addAttribute("position", 3, gl.FLOAT, false);
+vbo_earth.addAttribute("normal", 3, gl.FLOAT, false);
+vbo_earth.addAttribute("color", 4, gl.FLOAT, false);
+vbo_earth.addAttribute("textureCoord", 2, gl.FLOAT, false);
+vbo_earth.init(earthData.data.length / 12);
+vbo_earth.copy(earthData.data);
+ibo_earth.init(earthData.index);
+ibo_earth.bind();
 var m = new EcognitaMathLib.WebGLMatrix();
 var q = new EcognitaMathLib.WebGLQuaternion();
 var mMatrix = m.identity(m.create());
@@ -998,14 +1218,20 @@ var mvpMatrix = m.identity(m.create());
 var invMatrix = m.identity(m.create());
 var qMatrix = m.identity(m.create());
 var xQuaternion = q.identity(q.create());
+var lightDirection = [1.0, 1.0, 1.0];
 shader.bind();
 var uniLocation = new Array();
+uniLocation.push(shader.uniformIndex('mMatrix'));
 uniLocation.push(shader.uniformIndex('mvpMatrix'));
+uniLocation.push(shader.uniformIndex('invMatrix'));
+uniLocation.push(shader.uniformIndex('lightDirection'));
+uniLocation.push(shader.uniformIndex('useLight'));
 uniLocation.push(shader.uniformIndex('texture'));
 var lastPosX = 0;
 var lastPosY = 0;
 var isDragging = false;
-function mouseDrag(ev) {
+var hammer = new EcognitaMathLib.Hammer_Utils(canvas);
+hammer.on_pan = function (ev) {
     var elem = ev.target;
     if (!isDragging) {
         isDragging = true;
@@ -1030,55 +1256,128 @@ function mouseDrag(ev) {
     if (ev.isFinal) {
         isDragging = false;
     }
-}
-//depth test and blend
+};
+hammer.enablePan();
+//depth test
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
-gl.enable(gl.BLEND);
-gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
+var cnt = 0;
+var tex3 = null;
+var tex4 = null;
+var img3 = EcognitaMathLib.imread("./img/tex3.png");
+var img4 = EcognitaMathLib.imread("./img/tex4.png");
+img3.onload = function () {
+    tex3 = new EcognitaMathLib.WebGL_Texture(4, false, img3);
+};
+img4.onload = function () {
+    tex4 = new EcognitaMathLib.WebGL_Texture(4, false, img4);
+};
+gl.activeTexture(gl.TEXTURE0);
+var fBufferWidth = 512;
+var fBufferHeight = 512;
+//need refactor
+function create_framebuffer(width, height) {
+    // フレームバッファの生成
+    var frameBuffer = gl.createFramebuffer();
+    // フレームバッファをWebGLにバインド
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
+    // 深度バッファ用レンダーバッファの生成とバインド
+    var depthRenderBuffer = gl.createRenderbuffer();
+    gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderBuffer);
+    // レンダーバッファを深度バッファとして設定
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
+    // フレームバッファにレンダーバッファを関連付ける
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderBuffer);
+    // フレームバッファ用テクスチャの生成
+    var fTexture = gl.createTexture();
+    // フレームバッファ用のテクスチャをバインド
+    gl.bindTexture(gl.TEXTURE_2D, fTexture);
+    // フレームバッファ用のテクスチャにカラー用のメモリ領域を確保
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    // テクスチャパラメータ
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    // フレームバッファにテクスチャを関連付ける
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fTexture, 0);
+    // 各種オブジェクトのバインドを解除
+    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // オブジェクトを返して終了
+    return { f: frameBuffer, d: depthRenderBuffer, t: fTexture };
+}
+var fBuffer = create_framebuffer(fBufferWidth, fBufferHeight);
 (function () {
+    //bind frame buff
+    gl.bindFramebuffer(gl.FRAMEBUFFER, fBuffer.f);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    cnt++;
+    var rad = (cnt % 360) * Math.PI / 180;
+    var rad2 = (cnt % 720) * Math.PI / 360;
+    var lightDirection = [-1.0, 2.0, 1.0];
     qMatrix = q.ToMat4x4(xQuaternion);
-    var camPosition = [0.0, 5.0, 10.0];
+    var camPosition = [0.0, 0.0, 5.0];
     var camUpDirection = [0.0, 1.0, 0.0];
-    //camera view matrix
+    //camera setting
     vMatrix = m.viewMatrix(camPosition, [0, 0, 0], camUpDirection);
-    //billboard matrix
-    invMatrix = m.viewMatrix([0, 0, 0], camPosition, camUpDirection);
-    //user input -> cam rotate
-    vMatrix = m.multiply(vMatrix, qMatrix);
-    invMatrix = m.multiply(invMatrix, qMatrix);
-    //get billboard inv matrix
-    invMatrix = m.inverse(invMatrix);
-    //calculate vp matrix
-    pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
+    pMatrix = m.perspectiveMatrix(45, fBufferWidth / fBufferHeight, 0.1, 100);
     tmpMatrix = m.multiply(pMatrix, vMatrix);
-    //tex1 active
-    if (tex1 != null) {
-        gl.activeTexture(gl.TEXTURE1);
-        tex1.bind(tex1.texture);
-        gl.uniform1i(uniLocation[1], 1);
+    //render earth scene's skybox
+    if (tex4 != null) {
+        //gl.activeTexture(gl.TEXTURE1);
+        tex4.bind(tex4.texture);
     }
+    vbo_earth.bind(shader);
+    ibo_earth.bind();
     mMatrix = m.identity(mMatrix);
-    mMatrix = m.rotate(mMatrix, Math.PI / 2, [1, 0, 0]);
-    mMatrix = m.scale(mMatrix, [3.0, 3.0, 1.0]);
+    mMatrix = m.scale(mMatrix, [50.0, 50.0, 50.0]);
     mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-    gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
-    ibo.draw(gl.TRIANGLES);
-    //tex0 active
-    if (tex0 != null) {
-        gl.activeTexture(gl.TEXTURE0);
-        tex0.bind(tex0.texture);
-        gl.uniform1i(uniLocation[1], 0);
+    invMatrix = m.inverse(mMatrix);
+    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
+    gl.uniform3fv(uniLocation[3], lightDirection);
+    gl.uniform1i(uniLocation[4], false);
+    gl.uniform1i(uniLocation[5], 0);
+    ibo_earth.draw(gl.TRIANGLES);
+    //render earth
+    if (tex3 != null) {
+        //gl.activeTexture(gl.TEXTURE0);
+        tex3.bind(tex3.texture);
     }
-    mMatrix = m.identity(mMatrix);
-    mMatrix = m.translate(mMatrix, [0.0, 1.0, 0.0]);
-    mMatrix = m.multiply(mMatrix, invMatrix);
+    m.identity(mMatrix);
+    mMatrix = m.rotate(mMatrix, rad, [0, 1, 0]);
     mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-    gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
-    ibo.draw(gl.TRIANGLES);
+    invMatrix = m.inverse(mMatrix);
+    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
+    gl.uniform1i(uniLocation[4], true);
+    ibo_earth.draw(gl.TRIANGLES);
+    //release frame buffer
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    //reset canvas scene
+    gl.clearColor(0.0, 0.7, 0.7, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    //render cube
+    vbo_cube.bind(shader);
+    ibo_cube.bind();
+    //bind rendered texture
+    gl.bindTexture(gl.TEXTURE_2D, fBuffer.t);
+    lightDirection = [-1.0, 0.0, 0.0];
+    vMatrix = m.multiply(vMatrix, qMatrix);
+    tmpMatrix = m.multiply(pMatrix, vMatrix);
+    m.identity(mMatrix);
+    mMatrix = m.rotate(mMatrix, rad2, [1, 1, 0]);
+    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+    invMatrix = m.inverse(mMatrix);
+    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
+    ibo_cube.draw(gl.TRIANGLES);
     gl.flush();
     setTimeout(arguments.callee, 1000 / 30);
 })();

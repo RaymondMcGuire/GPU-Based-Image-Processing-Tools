@@ -15,17 +15,17 @@
         //px py pz cr cg cb ca
         data:Array<number>;
         index:Array<number>;
-        constructor(vcrs:number,hcrs:number,vr:number,hr:number,need_normal:boolean) {
+        constructor(vcrs:number,hcrs:number,vr:number,hr:number,color:Array<number>,need_normal:boolean,need_texture:boolean=false) {
             this.verCrossSectionSmooth = vcrs;
             this.horCrossSectionSmooth = hcrs;
             this.verRadius = vr;
             this.horRadius = hr;
             this.data = new Array<number>();
             this.index = new Array<number>();
-            this.preCalculate(need_normal);
+            this.preCalculate(color,need_normal,need_texture);
         }
 
-        private preCalculate(need_normal:boolean){
+        private preCalculate(color:Array<number>,need_normal:boolean,need_texture:boolean=false){
 
             //calculate pos and col
             for(var i = 0;i<=this.verCrossSectionSmooth;i++){
@@ -45,8 +45,21 @@
                         this.data.push(nx,verY,nz);
                    }
                    //hsv2rgb
-                   var rgba = HSV2RGB(360/this.horCrossSectionSmooth *ii, 1, 1, 1);
-                   this.data.push(rgba[0],rgba[1],rgba[2],rgba[3]);
+                   if(color == undefined){
+                        var rgba = HSV2RGB(360/this.horCrossSectionSmooth *ii, 1, 1, 1);
+                        this.data.push(rgba[0],rgba[1],rgba[2],rgba[3]);
+                    }else{
+                            this.data.push(color[0],color[1],color[2],color[3]);
+                    }
+                  
+
+                   if(need_texture){
+                        var rs = 1 / this.horCrossSectionSmooth * ii;
+                        var rt = 1 / this.verCrossSectionSmooth * i + 0.5;
+                        if(rt > 1.0){rt -= 1.0;}
+                        rt = 1.0 - rt;
+                        this.data.push(rs, rt);
+                   }
                 }
             }
 
@@ -69,20 +82,20 @@
         //px py pz cr cg cb ca
         data:Array<number>;
         index:Array<number>;
-        constructor(vcrs:number,hcrs:number,rad:number,need_normal:boolean) {
+        constructor(vcrs:number,hcrs:number,rad:number,color:Array<number>,need_normal:boolean,need_texture:boolean=false) {
             this.verCrossSectionSmooth = vcrs;
             this.horCrossSectionSmooth = hcrs;
             this.Radius = rad;
             this.data = new Array<number>();
             this.index = new Array<number>();
-            this.preCalculate(need_normal);
+            this.preCalculate(color,need_normal,need_texture);
         }
 
-        private preCalculate(need_normal:boolean){
+        private preCalculate(color:Array<number>,need_normal:boolean,need_texture:boolean=false){
 
             //calculate pos and col
             for(var i = 0;i<=this.verCrossSectionSmooth;i++){
-               var verIncrement = Math.PI * 2 /  this.verCrossSectionSmooth * i;
+               var verIncrement = Math.PI /  this.verCrossSectionSmooth * i;
                var verX = Math.cos(verIncrement);
                var verY = Math.sin(verIncrement);
                for(var ii=0;ii<=this.horCrossSectionSmooth;ii++){
@@ -98,8 +111,17 @@
                         this.data.push(nx,verX,nz);
                    }
                    //hsv2rgb
-                   var rgba = HSV2RGB(360/this.horCrossSectionSmooth *ii, 1, 1, 1);
-                   this.data.push(rgba[0],rgba[1],rgba[2],rgba[3]);
+                   if(color == undefined){
+                        var rgba = HSV2RGB(360/this.horCrossSectionSmooth *ii, 1, 1, 1);
+                        this.data.push(rgba[0],rgba[1],rgba[2],rgba[3]);
+                   }else{
+                        this.data.push(color[0],color[1],color[2],color[3]);
+                   }
+
+
+                   if(need_texture){
+                     this.data.push(1 - 1 / this.horCrossSectionSmooth * ii, 1 / this.verCrossSectionSmooth * i);
+                   }
                 }
             }
 
@@ -112,6 +134,79 @@
                 }
             }
         }
+
+    }
+
+    export class CubeModel {
+        side:number;
+        data:Array<number>;
+        index:Array<number>;
+        constructor(side:number,color:Array<number>,need_normal:boolean,need_texture:boolean=false) {
+            this.side = side;
+            this.data = new Array<number>();
+            this.index = [
+                0,  1,  2,  0,  2,  3,
+                4,  5,  6,  4,  6,  7,
+                8,  9, 10,  8, 10, 11,
+               12, 13, 14, 12, 14, 15,
+               16, 17, 18, 16, 18, 19,
+               20, 21, 22, 20, 22, 23
+           ];
+
+            var hs = side * 0.5;
+            var pos = [
+                -hs, -hs,  hs,  hs, -hs,  hs,  hs,  hs,  hs, -hs,  hs,  hs,
+                -hs, -hs, -hs, -hs,  hs, -hs,  hs,  hs, -hs,  hs, -hs, -hs,
+                -hs,  hs, -hs, -hs,  hs,  hs,  hs,  hs,  hs,  hs,  hs, -hs,
+                -hs, -hs, -hs,  hs, -hs, -hs,  hs, -hs,  hs, -hs, -hs,  hs,
+                 hs, -hs, -hs,  hs,  hs, -hs,  hs,  hs,  hs,  hs, -hs,  hs,
+                -hs, -hs, -hs, -hs, -hs,  hs, -hs,  hs,  hs, -hs,  hs, -hs
+            ];
+            var normal = [
+                -1.0, -1.0,  1.0,  1.0, -1.0,  1.0,  1.0,  1.0,  1.0, -1.0,  1.0,  1.0,
+                -1.0, -1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  1.0, -1.0,  1.0, -1.0, -1.0,
+                -1.0,  1.0, -1.0, -1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0,  1.0, -1.0,
+                -1.0, -1.0, -1.0,  1.0, -1.0, -1.0,  1.0, -1.0,  1.0, -1.0, -1.0,  1.0,
+                 1.0, -1.0, -1.0,  1.0,  1.0, -1.0,  1.0,  1.0,  1.0,  1.0, -1.0,  1.0,
+                -1.0, -1.0, -1.0, -1.0, -1.0,  1.0, -1.0,  1.0,  1.0, -1.0,  1.0, -1.0
+            ];
+            var col = new Array();
+            for(var i = 0; i < pos.length / 3; i++){
+                if(color!=undefined){
+                    var tc = color;
+                }else{
+                    tc = HSV2RGB(360 / pos.length / 3 * i, 1, 1, 1);
+                }
+                col.push(tc[0], tc[1], tc[2], tc[3]);
+            }
+            var st = [
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0
+            ];
+
+            var cubeVertexNum = 24;
+            for(var i=0;i<cubeVertexNum;i++){
+                //pos
+                this.data.push(pos[i*3+0],pos[i*3+1],pos[i*3+2]);
+                //normal
+                if(need_normal){
+                    this.data.push(normal[i*3+0],normal[i*3+1],normal[i*3+2]);
+                }
+                //color
+                this.data.push(col[i*4+0],col[i*4+1],col[i*4+2],col[i*4+3]);
+                //texture
+                if(need_texture){
+                    this.data.push(st[i*2+0],st[i*2+1]);
+                }
+            }
+
+        }
+
+    
 
     }
 }

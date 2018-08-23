@@ -25,7 +25,7 @@ var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "pointLighting-vert", "po
 
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
-var torusData = new EcognitaMathLib.TorusModel(64,64,0.5,1.5,true);
+var torusData = new EcognitaMathLib.TorusModel(64,64,0.5,1.5,undefined,true);
 
 vbo.addAttribute("position", 3, gl.FLOAT, false);
 vbo.addAttribute("normal", 3, gl.FLOAT, false);
