@@ -21,22 +21,9 @@ try {
 if (!gl)
     throw new Error("Could not initialise WebGL");
 
-var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "frameBuffer-vert", "frameBuffer-frag");
 
-var cubeData = new EcognitaMathLib.CubeModel(2.0,[1.0,1.0,1.0,1.0],true,true);
-var vbo_cube = new EcognitaMathLib.WebGL_VertexBuffer();
-var ibo_cube = new EcognitaMathLib.WebGL_IndexBuffer();
-
-vbo_cube.addAttribute("position", 3, gl.FLOAT, false);
-vbo_cube.addAttribute("normal", 3, gl.FLOAT, false);
-vbo_cube.addAttribute("color", 4, gl.FLOAT, false);
-vbo_cube.addAttribute("textureCoord", 2, gl.FLOAT, false);
-
-vbo_cube.init(cubeData.data.length/12);
-vbo_cube.copy(cubeData.data);
-
-ibo_cube.init(cubeData.index);
-ibo_cube.bind();
+//frame buffer shader
+var frameBufferShader = new EcognitaMathLib.WebGL_Shader(Shaders, "frameBuffer-vert", "frameBuffer-frag");
 
 var earthData = new EcognitaMathLib.ShpereModel(64,64,1,[1,1,1,1],true,true);
 var vbo_earth = new EcognitaMathLib.WebGL_VertexBuffer();
@@ -53,6 +40,45 @@ vbo_earth.copy(earthData.data);
 ibo_earth.init(earthData.index);
 ibo_earth.bind();
 
+frameBufferShader.bind();
+var uniLocation = new Array<any>();
+uniLocation.push(frameBufferShader.uniformIndex('mMatrix'));
+uniLocation.push(frameBufferShader.uniformIndex('mvpMatrix'));
+uniLocation.push(frameBufferShader.uniformIndex('invMatrix'));
+uniLocation.push(frameBufferShader.uniformIndex('lightDirection'));
+uniLocation.push(frameBufferShader.uniformIndex('useLight'));
+uniLocation.push(frameBufferShader.uniformIndex('texture'));
+
+//blur effect shader
+var blurShader = new EcognitaMathLib.WebGL_Shader(Shaders, "blurEffect-vert", "blurEffect-frag");
+
+var vbo_blur = new EcognitaMathLib.WebGL_VertexBuffer();
+var ibo_blur = new EcognitaMathLib.WebGL_IndexBuffer();
+
+vbo_blur.addAttribute("position", 3, gl.FLOAT, false);
+vbo_blur.addAttribute("color", 4, gl.FLOAT, false);
+
+var blurData = [
+    -1.0,  1.0,  0.0, 1.0, 1.0, 1.0, 1.0,
+     1.0,  1.0,  0.0, 1.0, 1.0, 1.0, 1.0,
+    -1.0, -1.0,  0.0, 1.0, 1.0, 1.0, 1.0,
+     1.0, -1.0,  0.0, 1.0, 1.0, 1.0, 1.0
+];
+
+var blurIndex = [0, 1, 2,
+                 3, 2, 1];
+
+vbo_blur.init(4);
+vbo_blur.copy(blurData);
+
+ibo_blur.init(blurIndex);
+ibo_blur.bind();
+
+blurShader.bind();
+var blurUniLocation = new Array<any>();
+blurUniLocation.push(blurShader.uniformIndex('mvpMatrix'));
+blurUniLocation.push(blurShader.uniformIndex('texture'));
+
 
 var m = new EcognitaMathLib.WebGLMatrix();
 var q = new EcognitaMathLib.WebGLQuaternion();
@@ -66,16 +92,6 @@ var invMatrix =m.identity(m.create());
 var qMatrix   = m.identity(m.create());
 
 var xQuaternion = q.identity(q.create());
-var lightDirection = [1.0, 1.0, 1.0];
-
-shader.bind();
-var uniLocation = new Array<any>();
-uniLocation.push(shader.uniformIndex('mMatrix'));
-uniLocation.push(shader.uniformIndex('mvpMatrix'));
-uniLocation.push(shader.uniformIndex('invMatrix'));
-uniLocation.push(shader.uniformIndex('lightDirection'));
-uniLocation.push(shader.uniformIndex('useLight'));
-uniLocation.push(shader.uniformIndex('texture'));
 
 var lastPosX = 0;
 var lastPosY = 0;
@@ -129,8 +145,6 @@ img4.onload = function(){
     tex4 = new EcognitaMathLib.WebGL_Texture(4,false,img4);
 };
 gl.activeTexture(gl.TEXTURE0);
-
-//frame buffer init
 var fBufferWidth  = 512;
 var fBufferHeight = 512;
 
@@ -151,7 +165,10 @@ frameBuffer.release();
 
         cnt++;
         var rad  = (cnt % 360) * Math.PI / 180;
-        var rad2 = (cnt % 720) * Math.PI / 360;
+
+        //render earth
+        frameBufferShader.bind();
+
         var lightDirection = [-1.0, 2.0, 1.0];
         qMatrix = q.ToMat4x4(xQuaternion);
 
@@ -160,6 +177,7 @@ frameBuffer.release();
 
         //camera setting
         vMatrix = m.viewMatrix(camPosition, [0, 0, 0], camUpDirection);
+        vMatrix = m.multiply(vMatrix,qMatrix);
         pMatrix = m.perspectiveMatrix(45, fBufferWidth / fBufferHeight, 0.1, 100);
         tmpMatrix =m.multiply(pMatrix, vMatrix);
 
@@ -169,7 +187,7 @@ frameBuffer.release();
             tex4.bind(tex4.texture);
         }
 
-        vbo_earth.bind(shader);
+        vbo_earth.bind(frameBufferShader);
         ibo_earth.bind();
 
 		mMatrix = m.identity(mMatrix);
@@ -181,7 +199,7 @@ frameBuffer.release();
 		gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
 		gl.uniform3fv(uniLocation[3], lightDirection);
 		gl.uniform1i(uniLocation[4], false);
-        gl.uniform1i(uniLocation[5], 0);
+		gl.uniform1i(uniLocation[5], 0);
         
 		ibo_earth.draw(gl.TRIANGLES);
         
@@ -204,32 +222,29 @@ frameBuffer.release();
         //release frame buffer
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-        
-        //reset canvas scene
-        gl.clearColor(0.0, 0.7, 0.7, 1.0);
+        //reset canvas
+        gl.clearColor(0.0, 0.0, 0.0, 1.0);
 		gl.clearDepth(1.0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
         
-        //render cube
-        vbo_cube.bind(shader);
-        ibo_cube.bind();
+        //render blur effect
+        blurShader.bind();
+        vbo_blur.bind(blurShader);
+        ibo_blur.bind();
 
-        //bind rendered texture
         gl.bindTexture(gl.TEXTURE_2D, frameBuffer.targetTexture);
-        lightDirection = [-1.0, 0.0, 0.0];
 
-        vMatrix = m.multiply(vMatrix,qMatrix);
-        tmpMatrix =m.multiply(pMatrix, vMatrix);
+        //re setting camera to ortho
+        vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0, 1, 0]);
+        pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
+        tmpMatrix = m.multiply(pMatrix,vMatrix);
 
-        m.identity(mMatrix);
-		mMatrix = m.rotate(mMatrix, rad2, [1, 1, 0]);
+        //render to polygon
+        mMatrix = m.identity(mMatrix);
 		mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-		invMatrix = m.inverse(mMatrix);
-		gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
-		gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
-		gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
-        
-        ibo_cube.draw(gl.TRIANGLES);
+		gl.uniformMatrix4fv(blurUniLocation[0], false, mvpMatrix);
+		gl.uniform1i(blurUniLocation[1], 0);
+		ibo_blur.draw(gl.TRIANGLES);
 
         gl.flush();
         setTimeout(arguments.callee, 1000 / 30);

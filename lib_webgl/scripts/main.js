@@ -277,6 +277,30 @@ var EcognitaMathLib;
             mat[15] = 0;
             return mat;
         };
+        WebGLMatrix.prototype.orthoMatrix = function (left, right, top, bottom, near, far) {
+            var mat = this.identity(this.create());
+            var h = (right - left);
+            var v = (top - bottom);
+            var d = (far - near);
+            mat[0] = 2 / h;
+            mat[1] = 0;
+            mat[2] = 0;
+            mat[3] = 0;
+            mat[4] = 0;
+            mat[5] = 2 / v;
+            mat[6] = 0;
+            mat[7] = 0;
+            mat[8] = 0;
+            mat[9] = 0;
+            mat[10] = -2 / d;
+            mat[11] = 0;
+            mat[12] = -(left + right) / h;
+            mat[13] = -(top + bottom) / v;
+            mat[14] = -(far + near) / d;
+            mat[15] = 1;
+            return mat;
+        };
+        ;
         WebGLMatrix.prototype.transpose = function (mat1) {
             var mat = this.create();
             mat[0] = mat1[0];
@@ -669,8 +693,112 @@ var EcognitaMathLib;
         return WebGL_IndexBuffer;
     }());
     EcognitaMathLib.WebGL_IndexBuffer = WebGL_IndexBuffer;
+    var WebGL_FrameBuffer = /** @class */ (function () {
+        function WebGL_FrameBuffer(width, height) {
+            this.width = width;
+            this.height = height;
+            var frameBuffer = gl.createFramebuffer();
+            this.framebuffer = frameBuffer;
+            var depthRenderBuffer = gl.createRenderbuffer();
+            this.depthbuffer = depthRenderBuffer;
+            var fTexture = gl.createTexture();
+            this.targetTexture = fTexture;
+        }
+        WebGL_FrameBuffer.prototype.bindFrameBuffer = function () {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+        };
+        WebGL_FrameBuffer.prototype.bindDepthBuffer = function () {
+            gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthbuffer);
+            //setiing render buffer to depth buffer
+            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
+            //attach depthbuffer to framebuffer
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthbuffer);
+        };
+        WebGL_FrameBuffer.prototype.renderToTexure = function () {
+            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+            //make sure we have enought memory to render the widthxheight size texture
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            //texture settings
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            //attach framebuff to texture
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
+        };
+        WebGL_FrameBuffer.prototype.release = function () {
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        };
+        return WebGL_FrameBuffer;
+    }());
+    EcognitaMathLib.WebGL_FrameBuffer = WebGL_FrameBuffer;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 var Shaders = {
+    'blurEffect-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'varying vec4      vColor;\n\n' +
+        'void main(void){\n' +
+        '	vec2 tFrag = vec2(1.0 / 512.0);\n' +
+        '	vec4 destColor = texture2D(texture, gl_FragCoord.st * tFrag);\n' +
+        '	destColor *= 0.36;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-1.0,  1.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 0.0,  1.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 1.0,  1.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-1.0,  0.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 1.0,  0.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-1.0, -1.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 0.0, -1.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 1.0, -1.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-2.0,  2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-1.0,  2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 0.0,  2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 1.0,  2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 2.0,  2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-2.0,  1.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 2.0,  1.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-2.0,  0.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 2.0,  0.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-2.0, -1.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 2.0, -1.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-2.0, -2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-1.0, -2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 0.0, -2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 1.0, -2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 2.0, -2.0)) * tFrag) *' +
+        ' 0.02;\n\n' +
+        '	gl_FragColor = vColor * destColor;\n' +
+        '}\n',
+    'blurEffect-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	vColor      = color;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'demo-frag': 'void main(void){\n' +
         '	gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n' +
         '}\n',
@@ -728,6 +856,36 @@ var Shaders = {
         '    float diffuse = clamp(dot(invLight,normal),0.1,1.0);\n' +
         '    vColor = color*vec4(vec3(diffuse),1.0) +ambientColor;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'frameBuffer-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'varying vec4      vColor;\n' +
+        'varying vec2      vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '	vec4 smpColor = texture2D(texture, vTextureCoord);\n' +
+        '	gl_FragColor  = vColor * smpColor;\n' +
+        '}\n',
+    'frameBuffer-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec2 textureCoord;\n' +
+        'uniform   mat4 mMatrix;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   mat4 invMatrix;\n' +
+        'uniform   vec3 lightDirection;\n' +
+        'uniform   bool useLight;\n' +
+        'varying   vec4 vColor;\n' +
+        'varying   vec2 vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '	if(useLight){\n' +
+        '		vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '		float diffuse  = clamp(dot(normal, invLight), 0.2, 1.0);\n' +
+        '		vColor         = vec4(color.xyz * vec3(diffuse), 1.0);\n' +
+        '	}else{\n' +
+        '		vColor         = color;\n' +
+        '	}\n' +
+        '	vTextureCoord  = textureCoord;\n' +
+        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'phong-frag': 'precision mediump float;\n\n' +
         'uniform mat4 invMatrix;\n' +
@@ -826,36 +984,6 @@ var Shaders = {
         '    vColor        = color;\n' +
         '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
         '    gl_PointSize  = pointSize;\n' +
-        '}\n',
-    'renderToTexture-frag': 'precision mediump float;\n\n' +
-        'uniform sampler2D texture;\n' +
-        'varying vec4      vColor;\n' +
-        'varying vec2      vTextureCoord;\n\n' +
-        'void main(void){\n' +
-        '	vec4 smpColor = texture2D(texture, vTextureCoord);\n' +
-        '	gl_FragColor  = vColor * smpColor;\n' +
-        '}\n',
-    'renderToTexture-vert': 'attribute vec3 position;\n' +
-        'attribute vec3 normal;\n' +
-        'attribute vec4 color;\n' +
-        'attribute vec2 textureCoord;\n' +
-        'uniform   mat4 mMatrix;\n' +
-        'uniform   mat4 mvpMatrix;\n' +
-        'uniform   mat4 invMatrix;\n' +
-        'uniform   vec3 lightDirection;\n' +
-        'uniform   bool useLight;\n' +
-        'varying   vec4 vColor;\n' +
-        'varying   vec2 vTextureCoord;\n\n' +
-        'void main(void){\n' +
-        '	if(useLight){\n' +
-        '		vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
-        '		float diffuse  = clamp(dot(normal, invLight), 0.2, 1.0);\n' +
-        '		vColor         = vec4(color.xyz * vec3(diffuse), 1.0);\n' +
-        '	}else{\n' +
-        '		vColor         = color;\n' +
-        '	}\n' +
-        '	vTextureCoord  = textureCoord;\n' +
-        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'specular-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +
@@ -1185,18 +1313,8 @@ try {
 catch (e) { }
 if (!gl)
     throw new Error("Could not initialise WebGL");
-var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "renderToTexture-vert", "renderToTexture-frag");
-var cubeData = new EcognitaMathLib.CubeModel(2.0, [1.0, 1.0, 1.0, 1.0], true, true);
-var vbo_cube = new EcognitaMathLib.WebGL_VertexBuffer();
-var ibo_cube = new EcognitaMathLib.WebGL_IndexBuffer();
-vbo_cube.addAttribute("position", 3, gl.FLOAT, false);
-vbo_cube.addAttribute("normal", 3, gl.FLOAT, false);
-vbo_cube.addAttribute("color", 4, gl.FLOAT, false);
-vbo_cube.addAttribute("textureCoord", 2, gl.FLOAT, false);
-vbo_cube.init(cubeData.data.length / 12);
-vbo_cube.copy(cubeData.data);
-ibo_cube.init(cubeData.index);
-ibo_cube.bind();
+//frame buffer shader
+var frameBufferShader = new EcognitaMathLib.WebGL_Shader(Shaders, "frameBuffer-vert", "frameBuffer-frag");
 var earthData = new EcognitaMathLib.ShpereModel(64, 64, 1, [1, 1, 1, 1], true, true);
 var vbo_earth = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo_earth = new EcognitaMathLib.WebGL_IndexBuffer();
@@ -1208,6 +1326,36 @@ vbo_earth.init(earthData.data.length / 12);
 vbo_earth.copy(earthData.data);
 ibo_earth.init(earthData.index);
 ibo_earth.bind();
+frameBufferShader.bind();
+var uniLocation = new Array();
+uniLocation.push(frameBufferShader.uniformIndex('mMatrix'));
+uniLocation.push(frameBufferShader.uniformIndex('mvpMatrix'));
+uniLocation.push(frameBufferShader.uniformIndex('invMatrix'));
+uniLocation.push(frameBufferShader.uniformIndex('lightDirection'));
+uniLocation.push(frameBufferShader.uniformIndex('useLight'));
+uniLocation.push(frameBufferShader.uniformIndex('texture'));
+//blur effect shader
+var blurShader = new EcognitaMathLib.WebGL_Shader(Shaders, "blurEffect-vert", "blurEffect-frag");
+var vbo_blur = new EcognitaMathLib.WebGL_VertexBuffer();
+var ibo_blur = new EcognitaMathLib.WebGL_IndexBuffer();
+vbo_blur.addAttribute("position", 3, gl.FLOAT, false);
+vbo_blur.addAttribute("color", 4, gl.FLOAT, false);
+var blurData = [
+    -1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+    1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+    -1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+    1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 1.0
+];
+var blurIndex = [0, 1, 2,
+    3, 2, 1];
+vbo_blur.init(4);
+vbo_blur.copy(blurData);
+ibo_blur.init(blurIndex);
+ibo_blur.bind();
+blurShader.bind();
+var blurUniLocation = new Array();
+blurUniLocation.push(blurShader.uniformIndex('mvpMatrix'));
+blurUniLocation.push(blurShader.uniformIndex('texture'));
 var m = new EcognitaMathLib.WebGLMatrix();
 var q = new EcognitaMathLib.WebGLQuaternion();
 var mMatrix = m.identity(m.create());
@@ -1218,15 +1366,6 @@ var mvpMatrix = m.identity(m.create());
 var invMatrix = m.identity(m.create());
 var qMatrix = m.identity(m.create());
 var xQuaternion = q.identity(q.create());
-var lightDirection = [1.0, 1.0, 1.0];
-shader.bind();
-var uniLocation = new Array();
-uniLocation.push(shader.uniformIndex('mMatrix'));
-uniLocation.push(shader.uniformIndex('mvpMatrix'));
-uniLocation.push(shader.uniformIndex('invMatrix'));
-uniLocation.push(shader.uniformIndex('lightDirection'));
-uniLocation.push(shader.uniformIndex('useLight'));
-uniLocation.push(shader.uniformIndex('texture'));
 var lastPosX = 0;
 var lastPosY = 0;
 var isDragging = false;
@@ -1275,53 +1414,28 @@ img4.onload = function () {
 gl.activeTexture(gl.TEXTURE0);
 var fBufferWidth = 512;
 var fBufferHeight = 512;
-//need refactor
-function create_framebuffer(width, height) {
-    // フレームバッファの生成
-    var frameBuffer = gl.createFramebuffer();
-    // フレームバッファをWebGLにバインド
-    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
-    // 深度バッファ用レンダーバッファの生成とバインド
-    var depthRenderBuffer = gl.createRenderbuffer();
-    gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderBuffer);
-    // レンダーバッファを深度バッファとして設定
-    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
-    // フレームバッファにレンダーバッファを関連付ける
-    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderBuffer);
-    // フレームバッファ用テクスチャの生成
-    var fTexture = gl.createTexture();
-    // フレームバッファ用のテクスチャをバインド
-    gl.bindTexture(gl.TEXTURE_2D, fTexture);
-    // フレームバッファ用のテクスチャにカラー用のメモリ領域を確保
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-    // テクスチャパラメータ
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    // フレームバッファにテクスチャを関連付ける
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, fTexture, 0);
-    // 各種オブジェクトのバインドを解除
-    gl.bindTexture(gl.TEXTURE_2D, null);
-    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    // オブジェクトを返して終了
-    return { f: frameBuffer, d: depthRenderBuffer, t: fTexture };
-}
-var fBuffer = create_framebuffer(fBufferWidth, fBufferHeight);
+var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
+frameBuffer.bindFrameBuffer();
+frameBuffer.bindDepthBuffer();
+frameBuffer.renderToTexure();
+frameBuffer.release();
 (function () {
     //bind frame buff
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fBuffer.f);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer.framebuffer);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     cnt++;
     var rad = (cnt % 360) * Math.PI / 180;
-    var rad2 = (cnt % 720) * Math.PI / 360;
+    //render earth
+    frameBufferShader.bind();
     var lightDirection = [-1.0, 2.0, 1.0];
     qMatrix = q.ToMat4x4(xQuaternion);
     var camPosition = [0.0, 0.0, 5.0];
     var camUpDirection = [0.0, 1.0, 0.0];
     //camera setting
     vMatrix = m.viewMatrix(camPosition, [0, 0, 0], camUpDirection);
+    vMatrix = m.multiply(vMatrix, qMatrix);
     pMatrix = m.perspectiveMatrix(45, fBufferWidth / fBufferHeight, 0.1, 100);
     tmpMatrix = m.multiply(pMatrix, vMatrix);
     //render earth scene's skybox
@@ -1329,7 +1443,7 @@ var fBuffer = create_framebuffer(fBufferWidth, fBufferHeight);
         //gl.activeTexture(gl.TEXTURE1);
         tex4.bind(tex4.texture);
     }
-    vbo_earth.bind(shader);
+    vbo_earth.bind(frameBufferShader);
     ibo_earth.bind();
     mMatrix = m.identity(mMatrix);
     mMatrix = m.scale(mMatrix, [50.0, 50.0, 50.0]);
@@ -1358,26 +1472,25 @@ var fBuffer = create_framebuffer(fBufferWidth, fBufferHeight);
     ibo_earth.draw(gl.TRIANGLES);
     //release frame buffer
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    //reset canvas scene
-    gl.clearColor(0.0, 0.7, 0.7, 1.0);
+    //reset canvas
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    //render cube
-    vbo_cube.bind(shader);
-    ibo_cube.bind();
-    //bind rendered texture
-    gl.bindTexture(gl.TEXTURE_2D, fBuffer.t);
-    lightDirection = [-1.0, 0.0, 0.0];
-    vMatrix = m.multiply(vMatrix, qMatrix);
+    //render blur effect
+    blurShader.bind();
+    vbo_blur.bind(blurShader);
+    ibo_blur.bind();
+    gl.bindTexture(gl.TEXTURE_2D, frameBuffer.targetTexture);
+    //re setting camera to ortho
+    vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0, 1, 0]);
+    pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
     tmpMatrix = m.multiply(pMatrix, vMatrix);
-    m.identity(mMatrix);
-    mMatrix = m.rotate(mMatrix, rad2, [1, 1, 0]);
+    //render to polygon
+    mMatrix = m.identity(mMatrix);
     mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-    invMatrix = m.inverse(mMatrix);
-    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
-    gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
-    gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
-    ibo_cube.draw(gl.TRIANGLES);
+    gl.uniformMatrix4fv(blurUniLocation[0], false, mvpMatrix);
+    gl.uniform1i(blurUniLocation[1], 0);
+    ibo_blur.draw(gl.TRIANGLES);
     gl.flush();
     setTimeout(arguments.callee, 1000 / 30);
 })();

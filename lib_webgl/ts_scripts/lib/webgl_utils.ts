@@ -250,4 +250,64 @@ module EcognitaMathLib {
             gl.drawElements(mode, length ? length : this.length, gl.UNSIGNED_SHORT, 0);
         }
     }
+
+    export class WebGL_FrameBuffer {
+        width:number;
+        height:number;
+        framebuffer:any;
+        depthbuffer:any;
+        targetTexture:any;
+
+        constructor( width:number, height:number) {
+            this.width = width;
+            this.height = height;
+
+            var frameBuffer = gl.createFramebuffer();
+            this.framebuffer = frameBuffer;
+
+            var depthRenderBuffer = gl.createRenderbuffer();
+            this.depthbuffer = depthRenderBuffer;
+
+            var fTexture = gl.createTexture();
+            this.targetTexture = fTexture;
+
+        }
+
+        bindFrameBuffer(){
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+        }
+
+        bindDepthBuffer(){
+            gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthbuffer);
+            //setiing render buffer to depth buffer
+            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width,  this.height);
+            //attach depthbuffer to framebuffer
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthbuffer);
+        }
+
+        renderToTexure(){
+
+
+            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+    
+            //make sure we have enought memory to render the widthxheight size texture
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    
+            //texture settings
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    
+            //attach framebuff to texture
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
+    
+        }
+
+        release(){
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
+
+    }
+
 }

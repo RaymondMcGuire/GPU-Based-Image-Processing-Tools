@@ -184,6 +184,30 @@ module EcognitaMathLib {
             return mat;
         }
 
+        orthoMatrix(left:number, right:number, top:number, bottom:number, near:number, far:number) {
+            let mat = this.identity(this.create());
+            var h = (right - left);
+            var v = (top - bottom);
+            var d = (far - near);
+            mat[0]  = 2 / h;
+            mat[1]  = 0;
+            mat[2]  = 0;
+            mat[3]  = 0;
+            mat[4]  = 0;
+            mat[5]  = 2 / v;
+            mat[6]  = 0;
+            mat[7]  = 0;
+            mat[8]  = 0;
+            mat[9]  = 0;
+            mat[10] = -2 / d;
+            mat[11] = 0;
+            mat[12] = -(left + right) / h;
+            mat[13] = -(top + bottom) / v;
+            mat[14] = -(far + near) / d;
+            mat[15] = 1;
+            return mat;
+        };
+
         transpose(mat1:Float32Array){
             let mat = this.create();
             mat[0]  = mat1[0];  mat[1]  = mat1[4];  mat[2]  = mat1[8];  mat[3]  = mat1[12];
