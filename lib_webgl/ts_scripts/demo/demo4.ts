@@ -43,12 +43,8 @@ var m = new EcognitaMathLib.WebGLMatrix();
 var mMatrix = m.identity(m.create());
 var vMatrix = m.viewMatrix([0.0, 0.0, 5.0], [0, 0, 0], [0, 1, 0]);
 var pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
-var tmpMatrix = m.multiply(pMatrix, vMatrix);
-var mvpMatrix =m.identity(m.create());
-
-shader.bind();
-var uniLocation =shader.uniformIndex('mvpMatrix');
-
+var uniLocation = new Array<any>();
+uniLocation.push(shader.uniformIndex('mvpMatrix'));
 (function(){
 
         gl.clearColor(0.0, 0.0, 0.0, 1.0);

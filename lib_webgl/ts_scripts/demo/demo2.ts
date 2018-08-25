@@ -43,7 +43,8 @@ mMatrix =m.translate(mMatrix,[1.5,0.0,0.0]);
 var mvpMatrix = m.multiply(tmpMatrix, mMatrix);
 
 shader.bind();
-var uniLocation =shader.uniformIndex('mvpMatrix');
+var uniLocation = new Array<any>();
+uniLocation.push(shader.uniformIndex('mvpMatrix'));
 //draw first triangle
 gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
 vbo.draw(gl.TRIANGLES);
@@ -52,6 +53,6 @@ vbo.draw(gl.TRIANGLES);
 mMatrix =m.identity(mMatrix);
 mMatrix =m.translate(mMatrix,[-1.5,0.0,0.0]);
 mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
 vbo.draw(gl.TRIANGLES);
 vbo.release();

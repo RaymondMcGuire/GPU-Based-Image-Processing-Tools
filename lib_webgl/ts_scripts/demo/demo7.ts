@@ -24,7 +24,7 @@ var shader     = new EcognitaMathLib.WebGL_Shader(Shaders, "dir_ambient-vert", "
 
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
-var torusData = new EcognitaMathLib.TorusModel(32,32,1,2,true);
+var torusData = new EcognitaMathLib.TorusModel(32,32,1,2,undefined,true);
 
 vbo.addAttribute("position", 3, gl.FLOAT, false);
 vbo.addAttribute("normal", 3, gl.FLOAT, false);
@@ -53,7 +53,7 @@ uniLocation.push(shader.uniformIndex('lightDirection'));
 uniLocation.push(shader.uniformIndex('ambientColor'));
 
 var lightDirection = [-0.5, 0.5, 0.5];
-\var ambientColor = [0.1, 0.1, 0.1, 1.0];
+var ambientColor = [0.1, 0.1, 0.1, 1.0];
 //depth test and cull face
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);

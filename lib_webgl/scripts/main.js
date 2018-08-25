@@ -1,8 +1,52 @@
 /* =========================================================================
  *
+ *  cv_imread.ts
+ *  read the image file
+ *
+ * ========================================================================= */
+var EcognitaMathLib;
+(function (EcognitaMathLib) {
+    function imread(file) {
+        var img = new Image();
+        img.src = file;
+        return img;
+    }
+    EcognitaMathLib.imread = imread;
+})(EcognitaMathLib || (EcognitaMathLib = {}));
+/* =========================================================================
+ *
+ *  extra_utils.ts
+ *  simple utils from extra library
+ *
+ * ========================================================================= */
+var EcognitaMathLib;
+(function (EcognitaMathLib) {
+    var Hammer_Utils = /** @class */ (function () {
+        //event listener dom,
+        function Hammer_Utils(canvas) {
+            //event listener
+            //using hammer library
+            this.hm = new Hammer(canvas);
+            this.on_pan = undefined;
+        }
+        Hammer_Utils.prototype.enablePan = function () {
+            if (this.on_pan == undefined) {
+                console.log("please setting the PAN function!");
+                return;
+            }
+            this.hm.add(new Hammer.Pan({ direction: Hammer.DIRECTION_ALL, threshold: 0 }));
+            this.hm.on("pan", this.on_pan);
+        };
+        return Hammer_Utils;
+    }());
+    EcognitaMathLib.Hammer_Utils = Hammer_Utils;
+})(EcognitaMathLib || (EcognitaMathLib = {}));
+/* =========================================================================
+ *
  *  webgl_matrix.ts
- *  a matrix library devdeloped for webgl
+ *  a matrix library developed for webgl
  *  part of source code referenced by minMatrix.js
+ *  https://wgld.org/d/library/l001.html
  * ========================================================================= */
 var EcognitaMathLib;
 (function (EcognitaMathLib) {
@@ -233,6 +277,30 @@ var EcognitaMathLib;
             mat[15] = 0;
             return mat;
         };
+        WebGLMatrix.prototype.orthoMatrix = function (left, right, top, bottom, near, far) {
+            var mat = this.identity(this.create());
+            var h = (right - left);
+            var v = (top - bottom);
+            var d = (far - near);
+            mat[0] = 2 / h;
+            mat[1] = 0;
+            mat[2] = 0;
+            mat[3] = 0;
+            mat[4] = 0;
+            mat[5] = 2 / v;
+            mat[6] = 0;
+            mat[7] = 0;
+            mat[8] = 0;
+            mat[9] = 0;
+            mat[10] = -2 / d;
+            mat[11] = 0;
+            mat[12] = -(left + right) / h;
+            mat[13] = -(top + bottom) / v;
+            mat[14] = -(far + near) / d;
+            mat[15] = 1;
+            return mat;
+        };
+        ;
         WebGLMatrix.prototype.transpose = function (mat1) {
             var mat = this.create();
             mat[0] = mat1[0];
@@ -256,6 +324,166 @@ var EcognitaMathLib;
         return WebGLMatrix;
     }());
     EcognitaMathLib.WebGLMatrix = WebGLMatrix;
+})(EcognitaMathLib || (EcognitaMathLib = {}));
+/* =========================================================================
+ *
+ *  webgl_quaternion.ts
+ *  a quaternion library developed for webgl
+ *  part of source code referenced by minMatrix.js
+ *  https://wgld.org/d/library/l001.html
+ * ========================================================================= */
+var EcognitaMathLib;
+(function (EcognitaMathLib) {
+    var WebGLQuaternion = /** @class */ (function () {
+        function WebGLQuaternion() {
+        }
+        WebGLQuaternion.prototype.create = function () { return new Float32Array(4); };
+        WebGLQuaternion.prototype.identity = function (qat) {
+            qat[0] = 0;
+            qat[1] = 0;
+            qat[2] = 0;
+            qat[3] = 1;
+            return qat;
+        };
+        WebGLQuaternion.prototype.inverse = function (qat) {
+            var out_qat = this.create();
+            out_qat[0] = -qat[0];
+            out_qat[1] = -qat[1];
+            out_qat[2] = -qat[2];
+            out_qat[3] = qat[3];
+            return out_qat;
+        };
+        WebGLQuaternion.prototype.normalize = function (qat) {
+            var x = qat[0], y = qat[1], z = qat[2], w = qat[3];
+            var l = Math.sqrt(x * x + y * y + z * z + w * w);
+            if (l === 0) {
+                qat[0] = 0;
+                qat[1] = 0;
+                qat[2] = 0;
+                qat[3] = 0;
+            }
+            else {
+                l = 1 / l;
+                qat[0] = x * l;
+                qat[1] = y * l;
+                qat[2] = z * l;
+                qat[3] = w * l;
+            }
+            return qat;
+        };
+        //q1(v1,w1) q2(v2,w2)
+        //v(Im) =  xi + yj + zk
+        //w(Re)
+        //q1q2 = (v1 x v2 + w2v1 + w1v2,w1w2 - v1・v2)
+        WebGLQuaternion.prototype.multiply = function (qat1, qat2) {
+            var out_qat = this.create();
+            var ax = qat1[0], ay = qat1[1], az = qat1[2], aw = qat1[3];
+            var bx = qat2[0], by = qat2[1], bz = qat2[2], bw = qat2[3];
+            out_qat[0] = ax * bw + aw * bx + ay * bz - az * by;
+            out_qat[1] = ay * bw + aw * by + az * bx - ax * bz;
+            out_qat[2] = az * bw + aw * bz + ax * by - ay * bx;
+            out_qat[3] = aw * bw - ax * bx - ay * by - az * bz;
+            return out_qat;
+        };
+        WebGLQuaternion.prototype.rotate = function (angle, axis) {
+            var sq = Math.sqrt(axis[0] * axis[0] + axis[1] * axis[1] + axis[2] * axis[2]);
+            if (!sq) {
+                console.log("need a axis value");
+                return undefined;
+            }
+            var a = axis[0], b = axis[1], c = axis[2];
+            if (sq != 1) {
+                sq = 1 / sq;
+                a *= sq;
+                b *= sq;
+                c *= sq;
+            }
+            var s = Math.sin(angle * 0.5);
+            var out_qat = this.create();
+            out_qat[0] = a * s;
+            out_qat[1] = b * s;
+            out_qat[2] = c * s;
+            out_qat[3] = Math.cos(angle * 0.5);
+            return out_qat;
+        };
+        //P' = qPq^(-1)
+        WebGLQuaternion.prototype.ToV3 = function (p_v3, q) {
+            var out_p = new Array(3);
+            var inv_q = this.inverse(q);
+            var in_p = this.create();
+            in_p[0] = p_v3[0];
+            in_p[1] = p_v3[1];
+            in_p[2] = p_v3[2];
+            var p_invq = this.multiply(inv_q, in_p);
+            var q_p_invq = this.multiply(p_invq, q);
+            out_p[0] = q_p_invq[0];
+            out_p[1] = q_p_invq[1];
+            out_p[2] = q_p_invq[2];
+            return out_p;
+        };
+        WebGLQuaternion.prototype.ToMat4x4 = function (q) {
+            var out_mat = new Float32Array(16);
+            var x = q[0], y = q[1], z = q[2], w = q[3];
+            var x2 = x + x, y2 = y + y, z2 = z + z;
+            var xx = x * x2, xy = x * y2, xz = x * z2;
+            var yy = y * y2, yz = y * z2, zz = z * z2;
+            var wx = w * x2, wy = w * y2, wz = w * z2;
+            out_mat[0] = 1 - (yy + zz);
+            out_mat[1] = xy - wz;
+            out_mat[2] = xz + wy;
+            out_mat[3] = 0;
+            out_mat[4] = xy + wz;
+            out_mat[5] = 1 - (xx + zz);
+            out_mat[6] = yz - wx;
+            out_mat[7] = 0;
+            out_mat[8] = xz - wy;
+            out_mat[9] = yz + wx;
+            out_mat[10] = 1 - (xx + yy);
+            out_mat[11] = 0;
+            out_mat[12] = 0;
+            out_mat[13] = 0;
+            out_mat[14] = 0;
+            out_mat[15] = 1;
+            return out_mat;
+        };
+        WebGLQuaternion.prototype.slerp = function (qtn1, qtn2, time) {
+            if (time < 0 || time > 1) {
+                console.log("parameter time's setting is wrong!");
+                return undefined;
+            }
+            var out_q = this.create();
+            var ht = qtn1[0] * qtn2[0] + qtn1[1] * qtn2[1] + qtn1[2] * qtn2[2] + qtn1[3] * qtn2[3];
+            var hs = 1.0 - ht * ht;
+            if (hs <= 0.0) {
+                out_q[0] = qtn1[0];
+                out_q[1] = qtn1[1];
+                out_q[2] = qtn1[2];
+                out_q[3] = qtn1[3];
+            }
+            else {
+                hs = Math.sqrt(hs);
+                if (Math.abs(hs) < 0.0001) {
+                    out_q[0] = (qtn1[0] * 0.5 + qtn2[0] * 0.5);
+                    out_q[1] = (qtn1[1] * 0.5 + qtn2[1] * 0.5);
+                    out_q[2] = (qtn1[2] * 0.5 + qtn2[2] * 0.5);
+                    out_q[3] = (qtn1[3] * 0.5 + qtn2[3] * 0.5);
+                }
+                else {
+                    var ph = Math.acos(ht);
+                    var pt = ph * time;
+                    var t0 = Math.sin(ph - pt) / hs;
+                    var t1 = Math.sin(pt) / hs;
+                    out_q[0] = qtn1[0] * t0 + qtn2[0] * t1;
+                    out_q[1] = qtn1[1] * t0 + qtn2[1] * t1;
+                    out_q[2] = qtn1[2] * t0 + qtn2[2] * t1;
+                    out_q[3] = qtn1[3] * t0 + qtn2[3] * t1;
+                }
+            }
+            return out_q;
+        };
+        return WebGLQuaternion;
+    }());
+    EcognitaMathLib.WebGLQuaternion = WebGLQuaternion;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
@@ -283,32 +511,18 @@ var EcognitaMathLib;
     }
     EcognitaMathLib.GetGLTypeSize = GetGLTypeSize;
     var WebGL_Texture = /** @class */ (function () {
-        function WebGL_Texture(width, height, channels, isFloat, isLinear, isClamped, texels) {
-            var coordMode = isClamped ? gl.CLAMP_TO_EDGE : gl.REPEAT;
+        function WebGL_Texture(channels, isFloat, texels) {
             this.type = isFloat ? gl.FLOAT : gl.UNSIGNED_BYTE;
             this.format = [gl.LUMINANCE, gl.RG, gl.RGB, gl.RGBA][channels - 1];
-            this.width = width;
-            this.height = height;
             this.glName = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, this.glName);
-            gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.width, this.height, 0, this.format, this.type, texels);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, coordMode);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, coordMode);
-            this.setSmooth(isLinear);
-            this.boundUnit = -1;
+            this.bind(this.glName);
+            gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, texels);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            this.bind(null);
+            this.texture = this.glName;
         }
-        WebGL_Texture.prototype.setSmooth = function (smooth) {
-            var interpMode = smooth ? gl.LINEAR : gl.NEAREST;
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, interpMode);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, interpMode);
-        };
-        WebGL_Texture.prototype.copy = function (texels) {
-            gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.width, this.height, 0, this.format, this.type, texels);
-        };
-        WebGL_Texture.prototype.bind = function (unit) {
-            gl.activeTexture(gl.TEXTURE0 + unit);
-            gl.bindTexture(gl.TEXTURE_2D, this.glName);
-            this.boundUnit = unit;
+        WebGL_Texture.prototype.bind = function (tex) {
+            gl.bindTexture(gl.TEXTURE_2D, tex);
         };
         return WebGL_Texture;
     }());
@@ -479,8 +693,112 @@ var EcognitaMathLib;
         return WebGL_IndexBuffer;
     }());
     EcognitaMathLib.WebGL_IndexBuffer = WebGL_IndexBuffer;
+    var WebGL_FrameBuffer = /** @class */ (function () {
+        function WebGL_FrameBuffer(width, height) {
+            this.width = width;
+            this.height = height;
+            var frameBuffer = gl.createFramebuffer();
+            this.framebuffer = frameBuffer;
+            var depthRenderBuffer = gl.createRenderbuffer();
+            this.depthbuffer = depthRenderBuffer;
+            var fTexture = gl.createTexture();
+            this.targetTexture = fTexture;
+        }
+        WebGL_FrameBuffer.prototype.bindFrameBuffer = function () {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+        };
+        WebGL_FrameBuffer.prototype.bindDepthBuffer = function () {
+            gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthbuffer);
+            //setiing render buffer to depth buffer
+            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
+            //attach depthbuffer to framebuffer
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthbuffer);
+        };
+        WebGL_FrameBuffer.prototype.renderToTexure = function () {
+            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+            //make sure we have enought memory to render the widthxheight size texture
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            //texture settings
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            //attach framebuff to texture
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
+        };
+        WebGL_FrameBuffer.prototype.release = function () {
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        };
+        return WebGL_FrameBuffer;
+    }());
+    EcognitaMathLib.WebGL_FrameBuffer = WebGL_FrameBuffer;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 var Shaders = {
+    'blurEffect-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'varying vec4      vColor;\n\n' +
+        'void main(void){\n' +
+        '	vec2 tFrag = vec2(1.0 / 512.0);\n' +
+        '	vec4 destColor = texture2D(texture, gl_FragCoord.st * tFrag);\n' +
+        '	destColor *= 0.36;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-1.0,  1.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 0.0,  1.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 1.0,  1.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-1.0,  0.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 1.0,  0.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-1.0, -1.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 0.0, -1.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 1.0, -1.0)) * tFrag) *' +
+        ' 0.04;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-2.0,  2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-1.0,  2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 0.0,  2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 1.0,  2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 2.0,  2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-2.0,  1.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 2.0,  1.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-2.0,  0.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 2.0,  0.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-2.0, -1.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 2.0, -1.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-2.0, -2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2(-1.0, -2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 0.0, -2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 1.0, -2.0)) * tFrag) *' +
+        ' 0.02;\n' +
+        '	destColor += texture2D(texture, (gl_FragCoord.st + vec2( 2.0, -2.0)) * tFrag) *' +
+        ' 0.02;\n\n' +
+        '	gl_FragColor = vColor * destColor;\n' +
+        '}\n',
+    'blurEffect-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	vColor      = color;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'demo-frag': 'void main(void){\n' +
         '	gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n' +
         '}\n',
@@ -539,6 +857,134 @@ var Shaders = {
         '    vColor = color*vec4(vec3(diffuse),1.0) +ambientColor;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'frameBuffer-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'varying vec4      vColor;\n' +
+        'varying vec2      vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '	vec4 smpColor = texture2D(texture, vTextureCoord);\n' +
+        '	gl_FragColor  = vColor * smpColor;\n' +
+        '}\n',
+    'frameBuffer-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec2 textureCoord;\n' +
+        'uniform   mat4 mMatrix;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   mat4 invMatrix;\n' +
+        'uniform   vec3 lightDirection;\n' +
+        'uniform   bool useLight;\n' +
+        'varying   vec4 vColor;\n' +
+        'varying   vec2 vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '	if(useLight){\n' +
+        '		vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '		float diffuse  = clamp(dot(normal, invLight), 0.2, 1.0);\n' +
+        '		vColor         = vec4(color.xyz * vec3(diffuse), 1.0);\n' +
+        '	}else{\n' +
+        '		vColor         = color;\n' +
+        '	}\n' +
+        '	vTextureCoord  = textureCoord;\n' +
+        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'phong-frag': 'precision mediump float;\n\n' +
+        'uniform mat4 invMatrix;\n' +
+        'uniform vec3 lightDirection;\n' +
+        'uniform vec3 eyeDirection;\n' +
+        'uniform vec4 ambientColor;\n' +
+        'varying vec4 vColor;\n' +
+        'varying vec3 vNormal;\n\n' +
+        'void main(void){\n' +
+        '	vec3 invLight = normalize(invMatrix*vec4(lightDirection,0.0)).xyz;\n' +
+        '	vec3 invEye = normalize(invMatrix*vec4(eyeDirection,0.0)).xyz;\n' +
+        '	vec3 halfLE = normalize(invLight+invEye);\n' +
+        '	float diffuse = clamp(dot(vNormal,invLight),0.0,1.0);\n' +
+        '	float specular = pow(clamp(dot(vNormal,halfLE),0.0,1.0),50.0);\n' +
+        '	vec4 destColor = vColor * vec4(vec3(diffuse),1.0) + vec4(vec3(specular),1.0) + ' +
+        'ambientColor;\n' +
+        '	gl_FragColor = destColor;\n' +
+        '}\n',
+    'phong-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec3 normal;\n\n' +
+        'uniform mat4 mvpMatrix;\n\n' +
+        'varying vec4 vColor;\n' +
+        'varying vec3 vNormal;\n\n' +
+        'void main(void){\n' +
+        '    vNormal = normal;\n' +
+        '    vColor = color;\n' +
+        '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'point-frag': 'precision mediump float;\n' +
+        'varying vec4      vColor;\n\n' +
+        'void main(void){\n' +
+        '    gl_FragColor = vColor;\n' +
+        '}\n',
+    'point-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   float pointSize;\n' +
+        'varying   vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '    vColor        = color;\n' +
+        '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
+        '    gl_PointSize  = pointSize;\n' +
+        '}\n',
+    'pointLighting-frag': 'precision mediump float;\n\n' +
+        'uniform mat4 invMatrix;\n' +
+        'uniform vec3 lightPosition;\n' +
+        'uniform vec3 eyeDirection;\n' +
+        'uniform vec4 ambientColor;\n\n' +
+        'varying vec4 vColor;\n' +
+        'varying vec3 vNormal;\n' +
+        'varying vec3 vPosition;\n\n' +
+        'void main(void){\n' +
+        '	vec3 lightVec = lightPosition -vPosition;\n' +
+        '	vec3 invLight = normalize(invMatrix*vec4(lightVec,0.0)).xyz;\n' +
+        '	vec3 invEye = normalize(invMatrix*vec4(eyeDirection,0.0)).xyz;\n' +
+        '	vec3 halfLE = normalize(invLight+invEye);\n' +
+        '	float diffuse = clamp(dot(vNormal,invLight),0.0,1.0);\n' +
+        '	float specular = pow(clamp(dot(vNormal,halfLE),0.0,1.0),50.0);\n' +
+        '	vec4 destColor = vColor * vec4(vec3(diffuse),1.0) + vec4(vec3(specular),1.0) + ' +
+        'ambientColor;\n' +
+        '	gl_FragColor = destColor;\n' +
+        '}\n',
+    'pointLighting-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec3 normal;\n\n' +
+        'uniform mat4 mvpMatrix;\n' +
+        'uniform mat4 mMatrix;\n\n' +
+        'varying vec3 vPosition;\n' +
+        'varying vec4 vColor;\n' +
+        'varying vec3 vNormal;\n\n' +
+        'void main(void){\n' +
+        '    vPosition = (mMatrix*vec4(position,1.0)).xyz;\n' +
+        '    vNormal = normal;\n' +
+        '    vColor = color;\n' +
+        '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'pointSprite-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'varying vec4      vColor;\n\n' +
+        'void main(void){\n' +
+        '    vec4 smpColor = vec4(1.0);\n' +
+        '    smpColor = texture2D(texture,gl_PointCoord);\n' +
+        '    if(smpColor.a == 0.0){\n' +
+        '        discard;\n' +
+        '    }else{\n' +
+        '        gl_FragColor = vColor * smpColor;\n' +
+        '    }\n' +
+        '}\n',
+    'pointSprite-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   float pointSize;\n' +
+        'varying   vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '    vColor        = color;\n' +
+        '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
+        '    gl_PointSize  = pointSize;\n' +
+        '}\n',
     'specular-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +
         'void main(void){\n' +
@@ -562,6 +1008,63 @@ var Shaders = {
         '    vec4 light = color*vec4(vec3(diffuse),1.0)+vec4(vec3(specular),1.0);\n' +
         '    vColor = light + ambientColor;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'stencilBufferOutline-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'uniform bool      useTexture;\n' +
+        'varying vec4      vColor;\n' +
+        'varying vec2      vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '	vec4 smpColor = vec4(1.0);\n' +
+        '	if(useTexture){\n' +
+        '		smpColor = texture2D(texture, vTextureCoord);\n' +
+        '	}\n' +
+        '	gl_FragColor = vColor * smpColor;\n' +
+        '}\n',
+    'stencilBufferOutline-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec2 textureCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   mat4 invMatrix;\n' +
+        'uniform   vec3 lightDirection;\n' +
+        'uniform   bool useLight;\n' +
+        'uniform   bool outline;\n' +
+        'varying   vec4 vColor;\n' +
+        'varying   vec2 vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '	if(useLight){\n' +
+        '		vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '		float diffuse  = clamp(dot(normal, invLight), 0.1, 1.0);\n' +
+        '		vColor         = color * vec4(vec3(diffuse), 1.0);\n' +
+        '	}else{\n' +
+        '		vColor         = color;\n' +
+        '	}\n' +
+        '	vTextureCoord      = textureCoord;\n' +
+        '	vec3 oPosition     = position;\n' +
+        '	if(outline){\n' +
+        '		oPosition     += normal * 0.1;\n' +
+        '	}\n' +
+        '	gl_Position = mvpMatrix * vec4(oPosition, 1.0);\n' +
+        '}\n',
+    'texture-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'varying vec4      vColor;\n' +
+        'varying vec2      vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '    vec4 smpColor = texture2D(texture, vTextureCoord);\n' +
+        '    gl_FragColor  = vColor * smpColor;\n' +
+        '}\n',
+    'texture-vert': 'attribute vec3 position;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec2 textureCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec4 vColor;\n' +
+        'varying   vec2 vTextureCoord;\n\n' +
+        'void main(void){\n' +
+        '    vColor        = color;\n' +
+        '    vTextureCoord = textureCoord;\n' +
+        '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n'
 };
 /* =========================================================================
@@ -608,16 +1111,18 @@ var EcognitaMathLib;
 var EcognitaMathLib;
 (function (EcognitaMathLib) {
     var TorusModel = /** @class */ (function () {
-        function TorusModel(vcrs, hcrs, vr, hr, need_normal) {
+        function TorusModel(vcrs, hcrs, vr, hr, color, need_normal, need_texture) {
+            if (need_texture === void 0) { need_texture = false; }
             this.verCrossSectionSmooth = vcrs;
             this.horCrossSectionSmooth = hcrs;
             this.verRadius = vr;
             this.horRadius = hr;
             this.data = new Array();
             this.index = new Array();
-            this.preCalculate(need_normal);
+            this.preCalculate(color, need_normal, need_texture);
         }
-        TorusModel.prototype.preCalculate = function (need_normal) {
+        TorusModel.prototype.preCalculate = function (color, need_normal, need_texture) {
+            if (need_texture === void 0) { need_texture = false; }
             //calculate pos and col
             for (var i = 0; i <= this.verCrossSectionSmooth; i++) {
                 var verIncrement = Math.PI * 2 / this.verCrossSectionSmooth * i;
@@ -635,8 +1140,22 @@ var EcognitaMathLib;
                         this.data.push(nx, verY, nz);
                     }
                     //hsv2rgb
-                    var rgba = EcognitaMathLib.HSV2RGB(360 / this.horCrossSectionSmooth * ii, 1, 1, 1);
-                    this.data.push(rgba[0], rgba[1], rgba[2], rgba[3]);
+                    if (color == undefined) {
+                        var rgba = EcognitaMathLib.HSV2RGB(360 / this.horCrossSectionSmooth * ii, 1, 1, 1);
+                        this.data.push(rgba[0], rgba[1], rgba[2], rgba[3]);
+                    }
+                    else {
+                        this.data.push(color[0], color[1], color[2], color[3]);
+                    }
+                    if (need_texture) {
+                        var rs = 1 / this.horCrossSectionSmooth * ii;
+                        var rt = 1 / this.verCrossSectionSmooth * i + 0.5;
+                        if (rt > 1.0) {
+                            rt -= 1.0;
+                        }
+                        rt = 1.0 - rt;
+                        this.data.push(rs, rt);
+                    }
                 }
             }
             //calculate index
@@ -651,77 +1170,327 @@ var EcognitaMathLib;
         return TorusModel;
     }());
     EcognitaMathLib.TorusModel = TorusModel;
+    var ShpereModel = /** @class */ (function () {
+        function ShpereModel(vcrs, hcrs, rad, color, need_normal, need_texture) {
+            if (need_texture === void 0) { need_texture = false; }
+            this.verCrossSectionSmooth = vcrs;
+            this.horCrossSectionSmooth = hcrs;
+            this.Radius = rad;
+            this.data = new Array();
+            this.index = new Array();
+            this.preCalculate(color, need_normal, need_texture);
+        }
+        ShpereModel.prototype.preCalculate = function (color, need_normal, need_texture) {
+            if (need_texture === void 0) { need_texture = false; }
+            //calculate pos and col
+            for (var i = 0; i <= this.verCrossSectionSmooth; i++) {
+                var verIncrement = Math.PI / this.verCrossSectionSmooth * i;
+                var verX = Math.cos(verIncrement);
+                var verY = Math.sin(verIncrement);
+                for (var ii = 0; ii <= this.horCrossSectionSmooth; ii++) {
+                    var horIncrement = Math.PI * 2 / this.horCrossSectionSmooth * ii;
+                    var horX = verY * this.Radius * Math.cos(horIncrement);
+                    var horY = verX * this.Radius;
+                    var horZ = verY * this.Radius * Math.sin(horIncrement);
+                    this.data.push(horX, horY, horZ);
+                    if (need_normal) {
+                        var nx = verY * Math.cos(horIncrement);
+                        var nz = verY * Math.sin(horIncrement);
+                        this.data.push(nx, verX, nz);
+                    }
+                    //hsv2rgb
+                    if (color == undefined) {
+                        var rgba = EcognitaMathLib.HSV2RGB(360 / this.horCrossSectionSmooth * ii, 1, 1, 1);
+                        this.data.push(rgba[0], rgba[1], rgba[2], rgba[3]);
+                    }
+                    else {
+                        this.data.push(color[0], color[1], color[2], color[3]);
+                    }
+                    if (need_texture) {
+                        this.data.push(1 - 1 / this.horCrossSectionSmooth * ii, 1 / this.verCrossSectionSmooth * i);
+                    }
+                }
+            }
+            //calculate index
+            for (i = 0; i < this.verCrossSectionSmooth; i++) {
+                for (ii = 0; ii < this.horCrossSectionSmooth; ii++) {
+                    verIncrement = (this.horCrossSectionSmooth + 1) * i + ii;
+                    this.index.push(verIncrement, verIncrement + 1, verIncrement + this.horCrossSectionSmooth + 2);
+                    this.index.push(verIncrement, verIncrement + this.horCrossSectionSmooth + 2, verIncrement + this.horCrossSectionSmooth + 1);
+                }
+            }
+        };
+        return ShpereModel;
+    }());
+    EcognitaMathLib.ShpereModel = ShpereModel;
+    var CubeModel = /** @class */ (function () {
+        function CubeModel(side, color, need_normal, need_texture) {
+            if (need_texture === void 0) { need_texture = false; }
+            this.side = side;
+            this.data = new Array();
+            this.index = [
+                0, 1, 2, 0, 2, 3,
+                4, 5, 6, 4, 6, 7,
+                8, 9, 10, 8, 10, 11,
+                12, 13, 14, 12, 14, 15,
+                16, 17, 18, 16, 18, 19,
+                20, 21, 22, 20, 22, 23
+            ];
+            var hs = side * 0.5;
+            var pos = [
+                -hs, -hs, hs, hs, -hs, hs, hs, hs, hs, -hs, hs, hs,
+                -hs, -hs, -hs, -hs, hs, -hs, hs, hs, -hs, hs, -hs, -hs,
+                -hs, hs, -hs, -hs, hs, hs, hs, hs, hs, hs, hs, -hs,
+                -hs, -hs, -hs, hs, -hs, -hs, hs, -hs, hs, -hs, -hs, hs,
+                hs, -hs, -hs, hs, hs, -hs, hs, hs, hs, hs, -hs, hs,
+                -hs, -hs, -hs, -hs, -hs, hs, -hs, hs, hs, -hs, hs, -hs
+            ];
+            var normal = [
+                -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0,
+                -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0,
+                -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0,
+                -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0,
+                1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0,
+                -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0
+            ];
+            var col = new Array();
+            for (var i = 0; i < pos.length / 3; i++) {
+                if (color != undefined) {
+                    var tc = color;
+                }
+                else {
+                    tc = EcognitaMathLib.HSV2RGB(360 / pos.length / 3 * i, 1, 1, 1);
+                }
+                col.push(tc[0], tc[1], tc[2], tc[3]);
+            }
+            var st = [
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0,
+                0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0, 1.0
+            ];
+            var cubeVertexNum = 24;
+            for (var i = 0; i < cubeVertexNum; i++) {
+                //pos
+                this.data.push(pos[i * 3 + 0], pos[i * 3 + 1], pos[i * 3 + 2]);
+                //normal
+                if (need_normal) {
+                    this.data.push(normal[i * 3 + 0], normal[i * 3 + 1], normal[i * 3 + 2]);
+                }
+                //color
+                this.data.push(col[i * 4 + 0], col[i * 4 + 1], col[i * 4 + 2], col[i * 4 + 3]);
+                //texture
+                if (need_texture) {
+                    this.data.push(st[i * 2 + 0], st[i * 2 + 1]);
+                }
+            }
+        }
+        return CubeModel;
+    }());
+    EcognitaMathLib.CubeModel = CubeModel;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
- *  demo8.ts
+ *  demo19.ts
  *  test some webgl demo
  *
  * ========================================================================= */
+/// <reference path="../lib/cv_imread.ts" />
+/// <reference path="../lib/extra_utils.ts" />
 /// <reference path="../lib/webgl_matrix.ts" />
+/// <reference path="../lib/webgl_quaternion.ts" />
 /// <reference path="../lib/webgl_utils.ts" />
 /// <reference path="../lib/webgl_shaders.ts" />
 /// <reference path="../lib/webgl_model.ts" />
 var canvas = document.getElementById('canvas');
-canvas.width = 500;
-canvas.height = 300;
+canvas.width = 512;
+canvas.height = 512;
 try {
-    var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    var gl = canvas.getContext("webgl", { stencil: true }) || canvas.getContext("experimental-webgl", { stencil: true });
 }
 catch (e) { }
 if (!gl)
     throw new Error("Could not initialise WebGL");
-var cnt = 0;
-var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "specular-vert", "specular-frag");
-var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
-var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
-var torusData = new EcognitaMathLib.TorusModel(32, 32, 1, 2, true);
-vbo.addAttribute("position", 3, gl.FLOAT, false);
-vbo.addAttribute("normal", 3, gl.FLOAT, false);
-vbo.addAttribute("color", 4, gl.FLOAT, false);
-vbo.init(torusData.data.length / 10);
-vbo.copy(torusData.data);
-vbo.bind(shader);
-ibo.init(torusData.index);
-ibo.bind();
+//frame buffer shader
+var frameBufferShader = new EcognitaMathLib.WebGL_Shader(Shaders, "frameBuffer-vert", "frameBuffer-frag");
+var earthData = new EcognitaMathLib.ShpereModel(64, 64, 1, [1, 1, 1, 1], true, true);
+var vbo_earth = new EcognitaMathLib.WebGL_VertexBuffer();
+var ibo_earth = new EcognitaMathLib.WebGL_IndexBuffer();
+vbo_earth.addAttribute("position", 3, gl.FLOAT, false);
+vbo_earth.addAttribute("normal", 3, gl.FLOAT, false);
+vbo_earth.addAttribute("color", 4, gl.FLOAT, false);
+vbo_earth.addAttribute("textureCoord", 2, gl.FLOAT, false);
+vbo_earth.init(earthData.data.length / 12);
+vbo_earth.copy(earthData.data);
+ibo_earth.init(earthData.index);
+ibo_earth.bind();
+frameBufferShader.bind();
+var uniLocation = new Array();
+uniLocation.push(frameBufferShader.uniformIndex('mMatrix'));
+uniLocation.push(frameBufferShader.uniformIndex('mvpMatrix'));
+uniLocation.push(frameBufferShader.uniformIndex('invMatrix'));
+uniLocation.push(frameBufferShader.uniformIndex('lightDirection'));
+uniLocation.push(frameBufferShader.uniformIndex('useLight'));
+uniLocation.push(frameBufferShader.uniformIndex('texture'));
+//blur effect shader
+var blurShader = new EcognitaMathLib.WebGL_Shader(Shaders, "blurEffect-vert", "blurEffect-frag");
+var vbo_blur = new EcognitaMathLib.WebGL_VertexBuffer();
+var ibo_blur = new EcognitaMathLib.WebGL_IndexBuffer();
+vbo_blur.addAttribute("position", 3, gl.FLOAT, false);
+vbo_blur.addAttribute("color", 4, gl.FLOAT, false);
+var blurData = [
+    -1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+    1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+    -1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 1.0,
+    1.0, -1.0, 0.0, 1.0, 1.0, 1.0, 1.0
+];
+var blurIndex = [0, 1, 2,
+    3, 2, 1];
+vbo_blur.init(4);
+vbo_blur.copy(blurData);
+ibo_blur.init(blurIndex);
+ibo_blur.bind();
+blurShader.bind();
+var blurUniLocation = new Array();
+blurUniLocation.push(blurShader.uniformIndex('mvpMatrix'));
+blurUniLocation.push(blurShader.uniformIndex('texture'));
 var m = new EcognitaMathLib.WebGLMatrix();
+var q = new EcognitaMathLib.WebGLQuaternion();
 var mMatrix = m.identity(m.create());
-var vMatrix = m.viewMatrix([0.0, 0.0, 20], [0, 0, 0], [0, 1, 0]);
-var pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
-var tmpMatrix = m.multiply(pMatrix, vMatrix);
+var vMatrix = m.identity(m.create());
+var pMatrix = m.identity(m.create());
+var tmpMatrix = m.identity(m.create());
 var mvpMatrix = m.identity(m.create());
 var invMatrix = m.identity(m.create());
-shader.bind();
-var uniLocation = new Array();
-uniLocation.push(shader.uniformIndex('mvpMatrix'));
-uniLocation.push(shader.uniformIndex('invMatrix'));
-uniLocation.push(shader.uniformIndex('lightDirection'));
-uniLocation.push(shader.uniformIndex('ambientColor'));
-uniLocation.push(shader.uniformIndex('eyeDirection'));
-var lightDirection = [-0.5, 0.5, 0.5];
-var ambientColor = [0.1, 0.1, 0.1, 1.0];
-var eyeDirection = [0.0, 0.0, 20.0];
-//depth test and cull face
+var qMatrix = m.identity(m.create());
+var xQuaternion = q.identity(q.create());
+var lastPosX = 0;
+var lastPosY = 0;
+var isDragging = false;
+var hammer = new EcognitaMathLib.Hammer_Utils(canvas);
+hammer.on_pan = function (ev) {
+    var elem = ev.target;
+    if (!isDragging) {
+        isDragging = true;
+        lastPosX = elem.offsetLeft;
+        lastPosY = elem.offsetTop;
+    }
+    var posX = ev.center.x - lastPosX;
+    var posY = ev.center.y - lastPosY;
+    var cw = canvas.width;
+    var ch = canvas.height;
+    var wh = 1 / Math.sqrt(cw * cw + ch * ch);
+    var x = posX - cw * 0.5;
+    var y = posY - ch * 0.5;
+    var sq = Math.sqrt(x * x + y * y);
+    var r = sq * 2.0 * Math.PI * wh;
+    if (sq != 1) {
+        sq = 1 / sq;
+        x *= sq;
+        y *= sq;
+    }
+    xQuaternion = q.rotate(r, [y, x, 0.0]);
+    if (ev.isFinal) {
+        isDragging = false;
+    }
+};
+hammer.enablePan();
+//depth test
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
-gl.enable(gl.CULL_FACE);
+var cnt = 0;
+var tex3 = null;
+var tex4 = null;
+var img3 = EcognitaMathLib.imread("./img/tex3.png");
+var img4 = EcognitaMathLib.imread("./img/tex4.png");
+img3.onload = function () {
+    tex3 = new EcognitaMathLib.WebGL_Texture(4, false, img3);
+};
+img4.onload = function () {
+    tex4 = new EcognitaMathLib.WebGL_Texture(4, false, img4);
+};
+gl.activeTexture(gl.TEXTURE0);
+var fBufferWidth = 512;
+var fBufferHeight = 512;
+var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
+frameBuffer.bindFrameBuffer();
+frameBuffer.bindDepthBuffer();
+frameBuffer.renderToTexure();
+frameBuffer.release();
 (function () {
+    //bind frame buff
+    gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer.framebuffer);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     cnt++;
     var rad = (cnt % 360) * Math.PI / 180;
-    //draw square
+    //render earth
+    frameBufferShader.bind();
+    var lightDirection = [-1.0, 2.0, 1.0];
+    qMatrix = q.ToMat4x4(xQuaternion);
+    var camPosition = [0.0, 0.0, 5.0];
+    var camUpDirection = [0.0, 1.0, 0.0];
+    //camera setting
+    vMatrix = m.viewMatrix(camPosition, [0, 0, 0], camUpDirection);
+    vMatrix = m.multiply(vMatrix, qMatrix);
+    pMatrix = m.perspectiveMatrix(45, fBufferWidth / fBufferHeight, 0.1, 100);
+    tmpMatrix = m.multiply(pMatrix, vMatrix);
+    //render earth scene's skybox
+    if (tex4 != null) {
+        //gl.activeTexture(gl.TEXTURE1);
+        tex4.bind(tex4.texture);
+    }
+    vbo_earth.bind(frameBufferShader);
+    ibo_earth.bind();
     mMatrix = m.identity(mMatrix);
-    mMatrix = m.rotate(mMatrix, rad, [0, 1, 1]);
+    mMatrix = m.scale(mMatrix, [50.0, 50.0, 50.0]);
     mvpMatrix = m.multiply(tmpMatrix, mMatrix);
     invMatrix = m.inverse(mMatrix);
-    gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
-    gl.uniformMatrix4fv(uniLocation[1], false, invMatrix);
-    gl.uniform3fv(uniLocation[2], lightDirection);
-    gl.uniform4fv(uniLocation[3], ambientColor);
-    gl.uniform3fv(uniLocation[4], eyeDirection);
-    ibo.draw(gl.TRIANGLES);
+    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
+    gl.uniform3fv(uniLocation[3], lightDirection);
+    gl.uniform1i(uniLocation[4], false);
+    gl.uniform1i(uniLocation[5], 0);
+    ibo_earth.draw(gl.TRIANGLES);
+    //render earth
+    if (tex3 != null) {
+        //gl.activeTexture(gl.TEXTURE0);
+        tex3.bind(tex3.texture);
+    }
+    m.identity(mMatrix);
+    mMatrix = m.rotate(mMatrix, rad, [0, 1, 0]);
+    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+    invMatrix = m.inverse(mMatrix);
+    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
+    gl.uniform1i(uniLocation[4], true);
+    ibo_earth.draw(gl.TRIANGLES);
+    //release frame buffer
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    //reset canvas
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    //render blur effect
+    blurShader.bind();
+    vbo_blur.bind(blurShader);
+    ibo_blur.bind();
+    gl.bindTexture(gl.TEXTURE_2D, frameBuffer.targetTexture);
+    //re setting camera to ortho
+    vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0, 1, 0]);
+    pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
+    tmpMatrix = m.multiply(pMatrix, vMatrix);
+    //render to polygon
+    mMatrix = m.identity(mMatrix);
+    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+    gl.uniformMatrix4fv(blurUniLocation[0], false, mvpMatrix);
+    gl.uniform1i(blurUniLocation[1], 0);
+    ibo_blur.draw(gl.TRIANGLES);
     gl.flush();
     setTimeout(arguments.callee, 1000 / 30);
 })();

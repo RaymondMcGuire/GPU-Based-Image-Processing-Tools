@@ -1,6 +1,6 @@
 /* =========================================================================
  *
- *  demo6.ts
+ *  demo9.ts
  *  test some webgl demo
  *  
  * ========================================================================= */
@@ -20,11 +20,11 @@ if (!gl)
 
 var cnt =0;
 
-var shader     = new EcognitaMathLib.WebGL_Shader(Shaders, "directionLighting-vert", "directionLighting-frag");
+var shader     = new EcognitaMathLib.WebGL_Shader(Shaders, "phong-vert", "phong-frag");
 
 var vbo = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo = new EcognitaMathLib.WebGL_IndexBuffer();
-var torusData = new EcognitaMathLib.TorusModel(32,32,1,2,undefined,true);
+var torusData = new EcognitaMathLib.TorusModel(64,64,1.5,3.0,undefined,true);
 
 vbo.addAttribute("position", 3, gl.FLOAT, false);
 vbo.addAttribute("normal", 3, gl.FLOAT, false);
@@ -50,8 +50,13 @@ var uniLocation = new Array<any>();
 uniLocation.push(shader.uniformIndex('mvpMatrix'));
 uniLocation.push(shader.uniformIndex('invMatrix'));
 uniLocation.push(shader.uniformIndex('lightDirection'));
+uniLocation.push(shader.uniformIndex('ambientColor'));
+uniLocation.push(shader.uniformIndex('eyeDirection'));
 
-var lightDirection = [-0.5, 0.5, 0.5];
+var lightDirection = [-0.5, 1.0, 0.5];
+var ambientColor = [0.1, 0.1, 0.1, 1.0];
+var eyeDirection = [0.0, 0.0, 20.0];
+
 //depth test and cull face
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
@@ -74,6 +79,8 @@ gl.enable(gl.CULL_FACE);
         gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
         gl.uniformMatrix4fv(uniLocation[1], false, invMatrix);
         gl.uniform3fv(uniLocation[2], lightDirection);
+        gl.uniform4fv(uniLocation[3], ambientColor);
+        gl.uniform3fv(uniLocation[4], eyeDirection);
 
         ibo.draw(gl.TRIANGLES);
         gl.flush();

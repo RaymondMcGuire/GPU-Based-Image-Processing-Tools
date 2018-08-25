@@ -38,8 +38,9 @@ var mvpMatrix = m.multiply(pMatrix, vMatrix);
 mvpMatrix =m.multiply(mvpMatrix, mMatrix);
 
 shader.bind();
-var uniLocation =shader.uniformIndex('mvpMatrix');
+var uniLocation = new Array<any>();
+uniLocation.push(shader.uniformIndex('mvpMatrix'));
 
-gl.uniformMatrix4fv(uniLocation, false, mvpMatrix);
+gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
 vbo.draw(gl.TRIANGLES);
 vbo.release();

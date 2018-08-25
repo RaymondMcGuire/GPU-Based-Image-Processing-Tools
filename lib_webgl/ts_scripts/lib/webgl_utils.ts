@@ -28,43 +28,24 @@ module EcognitaMathLib {
     export class WebGL_Texture {
         type:any;
         format:any;
-        width:number;
-        height:number;
         glName:any;
-        boundUnit:number;
-        constructor(width, height, channels, isFloat, isLinear, isClamped, texels) {
-            var coordMode = isClamped ? gl.CLAMP_TO_EDGE : gl.REPEAT;
+        texture:any;
+        constructor( channels, isFloat, texels) {
             this.type     = isFloat   ? gl.FLOAT         : gl.UNSIGNED_BYTE;
             this.format   = [gl.LUMINANCE, gl.RG, gl.RGB, gl.RGBA][channels - 1];
-            
-            this.width  = width;
-            this.height = height;
-        
+
             this.glName = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_2D, this.glName);
-            gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.width, this.height, 0, this.format, this.type, texels);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, coordMode);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, coordMode);
-            this.setSmooth(isLinear);
-            
-            this.boundUnit = -1;
+            this.bind(this.glName);
+            gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, texels);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            this.bind(null);
+            this.texture = this.glName;
         }
 
-        setSmooth(smooth:any) {
-            var interpMode = smooth ? gl.LINEAR : gl.NEAREST;
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, interpMode);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, interpMode);
+        bind(tex:any){
+            gl.bindTexture(gl.TEXTURE_2D, tex);
         }
 
-        copy(texels:any) {
-            gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.width, this.height, 0, this.format, this.type, texels);
-        }
-
-        bind(unit:any) {
-            gl.activeTexture(gl.TEXTURE0 + unit);
-            gl.bindTexture(gl.TEXTURE_2D, this.glName);
-            this.boundUnit = unit;
-        }
     }
 
     export class WebGL_RenderTarget{
@@ -269,4 +250,64 @@ module EcognitaMathLib {
             gl.drawElements(mode, length ? length : this.length, gl.UNSIGNED_SHORT, 0);
         }
     }
+
+    export class WebGL_FrameBuffer {
+        width:number;
+        height:number;
+        framebuffer:any;
+        depthbuffer:any;
+        targetTexture:any;
+
+        constructor( width:number, height:number) {
+            this.width = width;
+            this.height = height;
+
+            var frameBuffer = gl.createFramebuffer();
+            this.framebuffer = frameBuffer;
+
+            var depthRenderBuffer = gl.createRenderbuffer();
+            this.depthbuffer = depthRenderBuffer;
+
+            var fTexture = gl.createTexture();
+            this.targetTexture = fTexture;
+
+        }
+
+        bindFrameBuffer(){
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+        }
+
+        bindDepthBuffer(){
+            gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthbuffer);
+            //setiing render buffer to depth buffer
+            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width,  this.height);
+            //attach depthbuffer to framebuffer
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthbuffer);
+        }
+
+        renderToTexure(){
+
+
+            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+    
+            //make sure we have enought memory to render the widthxheight size texture
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    
+            //texture settings
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    
+            //attach framebuff to texture
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
+    
+        }
+
+        release(){
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        }
+
+    }
+
 }
