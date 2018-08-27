@@ -1,4 +1,5 @@
-../demo/demo21.ts
+./pkgBumpMapping.ts
+./pkg/bumpMapping.ts
 ../lib/cv_imread.ts
 ../lib/cv_colorSpace.ts
 ../lib/extra_utils.ts
