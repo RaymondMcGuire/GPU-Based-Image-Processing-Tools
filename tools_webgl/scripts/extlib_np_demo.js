@@ -340,6 +340,9 @@ var EcognitaMathLib;
             }
             return Val;
         };
+        //algo referenced by 
+        //https://stackoverflow.com/questions/2368728/can-normal-maps-be-generated-from-a-texture/2368794#2368794
+        //https://github.com/cpetry/NormalMap-Online/blob/gh-pages/javascripts/normalMap.js
         ImageView.prototype.drawNormalMap = function (strength, level) {
             if (strength === void 0) { strength = 2.5; }
             if (level === void 0) { level = 7.0; }
@@ -376,16 +379,30 @@ var EcognitaMathLib;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
- *  main.ts
- *  test some image process tools
+ *  demo.ts
+ *  demo for normal map generator
  *
  * ========================================================================= */
-/// <reference path="./lib/image_utils.ts" />
-var cvs = document.getElementById('canvas');
-cvs.width = 256;
-cvs.height = 256;
-var ImageViewer = new EcognitaMathLib.ImageView(cvs, "./img/test1.png");
-ImageViewer.image.onload = (function () {
-    ImageViewer.readImageData();
-    ImageViewer.drawNormalMap();
+/// <reference path="../lib/image_utils.ts" />
+var cvs_hm = document.getElementById('canvas_heightmap');
+var cvs_nm = document.getElementById('canvas_normalmap');
+var strength = parseFloat(document.getElementById("p_s").value);
+var level = parseFloat(document.getElementById("p_l").value);
+cvs_hm.height = 512;
+cvs_hm.width = 512;
+cvs_nm.height = 512;
+cvs_nm.width = 512;
+var HeightMapViewer = new EcognitaMathLib.ImageView(cvs_hm, "./project/NormalMapGenerator/img/heightmap.jpg");
+HeightMapViewer.image.onload = (function () {
+    HeightMapViewer.readImageData();
+});
+var NormalMapViewer = new EcognitaMathLib.ImageView(cvs_nm, "./project/NormalMapGenerator/img/heightmap.jpg");
+NormalMapViewer.image.onload = (function () {
+    NormalMapViewer.readImageData();
+    NormalMapViewer.drawNormalMap(strength, level);
+    document.getElementById("generate_normalmap").addEventListener("click", function () {
+        strength = parseFloat(document.getElementById("p_s").value);
+        level = parseFloat(document.getElementById("p_l").value);
+        NormalMapViewer.drawNormalMap(strength, level);
+    });
 });

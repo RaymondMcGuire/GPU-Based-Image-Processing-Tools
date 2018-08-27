@@ -1,4 +1,4 @@
-../main.ts
+./demo.ts
 ../extlib/math_utils.ts
 ../extlib/vector.ts
 ../lib/image_utils.ts
