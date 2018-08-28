@@ -6,6 +6,7 @@
 ../../../lib_webgl/ts_scripts/lib/webgl_shaders.ts
 ../../../lib_webgl/ts_scripts/lib/webgl_model.ts
 ../../../lib_webgl/ts_scripts/lib/webgl_utils.ts
+../../../lib_webgl/ts_scripts/package/pkg/bumpMapping.ts
 ../NormalMapGenerator.ts
 ../extlib/math_utils.ts
 ../extlib/vector.ts

@@ -68,7 +68,7 @@ module EcognitaWeb3DFunction {
         }
 
         initModel(){
-            var cubeData = new EcognitaMathLib.CubeModel(2,[6,6,6,255],true,true);
+            var cubeData = new EcognitaMathLib.CubeModel(2,[1,1,1,1],true,true);
             var vbo_cube = new EcognitaMathLib.WebGL_VertexBuffer();
             var ibo_cube = new EcognitaMathLib.WebGL_IndexBuffer();
             this.vbo.push(vbo_cube);
