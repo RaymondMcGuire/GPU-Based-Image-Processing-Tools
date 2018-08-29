@@ -2,7 +2,7 @@
  *
  *  demo21.ts
  *  test some webgl demo
- *  need adjust the param's value
+ *  need adjust the param's value(coding in normal map tools)
  *  
  * ========================================================================= */
 /// <reference path="../lib/cv_imread.ts" />

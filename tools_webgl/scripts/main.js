@@ -649,6 +649,44 @@ var Shaders = {
         '	vTextureCoord  = textureCoord;\n' +
         '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'cubeTexMapping-frag': 'precision mediump float;\n\n' +
+        'uniform vec3        eyePosition;\n' +
+        'uniform samplerCube cubeTexture;\n' +
+        'uniform bool        reflection;\n' +
+        'varying vec3        vPosition;\n' +
+        'varying vec3        vNormal;\n' +
+        'varying vec4        vColor;\n\n' +
+        '//reflect = I - 2.0 * dot(N, I) * N.\n' +
+        'vec3 egt_reflect(vec3 p, vec3 n){\n' +
+        '  return  p - 2.0* dot(n,p) * n;\n' +
+        '}\n\n' +
+        'void main(void){\n' +
+        '	vec3 ref;\n' +
+        '	if(reflection){\n' +
+        '		ref = reflect(vPosition - eyePosition, vNormal);\n' +
+        '        //ref = egt_reflect(normalize(vPosition - eyePosition),normalize(vNormal' +
+        '));\n' +
+        '	}else{\n' +
+        '		ref = vNormal;\n' +
+        '	}\n' +
+        '	vec4 envColor  = textureCube(cubeTexture, ref);\n' +
+        '	vec4 destColor = vColor * envColor;\n' +
+        '	gl_FragColor   = destColor;\n' +
+        '}\n',
+    'cubeTexMapping-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mMatrix;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec3 vPosition;\n' +
+        'varying   vec3 vNormal;\n' +
+        'varying   vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	vPosition   = (mMatrix * vec4(position, 1.0)).xyz;\n' +
+        '	vNormal     = (mMatrix * vec4(normal, 0.0)).xyz;\n' +
+        '	vColor      = color;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'demo-frag': 'void main(void){\n' +
         '	gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n' +
         '}\n',
@@ -1149,6 +1187,48 @@ var EcognitaMathLib;
         return WebGL_Texture;
     }());
     EcognitaMathLib.WebGL_Texture = WebGL_Texture;
+    var WebGL_CubeMapTexture = /** @class */ (function () {
+        function WebGL_CubeMapTexture(texArray) {
+            this.cubeSource = texArray;
+            this.cubeTarget = new Array(gl.TEXTURE_CUBE_MAP_POSITIVE_X, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z);
+            this.loadCubeTexture();
+            this.cubeTexture = undefined;
+        }
+        WebGL_CubeMapTexture.prototype.loadCubeTexture = function () {
+            var _this = this;
+            var cubeImage = new Array();
+            var loadFlagCnt = 0;
+            this.cubeImage = cubeImage;
+            for (var i = 0; i < this.cubeSource.length; i++) {
+                cubeImage[i] = new Object();
+                cubeImage[i].data = new Image();
+                cubeImage[i].data.src = this.cubeSource[i];
+                cubeImage[i].data.onload = (function () {
+                    loadFlagCnt++;
+                    //check image load
+                    if (loadFlagCnt == _this.cubeSource.length) {
+                        _this.generateCubeMap();
+                    }
+                });
+            }
+        };
+        WebGL_CubeMapTexture.prototype.generateCubeMap = function () {
+            var tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+            for (var j = 0; j < this.cubeSource.length; j++) {
+                gl.texImage2D(this.cubeTarget[j], 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.cubeImage[j].data);
+            }
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            this.cubeTexture = tex;
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+        };
+        return WebGL_CubeMapTexture;
+    }());
+    EcognitaMathLib.WebGL_CubeMapTexture = WebGL_CubeMapTexture;
     var WebGL_RenderTarget = /** @class */ (function () {
         function WebGL_RenderTarget() {
             this.glName = gl.createFramebuffer();
@@ -1916,19 +1996,20 @@ var EcognitaMathLib;
  *
  *  NormalMapGenerator.ts
  *  tool for generate normal map from texture
+ *  using filesaver.js can export a nice texture,TODO
  *
  * ========================================================================= */
 /// <reference path="./lib/image_utils.ts" />
 /// <reference path="../../lib_webgl/ts_scripts/package/pkg/bumpMapping.ts" />
 var cvs_normalmap = document.getElementById('canvas_normalmap');
-cvs_normalmap.width = 256;
-cvs_normalmap.height = 256;
+cvs_normalmap.width = 512;
+cvs_normalmap.height = 512;
 var cvs_web3d = document.getElementById('canvas_web3d');
 cvs_web3d.width = 512;
 cvs_web3d.height = 512;
 var strength = parseFloat(document.getElementById('strength').value) / 10.0;
 var level = parseFloat(document.getElementById('level').value) / 10.0;
-var ImageViewer = new EcognitaMathLib.ImageView(cvs_normalmap, "./img/test1.png");
+var ImageViewer = new EcognitaMathLib.ImageView(cvs_normalmap, "./img/texture_info.png");
 ImageViewer.image.onload = (function () {
     ImageViewer.readImageData();
     ImageViewer.drawNormalMap(strength, level);
@@ -1943,7 +2024,6 @@ function updateLevel(val) {
     var bumpMapping = new EcognitaWeb3DFunction.BumpMapping(cvs_web3d, cvs_normalmap.toDataURL());
 }
 function ExportNormalMap() {
-    console.log("click");
     var image = cvs_normalmap.toDataURL("image/png").replace("image/png", "image/octet-stream");
     window.location.href = image;
 }

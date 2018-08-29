@@ -130,6 +130,111 @@ var Shaders = {
         '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n'           +
         '}\n',
 
+    'cubeTexBumpMapping-frag':
+        'precision mediump float;\n\n'                                                       +
+
+        'uniform vec3        eyePosition;\n'                                                 +
+        'uniform sampler2D   normalMap;\n'                                                   +
+        'uniform samplerCube cubeTexture;\n'                                                 +
+        'uniform bool        reflection;\n'                                                  +
+        'varying vec3        vPosition;\n'                                                   +
+        'varying vec2        vTextureCoord;\n'                                               +
+        'varying vec3        vNormal;\n'                                                     +
+        'varying vec3        tTangent;\n\n'                                                  +
+
+        'varying vec4        vColor;\n\n'                                                    +
+
+        '//reflect = I - 2.0 * dot(N, I) * N.\n'                                             +
+        'vec3 egt_reflect(vec3 p, vec3 n){\n'                                                +
+        '  return  p - 2.0* dot(n,p) * n;\n'                                                 +
+        '}\n\n'                                                                              +
+
+        'void main(void){\n'                                                                 +
+        '	vec3 tBinormal = cross(vNormal, tTangent);\n'                                      +
+        '	mat3 mView     = mat3(tTangent, tBinormal, vNormal);\n'                            +
+        '	vec3 mNormal   = mView * (texture2D(normalMap, vTextureCoord) * 2.0 - 1.0).rgb;\n' +
+        '	vec3 ref;\n'                                                                       +
+        '	if(reflection){\n'                                                                 +
+        '		ref = reflect(vPosition - eyePosition, mNormal);\n'                               +
+        '        //ref = egt_reflect(normalize(vPosition - eyePosition),normalize(vNormal'   +
+                                                                                 '));\n'     +
+        '	}else{\n'                                                                          +
+        '		ref = vNormal;\n'                                                                 +
+        '	}\n'                                                                               +
+        '	vec4 envColor  = textureCube(cubeTexture, ref);\n'                                 +
+        '	vec4 destColor = vColor * envColor;\n'                                             +
+        '	gl_FragColor   = destColor;\n'                                                     +
+        '}\n',
+
+    'cubeTexBumpMapping-vert':
+        'attribute vec3 position;\n'                              +
+        'attribute vec3 normal;\n'                                +
+        'attribute vec4 color;\n'                                 +
+        'attribute vec2 textureCoord;\n\n'                        +
+
+        'uniform   mat4 mMatrix;\n'                               +
+        'uniform   mat4 mvpMatrix;\n'                             +
+        'varying   vec3 vPosition;\n'                             +
+        'varying   vec2 vTextureCoord;\n'                         +
+        'varying   vec3 vNormal;\n'                               +
+        'varying   vec4 vColor;\n'                                +
+        'varying   vec3 tTangent;\n\n'                            +
+
+        'void main(void){\n'                                      +
+        '	vPosition   = (mMatrix * vec4(position, 1.0)).xyz;\n'   +
+        '	vNormal     = (mMatrix * vec4(normal, 0.0)).xyz;\n'     +
+        '	vTextureCoord = textureCoord;\n'                        +
+        '	vColor      = color;\n'                                 +
+        '	tTangent      = cross(vNormal, vec3(0.0, 1.0, 0.0));\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n'       +
+        '}\n',
+
+    'cubeTexMapping-frag':
+        'precision mediump float;\n\n'                                                     +
+
+        'uniform vec3        eyePosition;\n'                                               +
+        'uniform samplerCube cubeTexture;\n'                                               +
+        'uniform bool        reflection;\n'                                                +
+        'varying vec3        vPosition;\n'                                                 +
+        'varying vec3        vNormal;\n'                                                   +
+        'varying vec4        vColor;\n\n'                                                  +
+
+        '//reflect = I - 2.0 * dot(N, I) * N.\n'                                           +
+        'vec3 egt_reflect(vec3 p, vec3 n){\n'                                              +
+        '  return  p - 2.0* dot(n,p) * n;\n'                                               +
+        '}\n\n'                                                                            +
+
+        'void main(void){\n'                                                               +
+        '	vec3 ref;\n'                                                                     +
+        '	if(reflection){\n'                                                               +
+        '		ref = reflect(vPosition - eyePosition, vNormal);\n'                             +
+        '        //ref = egt_reflect(normalize(vPosition - eyePosition),normalize(vNormal' +
+                                                                                 '));\n'   +
+        '	}else{\n'                                                                        +
+        '		ref = vNormal;\n'                                                               +
+        '	}\n'                                                                             +
+        '	vec4 envColor  = textureCube(cubeTexture, ref);\n'                               +
+        '	vec4 destColor = vColor * envColor;\n'                                           +
+        '	gl_FragColor   = destColor;\n'                                                   +
+        '}\n',
+
+    'cubeTexMapping-vert':
+        'attribute vec3 position;\n'                            +
+        'attribute vec3 normal;\n'                              +
+        'attribute vec4 color;\n'                               +
+        'uniform   mat4 mMatrix;\n'                             +
+        'uniform   mat4 mvpMatrix;\n'                           +
+        'varying   vec3 vPosition;\n'                           +
+        'varying   vec3 vNormal;\n'                             +
+        'varying   vec4 vColor;\n\n'                            +
+
+        'void main(void){\n'                                    +
+        '	vPosition   = (mMatrix * vec4(position, 1.0)).xyz;\n' +
+        '	vNormal     = (mMatrix * vec4(normal, 0.0)).xyz;\n'   +
+        '	vColor      = color;\n'                               +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n'     +
+        '}\n',
+
     'demo-frag':
         'void main(void){\n'                          +
         '	gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n' +

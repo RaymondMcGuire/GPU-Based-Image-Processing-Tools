@@ -48,6 +48,67 @@ module EcognitaMathLib {
 
     }
 
+    export class WebGL_CubeMapTexture {
+        cubeSource:Array<any>;
+        cubeTarget:Array<any>;
+        cubeImage:Array<any>;
+        cubeTexture:any;
+        constructor(texArray:Array<any>) {
+            this.cubeSource = texArray;
+            this.cubeTarget = new Array( gl.TEXTURE_CUBE_MAP_POSITIVE_X,
+                                         gl.TEXTURE_CUBE_MAP_POSITIVE_Y,
+                                         gl.TEXTURE_CUBE_MAP_POSITIVE_Z,
+                                         gl.TEXTURE_CUBE_MAP_NEGATIVE_X,
+                                         gl.TEXTURE_CUBE_MAP_NEGATIVE_Y,
+                                         gl.TEXTURE_CUBE_MAP_NEGATIVE_Z);
+            this.loadCubeTexture();
+            this.cubeTexture = undefined;
+        }
+
+        loadCubeTexture(){
+            var cubeImage = new Array();
+            var loadFlagCnt =0;
+            this.cubeImage = cubeImage;
+            for(var i = 0; i < this.cubeSource.length; i++){
+                cubeImage[i] = new Object();
+                cubeImage[i].data = new Image();
+                cubeImage[i].data.src = this.cubeSource[i];
+                cubeImage[i].data.onload = (() => { 
+                    loadFlagCnt++;
+                    //check image load
+                    if(loadFlagCnt == this.cubeSource.length)
+                    {
+                        this.generateCubeMap(); 
+                    }
+                });
+            }
+        }
+
+        generateCubeMap(){
+
+            var tex = gl.createTexture();
+			
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+        
+            for(var j = 0; j < this.cubeSource.length; j++){
+                gl.texImage2D(this.cubeTarget[j], 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.cubeImage[j].data);
+            }
+        
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+        
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            
+            this.cubeTexture = tex;
+        
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+        }
+
+
+    }
+
     export class WebGL_RenderTarget{
         glName:any;
         constructor() {

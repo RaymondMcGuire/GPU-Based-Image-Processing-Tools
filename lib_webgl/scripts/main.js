@@ -1,16 +1,3 @@
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    }
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 /* =========================================================================
  *
  *  cv_imread.ts
@@ -540,6 +527,48 @@ var EcognitaMathLib;
         return WebGL_Texture;
     }());
     EcognitaMathLib.WebGL_Texture = WebGL_Texture;
+    var WebGL_CubeMapTexture = /** @class */ (function () {
+        function WebGL_CubeMapTexture(texArray) {
+            this.cubeSource = texArray;
+            this.cubeTarget = new Array(gl.TEXTURE_CUBE_MAP_POSITIVE_X, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z);
+            this.loadCubeTexture();
+            this.cubeTexture = undefined;
+        }
+        WebGL_CubeMapTexture.prototype.loadCubeTexture = function () {
+            var _this = this;
+            var cubeImage = new Array();
+            var loadFlagCnt = 0;
+            this.cubeImage = cubeImage;
+            for (var i = 0; i < this.cubeSource.length; i++) {
+                cubeImage[i] = new Object();
+                cubeImage[i].data = new Image();
+                cubeImage[i].data.src = this.cubeSource[i];
+                cubeImage[i].data.onload = (function () {
+                    loadFlagCnt++;
+                    //check image load
+                    if (loadFlagCnt == _this.cubeSource.length) {
+                        _this.generateCubeMap();
+                    }
+                });
+            }
+        };
+        WebGL_CubeMapTexture.prototype.generateCubeMap = function () {
+            var tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+            for (var j = 0; j < this.cubeSource.length; j++) {
+                gl.texImage2D(this.cubeTarget[j], 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.cubeImage[j].data);
+            }
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            this.cubeTexture = tex;
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+        };
+        return WebGL_CubeMapTexture;
+    }());
+    EcognitaMathLib.WebGL_CubeMapTexture = WebGL_CubeMapTexture;
     var WebGL_RenderTarget = /** @class */ (function () {
         function WebGL_RenderTarget() {
             this.glName = gl.createFramebuffer();
@@ -862,6 +891,93 @@ var Shaders = {
         '	vColor         = color;\n' +
         '	vTextureCoord  = textureCoord;\n' +
         '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'cubeTexBumpMapping-frag': 'precision mediump float;\n\n' +
+        'uniform vec3        eyePosition;\n' +
+        'uniform sampler2D   normalMap;\n' +
+        'uniform samplerCube cubeTexture;\n' +
+        'uniform bool        reflection;\n' +
+        'varying vec3        vPosition;\n' +
+        'varying vec2        vTextureCoord;\n' +
+        'varying vec3        vNormal;\n' +
+        'varying vec3        tTangent;\n\n' +
+        'varying vec4        vColor;\n\n' +
+        '//reflect = I - 2.0 * dot(N, I) * N.\n' +
+        'vec3 egt_reflect(vec3 p, vec3 n){\n' +
+        '  return  p - 2.0* dot(n,p) * n;\n' +
+        '}\n\n' +
+        'void main(void){\n' +
+        '	vec3 tBinormal = cross(vNormal, tTangent);\n' +
+        '	mat3 mView     = mat3(tTangent, tBinormal, vNormal);\n' +
+        '	vec3 mNormal   = mView * (texture2D(normalMap, vTextureCoord) * 2.0 - 1.0).rgb;\n' +
+        '	vec3 ref;\n' +
+        '	if(reflection){\n' +
+        '		ref = reflect(vPosition - eyePosition, mNormal);\n' +
+        '        //ref = egt_reflect(normalize(vPosition - eyePosition),normalize(vNormal' +
+        '));\n' +
+        '	}else{\n' +
+        '		ref = vNormal;\n' +
+        '	}\n' +
+        '	vec4 envColor  = textureCube(cubeTexture, ref);\n' +
+        '	vec4 destColor = vColor * envColor;\n' +
+        '	gl_FragColor   = destColor;\n' +
+        '}\n',
+    'cubeTexBumpMapping-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'attribute vec2 textureCoord;\n\n' +
+        'uniform   mat4 mMatrix;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec3 vPosition;\n' +
+        'varying   vec2 vTextureCoord;\n' +
+        'varying   vec3 vNormal;\n' +
+        'varying   vec4 vColor;\n' +
+        'varying   vec3 tTangent;\n\n' +
+        'void main(void){\n' +
+        '	vPosition   = (mMatrix * vec4(position, 1.0)).xyz;\n' +
+        '	vNormal     = (mMatrix * vec4(normal, 0.0)).xyz;\n' +
+        '	vTextureCoord = textureCoord;\n' +
+        '	vColor      = color;\n' +
+        '	tTangent      = cross(vNormal, vec3(0.0, 1.0, 0.0));\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'cubeTexMapping-frag': 'precision mediump float;\n\n' +
+        'uniform vec3        eyePosition;\n' +
+        'uniform samplerCube cubeTexture;\n' +
+        'uniform bool        reflection;\n' +
+        'varying vec3        vPosition;\n' +
+        'varying vec3        vNormal;\n' +
+        'varying vec4        vColor;\n\n' +
+        '//reflect = I - 2.0 * dot(N, I) * N.\n' +
+        'vec3 egt_reflect(vec3 p, vec3 n){\n' +
+        '  return  p - 2.0* dot(n,p) * n;\n' +
+        '}\n\n' +
+        'void main(void){\n' +
+        '	vec3 ref;\n' +
+        '	if(reflection){\n' +
+        '		ref = reflect(vPosition - eyePosition, vNormal);\n' +
+        '        //ref = egt_reflect(normalize(vPosition - eyePosition),normalize(vNormal' +
+        '));\n' +
+        '	}else{\n' +
+        '		ref = vNormal;\n' +
+        '	}\n' +
+        '	vec4 envColor  = textureCube(cubeTexture, ref);\n' +
+        '	vec4 destColor = vColor * envColor;\n' +
+        '	gl_FragColor   = destColor;\n' +
+        '}\n',
+    'cubeTexMapping-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mMatrix;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec3 vPosition;\n' +
+        'varying   vec3 vNormal;\n' +
+        'varying   vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	vPosition   = (mMatrix * vec4(position, 1.0)).xyz;\n' +
+        '	vNormal     = (mMatrix * vec4(normal, 0.0)).xyz;\n' +
+        '	vColor      = color;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'demo-frag': 'void main(void){\n' +
         '	gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n' +
@@ -1357,189 +1473,184 @@ var EcognitaMathLib;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
- *  bumpMapping.ts
- *  create a bump mapping demo(include some simple web3d function)
- *  v0.1
+ *  demo23.ts
+ *  cube texture with bump mapping
  *
  * ========================================================================= */
-/// <reference path="../../lib/cv_imread.ts" />
-/// <reference path="../../lib/extra_utils.ts" />
-/// <reference path="../../lib/webgl_matrix.ts" />
-/// <reference path="../../lib/webgl_quaternion.ts" />
-/// <reference path="../../lib/webgl_utils.ts" />
-/// <reference path="../../lib/webgl_shaders.ts" />
-/// <reference path="../../lib/webgl_model.ts" />
-var EcognitaWeb3DFunction;
-(function (EcognitaWeb3DFunction) {
-    var InitWeb3DEnv = /** @class */ (function () {
-        function InitWeb3DEnv(cvs, shader_name) {
-            this.canvas = cvs;
-            this.chkWebGLEnvi();
-            this.vbo = new Array();
-            this.ibo = new Array();
-            this.Texture = new Array();
-            this.shader = new EcognitaMathLib.WebGL_Shader(Shaders, shader_name + "-vert", shader_name + "-frag");
-            this.matUtil = new EcognitaMathLib.WebGLMatrix();
-            this.quatUtil = new EcognitaMathLib.WebGLQuaternion();
-            this.extHammer = new EcognitaMathLib.Hammer_Utils(this.canvas);
-        }
-        InitWeb3DEnv.prototype.loadTexture = function (file_name) {
-            var _this = this;
-            var tex = null;
-            var image = EcognitaMathLib.imread(file_name);
-            image.onload = (function () {
-                tex = new EcognitaMathLib.WebGL_Texture(4, false, image);
-                _this.Texture.push(tex);
-            });
-        };
-        InitWeb3DEnv.prototype.chkWebGLEnvi = function () {
-            try {
-                gl = this.canvas.getContext("webgl") || this.canvas.getContext("experimental-webgl");
-            }
-            catch (e) { }
-            if (!gl)
-                throw new Error("Could not initialise WebGL");
-        };
-        return InitWeb3DEnv;
-    }());
-    EcognitaWeb3DFunction.InitWeb3DEnv = InitWeb3DEnv;
-    var BumpMapping = /** @class */ (function (_super) {
-        __extends(BumpMapping, _super);
-        function BumpMapping(cvs) {
-            var _this = _super.call(this, cvs, "bumpMapping") || this;
-            _this.initModel();
-            _this.settingUniform();
-            _this.regisEvent();
-            _this.loadTexture("./img/tex5.png");
-            _this.settingRenderPipeline();
-            _this.regisLoopFunc();
-            return _this;
-        }
-        BumpMapping.prototype.initModel = function () {
-            var cubeData = new EcognitaMathLib.CubeModel(2, [6, 6, 6, 255], true, true);
-            var vbo_cube = new EcognitaMathLib.WebGL_VertexBuffer();
-            var ibo_cube = new EcognitaMathLib.WebGL_IndexBuffer();
-            this.vbo.push(vbo_cube);
-            this.ibo.push(ibo_cube);
-            vbo_cube.addAttribute("position", 3, gl.FLOAT, false);
-            vbo_cube.addAttribute("normal", 3, gl.FLOAT, false);
-            vbo_cube.addAttribute("color", 4, gl.FLOAT, false);
-            vbo_cube.addAttribute("textureCoord", 2, gl.FLOAT, false);
-            vbo_cube.init(cubeData.data.length / 12);
-            vbo_cube.copy(cubeData.data);
-            vbo_cube.bind(this.shader);
-            ibo_cube.init(cubeData.index);
-            ibo_cube.bind();
-            this.shader.bind();
-        };
-        BumpMapping.prototype.settingUniform = function () {
-            var shader = this.shader;
-            var uniLocation = new Array();
-            uniLocation.push(shader.uniformIndex('mMatrix'));
-            uniLocation.push(shader.uniformIndex('mvpMatrix'));
-            uniLocation.push(shader.uniformIndex('invMatrix'));
-            uniLocation.push(shader.uniformIndex('lightPosition'));
-            uniLocation.push(shader.uniformIndex('eyePosition'));
-            uniLocation.push(shader.uniformIndex('texture'));
-            this.uniLocation = uniLocation;
-        };
-        BumpMapping.prototype.settingRenderPipeline = function () {
-            gl.enable(gl.DEPTH_TEST);
-            gl.depthFunc(gl.LEQUAL);
-        };
-        BumpMapping.prototype.regisEvent = function () {
-            var _this = this;
-            var lastPosX = 0;
-            var lastPosY = 0;
-            var isDragging = false;
-            var hammer = this.extHammer;
-            hammer.on_pan = function (ev) {
-                var elem = ev.target;
-                if (!isDragging) {
-                    isDragging = true;
-                    lastPosX = elem.offsetLeft;
-                    lastPosY = elem.offsetTop;
-                }
-                var posX = ev.center.x - lastPosX;
-                var posY = ev.center.y - lastPosY;
-                var cw = _this.canvas.width;
-                var ch = _this.canvas.height;
-                var wh = 1 / Math.sqrt(cw * cw + ch * ch);
-                var x = posX - cw * 0.5;
-                var y = posY - ch * 0.5;
-                var sq = Math.sqrt(x * x + y * y);
-                var r = sq * 2.0 * Math.PI * wh;
-                if (sq != 1) {
-                    sq = 1 / sq;
-                    x *= sq;
-                    y *= sq;
-                }
-                _this.usrQuaternion = _this.quatUtil.rotate(r, [y, x, 0.0]);
-                if (ev.isFinal) {
-                    isDragging = false;
-                }
-            };
-            hammer.enablePan();
-        };
-        BumpMapping.prototype.regisLoopFunc = function () {
-            var _this = this;
-            var step = 0;
-            var camUpDirection = new Array();
-            var eyePosition = new Array();
-            var lightPosition = [-10.0, 10.0, 10.0];
-            var m = this.matUtil;
-            var q = this.quatUtil;
-            var mMatrix = m.identity(m.create());
-            var vMatrix = m.identity(m.create());
-            var pMatrix = m.identity(m.create());
-            var tmpMatrix = m.identity(m.create());
-            var mvpMatrix = m.identity(m.create());
-            var invMatrix = m.identity(m.create());
-            this.usrQuaternion = q.identity(q.create());
-            var uniLocation = this.uniLocation;
-            var loop = function () {
-                gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                gl.clearDepth(1.0);
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                step++;
-                var rad = (step % 360) * Math.PI / 180;
-                camUpDirection = q.ToV3([0.0, 1.0, 0.0], _this.usrQuaternion);
-                eyePosition = q.ToV3([0.0, 0.0, 5.0], _this.usrQuaternion);
-                //camera setting
-                vMatrix = m.viewMatrix(eyePosition, [0, 0, 0], camUpDirection);
-                pMatrix = m.perspectiveMatrix(45, _this.canvas.width / _this.canvas.height, 0.1, 100);
-                tmpMatrix = m.multiply(pMatrix, vMatrix);
-                if (_this.Texture[0] != null) {
-                    _this.Texture[0].bind(_this.Texture[0].texture);
-                }
-                mMatrix = m.identity(mMatrix);
-                mMatrix = m.rotate(mMatrix, -rad, [0, 1, 0]);
-                mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-                invMatrix = m.inverse(mMatrix);
-                gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
-                gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
-                gl.uniformMatrix4fv(uniLocation[2], false, invMatrix);
-                gl.uniform3fv(uniLocation[3], lightPosition);
-                gl.uniform3fv(uniLocation[4], eyePosition);
-                gl.uniform1i(uniLocation[5], 0);
-                _this.ibo[0].draw(gl.TRIANGLES);
-                gl.flush();
-                requestAnimationFrame(loop);
-            };
-            loop();
-        };
-        return BumpMapping;
-    }(InitWeb3DEnv));
-    EcognitaWeb3DFunction.BumpMapping = BumpMapping;
-})(EcognitaWeb3DFunction || (EcognitaWeb3DFunction = {}));
-/* =========================================================================
- *
- *  pkgBumpMapping.ts
- *  package for bump mapping
- *
- * ========================================================================= */
-/// <reference path="./pkg/bumpMapping.ts" />
+/// <reference path="../lib/cv_imread.ts" />
+/// <reference path="../lib/extra_utils.ts" />
+/// <reference path="../lib/webgl_matrix.ts" />
+/// <reference path="../lib/webgl_quaternion.ts" />
+/// <reference path="../lib/webgl_utils.ts" />
+/// <reference path="../lib/webgl_shaders.ts" />
+/// <reference path="../lib/webgl_model.ts" />
 var canvas = document.getElementById('canvas');
 canvas.width = 500;
-canvas.height = 300;
-var bumpMapping = new EcognitaWeb3DFunction.BumpMapping(canvas);
+canvas.height = 500;
+try {
+    var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+}
+catch (e) { }
+if (!gl)
+    throw new Error("Could not initialise WebGL");
+var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "cubeTexBumpMapping-vert", "cubeTexBumpMapping-frag");
+//cube texture
+var cubeData = new EcognitaMathLib.CubeModel(2, [1, 1, 1, 1], true, true);
+var vbo_cube = new EcognitaMathLib.WebGL_VertexBuffer();
+var ibo_cube = new EcognitaMathLib.WebGL_IndexBuffer();
+vbo_cube.addAttribute("position", 3, gl.FLOAT, false);
+vbo_cube.addAttribute("normal", 3, gl.FLOAT, false);
+vbo_cube.addAttribute("color", 4, gl.FLOAT, false);
+vbo_cube.addAttribute("textureCoord", 2, gl.FLOAT, false);
+vbo_cube.init(cubeData.data.length / 12);
+vbo_cube.copy(cubeData.data);
+vbo_cube.bind(shader);
+ibo_cube.init(cubeData.index);
+ibo_cube.bind();
+//scene model : sphere
+var sphereData = new EcognitaMathLib.ShpereModel(64, 64, 2.5, [1.0, 1.0, 1.0, 1.0], true, true);
+var vbo_sphere = new EcognitaMathLib.WebGL_VertexBuffer();
+var ibo_sphere = new EcognitaMathLib.WebGL_IndexBuffer();
+vbo_sphere.addAttribute("position", 3, gl.FLOAT, false);
+vbo_sphere.addAttribute("normal", 3, gl.FLOAT, false);
+vbo_sphere.addAttribute("color", 4, gl.FLOAT, false);
+vbo_sphere.addAttribute("textureCoord", 2, gl.FLOAT, false);
+vbo_sphere.init(sphereData.data.length / 12);
+vbo_sphere.copy(sphereData.data);
+vbo_sphere.bind(shader);
+ibo_sphere.init(sphereData.index);
+ibo_sphere.bind();
+//scene model : torus
+var torusData = new EcognitaMathLib.TorusModel(64, 64, 1.0, 2.0, [1.0, 1.0, 1.0, 1.0], true, true);
+var vbo_torus = new EcognitaMathLib.WebGL_VertexBuffer();
+var ibo_torus = new EcognitaMathLib.WebGL_IndexBuffer();
+vbo_torus.addAttribute("position", 3, gl.FLOAT, false);
+vbo_torus.addAttribute("normal", 3, gl.FLOAT, false);
+vbo_torus.addAttribute("color", 4, gl.FLOAT, false);
+vbo_torus.addAttribute("textureCoord", 2, gl.FLOAT, false);
+vbo_torus.init(torusData.data.length / 12);
+vbo_torus.copy(torusData.data);
+vbo_torus.bind(shader);
+ibo_torus.init(torusData.index);
+ibo_torus.bind();
+shader.bind();
+var uniLocation = new Array();
+uniLocation.push(shader.uniformIndex('mMatrix'));
+uniLocation.push(shader.uniformIndex('mvpMatrix'));
+uniLocation.push(shader.uniformIndex('eyePosition'));
+uniLocation.push(shader.uniformIndex('normalMap'));
+uniLocation.push(shader.uniformIndex('cubeTexture'));
+uniLocation.push(shader.uniformIndex('reflection'));
+var m = new EcognitaMathLib.WebGLMatrix();
+var q = new EcognitaMathLib.WebGLQuaternion();
+var mMatrix = m.identity(m.create());
+var vMatrix = m.identity(m.create());
+var pMatrix = m.identity(m.create());
+var tmpMatrix = m.identity(m.create());
+var mvpMatrix = m.identity(m.create());
+var xQuaternion = q.identity(q.create());
+var lastPosX = 0;
+var lastPosY = 0;
+var isDragging = false;
+var hammer = new EcognitaMathLib.Hammer_Utils(canvas);
+hammer.on_pan = function (ev) {
+    var elem = ev.target;
+    if (!isDragging) {
+        isDragging = true;
+        lastPosX = elem.offsetLeft;
+        lastPosY = elem.offsetTop;
+    }
+    var posX = ev.center.x - lastPosX;
+    var posY = ev.center.y - lastPosY;
+    var cw = canvas.width;
+    var ch = canvas.height;
+    var wh = 1 / Math.sqrt(cw * cw + ch * ch);
+    var x = posX - cw * 0.5;
+    var y = posY - ch * 0.5;
+    var sq = Math.sqrt(x * x + y * y);
+    var r = sq * 2.0 * Math.PI * wh;
+    if (sq != 1) {
+        sq = 1 / sq;
+        x *= sq;
+        y *= sq;
+    }
+    xQuaternion = q.rotate(r, [y, x, 0.0]);
+    if (ev.isFinal) {
+        isDragging = false;
+    }
+};
+hammer.enablePan();
+//depth test
+gl.enable(gl.DEPTH_TEST);
+gl.depthFunc(gl.LEQUAL);
+//cube texture mapping
+var cubeImagePath = "./img/cube_texture/";
+var texArray = new Array(cubeImagePath + 'px.png', cubeImagePath + 'py.png', cubeImagePath + 'pz.png', cubeImagePath + 'nx.png', cubeImagePath + 'ny.png', cubeImagePath + 'nz.png');
+var cubeTexureMapping = new EcognitaMathLib.WebGL_CubeMapTexture(texArray);
+var tex_normalMap = null;
+var img_normalMap = EcognitaMathLib.imread("./img/normal_info.png");
+img_normalMap.onload = function () {
+    tex_normalMap = new EcognitaMathLib.WebGL_Texture(4, false, img_normalMap);
+};
+var eyePosition = [0.0, 0.0, 20.0];
+var cnt = 0;
+(function () {
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    cnt++;
+    var rad = (cnt % 360) * Math.PI / 180;
+    var rad2 = ((cnt + 180) % 360) * Math.PI / 180;
+    var camUpDirection = new Array();
+    camUpDirection = q.ToV3([0.0, 1.0, 0.0], xQuaternion);
+    eyePosition = q.ToV3([0.0, 0.0, 20.0], xQuaternion);
+    //camera setting
+    vMatrix = m.viewMatrix(eyePosition, [0, 0, 0], camUpDirection);
+    pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 200);
+    tmpMatrix = m.multiply(pMatrix, vMatrix);
+    //background cube texture
+    vbo_cube.bind(shader);
+    ibo_cube.bind();
+    if (tex_normalMap != null) {
+        gl.activeTexture(gl.TEXTURE0);
+        tex_normalMap.bind(tex_normalMap.texture);
+        gl.uniform1i(uniLocation[3], 0);
+    }
+    if (cubeTexureMapping.cubeTexture != undefined) {
+        gl.activeTexture(gl.TEXTURE1);
+        gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeTexureMapping.cubeTexture);
+        gl.uniform1i(uniLocation[4], 1);
+    }
+    mMatrix = m.identity(mMatrix);
+    mMatrix = m.scale(mMatrix, [100.0, 100.0, 100.0]);
+    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
+    gl.uniform3fv(uniLocation[2], eyePosition);
+    gl.uniform1i(uniLocation[5], false);
+    ibo_cube.draw(gl.TRIANGLES);
+    //draw sphere
+    vbo_sphere.bind(shader);
+    ibo_sphere.bind();
+    mMatrix = m.identity(mMatrix);
+    mMatrix = m.rotate(mMatrix, rad, [0, 0, 1]);
+    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
+    gl.uniform1i(uniLocation[5], true);
+    ibo_sphere.draw(gl.TRIANGLES);
+    //draw torus
+    vbo_torus.bind(shader);
+    ibo_torus.bind();
+    mMatrix = m.identity(mMatrix);
+    mMatrix = m.rotate(mMatrix, rad2, [0, 0, 1]);
+    mMatrix = m.translate(mMatrix, [5.0, 0.0, 0.0]);
+    mMatrix = m.rotate(mMatrix, rad, [1, 0, 1]);
+    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[1], false, mvpMatrix);
+    gl.uniform1i(uniLocation[5], true);
+    ibo_torus.draw(gl.TRIANGLES);
+    gl.flush();
+    setTimeout(arguments.callee, 1000 / 30);
+})();
