@@ -487,6 +487,49 @@ var Shaders = {
         '    gl_PointSize  = pointSize;\n'                       +
         '}\n',
 
+    'refractionMapping-frag':
+        'precision mediump float;\n\n'                                        +
+
+        'uniform vec3        eyePosition;\n'                                  +
+        'uniform samplerCube cubeTexture;\n'                                  +
+        'uniform bool        refraction;\n'                                   +
+        'varying vec3        vPosition;\n'                                    +
+        'varying vec3        vNormal;\n'                                      +
+        'varying vec4        vColor;\n\n'                                     +
+
+        '//reflact calculation TODO\n'                                        +
+        '//vec3 egt_refract(vec3 p, vec3 n,float eta){\n'                     +
+        '//}\n\n'                                                             +
+
+        'void main(void){\n'                                                  +
+        '	vec3 ref;\n'                                                        +
+        '	if(refraction){\n'                                                  +
+        '		ref = refract(normalize(vPosition - eyePosition), vNormal,0.6);\n' +
+        '	}else{\n'                                                           +
+        '		ref = vNormal;\n'                                                  +
+        '	}\n'                                                                +
+        '	vec4 envColor  = textureCube(cubeTexture, ref);\n'                  +
+        '	vec4 destColor = vColor * envColor;\n'                              +
+        '	gl_FragColor   = destColor;\n'                                      +
+        '}\n',
+
+    'refractionMapping-vert':
+        'attribute vec3 position;\n'                                     +
+        'attribute vec3 normal;\n'                                       +
+        'attribute vec4 color;\n'                                        +
+        'uniform   mat4 mMatrix;\n'                                      +
+        'uniform   mat4 mvpMatrix;\n'                                    +
+        'varying   vec3 vPosition;\n'                                    +
+        'varying   vec3 vNormal;\n'                                      +
+        'varying   vec4 vColor;\n\n'                                     +
+
+        'void main(void){\n'                                             +
+        '	vPosition   = (mMatrix * vec4(position, 1.0)).xyz;\n'          +
+        '	vNormal     = normalize((mMatrix * vec4(normal, 0.0)).xyz);\n' +
+        '	vColor      = color;\n'                                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n'              +
+        '}\n',
+
     'specular-frag':
         'precision mediump float;\n\n' +
 

@@ -269,6 +269,12 @@ module EcognitaMathLib {
             this.elementSize += size*GetGLTypeSize(type);
         }
 
+        addAttributes(attrArray:Array<string>,sizeArray:Array<number>){
+            for(var i=0;i<attrArray.length;i++){
+                this.addAttribute(attrArray[i],sizeArray[i],gl.FLOAT,false);
+            }
+        }
+
         init(numVerts:number) {
             this.length = numVerts;
             this.glName = gl.createBuffer();
@@ -348,10 +354,9 @@ module EcognitaMathLib {
 
         renderToTexure(){
 
-
             gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
     
-            //make sure we have enought memory to render the widthxheight size texture
+            //make sure we have enought memory to render the width x height size texture
             gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
     
             //texture settings
@@ -361,6 +366,26 @@ module EcognitaMathLib {
             //attach framebuff to texture
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
     
+        }
+
+        renderToCubeTexture(cubeTarget:Array<any>){
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.targetTexture);
+
+            for(var i = 0; i < cubeTarget.length; i++){
+                gl.texImage2D(cubeTarget[i], 0, gl.RGBA,  this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            }
+            
+            // テクスチャパラメータ
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        }
+
+        releaseCubeTex(){
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         }
 
         release(){
