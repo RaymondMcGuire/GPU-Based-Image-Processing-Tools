@@ -633,5 +633,45 @@ var Shaders = {
         '    vColor        = color;\n'                           +
         '    vTextureCoord = textureCoord;\n'                    +
         '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
+    'toonShading-frag':
+        'precision mediump float;\n\n'                                               +
+
+        'uniform mat4      invMatrix;\n'                                             +
+        'uniform vec3      lightDirection;\n'                                        +
+        'uniform sampler2D texture;\n'                                               +
+        'uniform vec4      edgeColor;\n'                                             +
+        'varying vec3      vNormal;\n'                                               +
+        'varying vec4      vColor;\n\n'                                              +
+
+        'void main(void){\n'                                                         +
+        '	if(edgeColor.a > 0.0){\n'                                                  +
+        '		gl_FragColor   = edgeColor;\n'                                            +
+        '	}else{\n'                                                                  +
+        '		vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '		float diffuse  = clamp(dot(vNormal, invLight), 0.1, 1.0);\n'              +
+        '		vec4  smpColor = texture2D(texture, vec2(diffuse, 0.0));\n'               +
+        '		gl_FragColor   = vColor * smpColor;\n'                                    +
+        '	}\n'                                                                       +
+        '}\n',
+
+    'toonShading-vert':
+        'attribute vec3 position;\n'                   +
+        'attribute vec3 normal;\n'                     +
+        'attribute vec4 color;\n'                      +
+        'uniform   mat4 mvpMatrix;\n'                  +
+        'uniform   bool edge;\n'                       +
+        'varying   vec3 vNormal;\n'                    +
+        'varying   vec4 vColor;\n\n'                   +
+
+        'void main(void){\n'                           +
+        '	vec3 pos    = position;\n'                   +
+        '	if(edge){\n'                                 +
+        '		pos    += normal * 0.05;\n'                 +
+        '	}\n'                                         +
+        '	vNormal     = normal;\n'                     +
+        '	vColor      = color;\n'                      +
+        '	gl_Position = mvpMatrix * vec4(pos, 1.0);\n' +
         '}\n'
 }

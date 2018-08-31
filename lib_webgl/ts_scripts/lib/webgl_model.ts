@@ -12,6 +12,7 @@
         verCrossSectionSmooth:number;
         horRadius:number;
         verRadius:number;
+        normal:Array<number>;
         //px py pz cr cg cb ca
         data:Array<number>;
         index:Array<number>;
@@ -22,6 +23,7 @@
             this.horRadius = hr;
             this.data = new Array<number>();
             this.index = new Array<number>();
+            this.normal = new Array<number>();
             this.preCalculate(color,need_normal,need_texture);
         }
 
@@ -42,6 +44,7 @@
                    if(need_normal){
                         var nx = verX * Math.cos(horIncrement);
                         var nz = verX * Math.sin(horIncrement);
+                        this.normal.push(nx,verY,nz);
                         this.data.push(nx,verY,nz);
                    }
                    //hsv2rgb
@@ -109,10 +112,11 @@
                         var nx = verY * Math.cos(horIncrement);
                         var nz = verY * Math.sin(horIncrement);
                         this.data.push(nx,verX,nz);
+
                    }
                    //hsv2rgb
                    if(color == undefined){
-                        var rgba = HSV2RGB(360/this.horCrossSectionSmooth *ii, 1, 1, 1);
+                        var rgba = HSV2RGB(360/this.horCrossSectionSmooth *i, 1, 1, 1);
                         this.data.push(rgba[0],rgba[1],rgba[2],rgba[3]);
                    }else{
                         this.data.push(color[0],color[1],color[2],color[3]);
