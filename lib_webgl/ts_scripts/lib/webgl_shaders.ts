@@ -487,6 +487,45 @@ var Shaders = {
         '    gl_PointSize  = pointSize;\n'                       +
         '}\n',
 
+    'projTexture-frag':
+        'precision mediump float;\n\n'                                     +
+
+        'uniform mat4      invMatrix;\n'                                   +
+        'uniform vec3      lightPosition;\n'                               +
+        'uniform sampler2D texture;\n'                                     +
+        'varying vec3      vPosition;\n'                                   +
+        'varying vec3      vNormal;\n'                                     +
+        'varying vec4      vColor;\n'                                      +
+        'varying vec4      vTexCoord;\n\n'                                 +
+
+        'void main(void){\n'                                               +
+        '	vec3  light    = lightPosition - vPosition;\n'                   +
+        '	vec3  invLight = normalize(invMatrix * vec4(light, 0.0)).xyz;\n' +
+        '	float diffuse  = clamp(dot(vNormal, invLight), 0.1, 1.0);\n'     +
+        '	vec4  smpColor = texture2DProj(texture, vTexCoord);\n'           +
+        '	gl_FragColor   = vColor * (0.5 + diffuse) * smpColor;\n'         +
+        '}\n',
+
+    'projTexture-vert':
+        'attribute vec3 position;\n'                            +
+        'attribute vec3 normal;\n'                              +
+        'attribute vec4 color;\n'                               +
+        'uniform   mat4 mMatrix;\n'                             +
+        'uniform   mat4 tMatrix;\n'                             +
+        'uniform   mat4 mvpMatrix;\n'                           +
+        'varying   vec3 vPosition;\n'                           +
+        'varying   vec3 vNormal;\n'                             +
+        'varying   vec4 vColor;\n'                              +
+        'varying   vec4 vTexCoord;\n\n'                         +
+
+        'void main(void){\n'                                    +
+        '	vPosition   = (mMatrix * vec4(position, 1.0)).xyz;\n' +
+        '	vNormal     = normal;\n'                              +
+        '	vColor      = color;\n'                               +
+        '	vTexCoord   = tMatrix * vec4(vPosition, 1.0);\n'      +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n'     +
+        '}\n',
+
     'refractionMapping-frag':
         'precision mediump float;\n\n'                                        +
 

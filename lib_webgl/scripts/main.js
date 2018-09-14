@@ -511,7 +511,8 @@ var EcognitaMathLib;
     }
     EcognitaMathLib.GetGLTypeSize = GetGLTypeSize;
     var WebGL_Texture = /** @class */ (function () {
-        function WebGL_Texture(channels, isFloat, texels) {
+        function WebGL_Texture(channels, isFloat, texels, texType) {
+            if (texType === void 0) { texType = gl.REPEAT; }
             this.type = isFloat ? gl.FLOAT : gl.UNSIGNED_BYTE;
             this.format = [gl.LUMINANCE, gl.RG, gl.RGB, gl.RGBA][channels - 1];
             this.glName = gl.createTexture();
@@ -520,8 +521,8 @@ var EcognitaMathLib;
             gl.generateMipmap(gl.TEXTURE_2D);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, texType);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, texType);
             this.texture = this.glName;
             this.bind(null);
         }
@@ -1189,6 +1190,38 @@ var Shaders = {
         '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
         '    gl_PointSize  = pointSize;\n' +
         '}\n',
+    'projTexture-frag': 'precision mediump float;\n\n' +
+        'uniform mat4      invMatrix;\n' +
+        'uniform vec3      lightPosition;\n' +
+        'uniform sampler2D texture;\n' +
+        'varying vec3      vPosition;\n' +
+        'varying vec3      vNormal;\n' +
+        'varying vec4      vColor;\n' +
+        'varying vec4      vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vec3  light    = lightPosition - vPosition;\n' +
+        '	vec3  invLight = normalize(invMatrix * vec4(light, 0.0)).xyz;\n' +
+        '	float diffuse  = clamp(dot(vNormal, invLight), 0.1, 1.0);\n' +
+        '	vec4  smpColor = texture2DProj(texture, vTexCoord);\n' +
+        '	gl_FragColor   = vColor * (0.5 + diffuse) * smpColor;\n' +
+        '}\n',
+    'projTexture-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mMatrix;\n' +
+        'uniform   mat4 tMatrix;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec3 vPosition;\n' +
+        'varying   vec3 vNormal;\n' +
+        'varying   vec4 vColor;\n' +
+        'varying   vec4 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vPosition   = (mMatrix * vec4(position, 1.0)).xyz;\n' +
+        '	vNormal     = normal;\n' +
+        '	vColor      = color;\n' +
+        '	vTexCoord   = tMatrix * vec4(vPosition, 1.0);\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'refractionMapping-frag': 'precision mediump float;\n\n' +
         'uniform vec3        eyePosition;\n' +
         'uniform samplerCube cubeTexture;\n' +
@@ -1382,6 +1415,45 @@ var EcognitaMathLib;
 /// <reference path="./cv_colorSpace.ts" />
 var EcognitaMathLib;
 (function (EcognitaMathLib) {
+    var BoardModel = /** @class */ (function () {
+        function BoardModel(need_normal, need_color) {
+            if (need_normal === void 0) { need_normal = true; }
+            if (need_color === void 0) { need_color = true; }
+            this.data = new Array();
+            var position = [
+                -1.0, 0.0, -1.0,
+                1.0, 0.0, -1.0,
+                -1.0, 0.0, 1.0,
+                1.0, 0.0, 1.0
+            ];
+            var normal = [
+                0.0, 1.0, 0.0,
+                0.0, 1.0, 0.0,
+                0.0, 1.0, 0.0,
+                0.0, 1.0, 0.0
+            ];
+            var color = [
+                1.0, 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.0
+            ];
+            this.index = [
+                0, 1, 2,
+                3, 2, 1
+            ];
+            for (var i = 0; i < 4; i++) {
+                this.data.push(position[i * 3 + 0], position[i * 3 + 1], position[i * 3 + 2]);
+                if (need_normal)
+                    this.data.push(normal[i * 3 + 0], normal[i * 3 + 1], normal[i * 3 + 2]);
+                if (need_color)
+                    this.data.push(color[i * 4 + 0], color[i * 4 + 1], color[i * 4 + 2], color[i * 4 + 3]);
+                //console.log(this.data);
+            }
+        }
+        return BoardModel;
+    }());
+    EcognitaMathLib.BoardModel = BoardModel;
     var TorusModel = /** @class */ (function () {
         function TorusModel(vcrs, hcrs, vr, hr, color, need_normal, need_texture) {
             if (need_texture === void 0) { need_texture = false; }
@@ -1567,8 +1639,8 @@ var EcognitaMathLib;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
- *  demo26.ts
- *  toon shading
+ *  demo27.ts
+ *  projection texture
  *
  * ========================================================================= */
 /// <reference path="../lib/cv_imread.ts" />
@@ -1587,9 +1659,9 @@ try {
 catch (e) { }
 if (!gl)
     throw new Error("Could not initialise WebGL");
-var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "toonShading-vert", "toonShading-frag");
+var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "projTexture-vert", "projTexture-frag");
 //scene model : torus
-var torusData = new EcognitaMathLib.TorusModel(64, 64, 0.5, 2.5, undefined, true, false);
+var torusData = new EcognitaMathLib.TorusModel(64, 64, 0.5, 2.5, [1.0, 1.0, 1.0, 1.0], true, false);
 var vbo_torus = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo_torus = new EcognitaMathLib.WebGL_IndexBuffer();
 vbo_torus.addAttribute("position", 3, gl.FLOAT, false);
@@ -1598,24 +1670,24 @@ vbo_torus.addAttribute("color", 4, gl.FLOAT, false);
 vbo_torus.init(torusData.data.length / 10);
 vbo_torus.copy(torusData.data);
 ibo_torus.init(torusData.index);
-//scene model : sphere
-var sphereData = new EcognitaMathLib.ShpereModel(64, 64, 1.5, undefined, true, false);
-var vbo_sphere = new EcognitaMathLib.WebGL_VertexBuffer();
-var ibo_sphere = new EcognitaMathLib.WebGL_IndexBuffer();
-vbo_sphere.addAttribute("position", 3, gl.FLOAT, false);
-vbo_sphere.addAttribute("normal", 3, gl.FLOAT, false);
-vbo_sphere.addAttribute("color", 4, gl.FLOAT, false);
-vbo_sphere.init(sphereData.data.length / 10);
-vbo_sphere.copy(sphereData.data);
-ibo_sphere.init(sphereData.index);
+//scene model : board
+var boardData = new EcognitaMathLib.BoardModel();
+var vbo_board = new EcognitaMathLib.WebGL_VertexBuffer();
+var ibo_board = new EcognitaMathLib.WebGL_IndexBuffer();
+vbo_board.addAttribute("position", 3, gl.FLOAT, false);
+vbo_board.addAttribute("normal", 3, gl.FLOAT, false);
+vbo_board.addAttribute("color", 4, gl.FLOAT, false);
+vbo_board.init(boardData.data.length / 10);
+vbo_board.copy(boardData.data);
+ibo_board.init(boardData.index);
 shader.bind();
 var uniLocation = new Array();
+uniLocation.push(shader.uniformIndex('mMatrix'));
+uniLocation.push(shader.uniformIndex('tMatrix'));
 uniLocation.push(shader.uniformIndex('mvpMatrix'));
 uniLocation.push(shader.uniformIndex('invMatrix'));
-uniLocation.push(shader.uniformIndex('lightDirection'));
+uniLocation.push(shader.uniformIndex('lightPosition'));
 uniLocation.push(shader.uniformIndex('texture'));
-uniLocation.push(shader.uniformIndex('edge'));
-uniLocation.push(shader.uniformIndex('edgeColor'));
 var m = new EcognitaMathLib.WebGLMatrix();
 var q = new EcognitaMathLib.WebGLQuaternion();
 var mMatrix = m.identity(m.create());
@@ -1624,6 +1696,10 @@ var pMatrix = m.identity(m.create());
 var tmpMatrix = m.identity(m.create());
 var mvpMatrix = m.identity(m.create());
 var invMatrix = m.identity(m.create());
+var tMatrix = m.identity(m.create());
+var tvMatrix = m.identity(m.create());
+var tpMatrix = m.identity(m.create());
+var tvpMatrix = m.identity(m.create());
 var xQuaternion = q.identity(q.create());
 var lastPosX = 0;
 var lastPosY = 0;
@@ -1659,74 +1735,115 @@ hammer.enablePan();
 //depth test
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
-//culling
-gl.enable(gl.CULL_FACE);
-//toon texture
-var texToon = null;
-var toonImage = EcognitaMathLib.imread("./img/toon.png");
-toonImage.onload = function () {
-    texToon = new EcognitaMathLib.WebGL_Texture(4, false, toonImage);
+//projection texture
+var projTex = null;
+var projImage = EcognitaMathLib.imread("./img/tex4.png");
+projImage.onload = function () {
+    projTex = new EcognitaMathLib.WebGL_Texture(4, false, projImage, gl.CLAMP_TO_EDGE);
 };
 gl.activeTexture(gl.TEXTURE0);
-var edgeColor = [0.0, 0.0, 0.0, 1.0];
-var lightDirection = [-0.5, 0.5, 0.5];
+var lightPosition = [-10.0, 10.0, 10.0];
+var lightUpDirection = [0.577, 0.577, -0.577];
 var cnt = 0;
 (function () {
     gl.clearColor(0.0, 0.7, 0.7, 1.0);
     gl.clearDepth(1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     cnt++;
-    var rad = (cnt % 360) * Math.PI / 180;
-    if (texToon != null) {
-        texToon.bind(texToon.texture);
-    }
     var eyePosition = new Array();
     var camUpDirection = new Array();
-    eyePosition = q.ToV3([0.0, 0.0, 10.0], xQuaternion);
+    eyePosition = q.ToV3([0.0, 0.0, 70.0], xQuaternion);
     camUpDirection = q.ToV3([0.0, 1.0, 0.0], xQuaternion);
     //camera setting
     vMatrix = m.viewMatrix(eyePosition, [0, 0, 0], camUpDirection);
-    pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 100);
+    pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 150);
     tmpMatrix = m.multiply(pMatrix, vMatrix);
+    if (projTex != null) {
+        projTex.bind(projTex.texture);
+    }
+    //st?w =  tMatrix * xyzw
+    tMatrix[0] = 0.5;
+    tMatrix[1] = 0.0;
+    tMatrix[2] = 0.0;
+    tMatrix[3] = 0.0;
+    tMatrix[4] = 0.0;
+    tMatrix[5] = -0.5;
+    tMatrix[6] = 0.0;
+    tMatrix[7] = 0.0;
+    tMatrix[8] = 0.0;
+    tMatrix[9] = 0.0;
+    tMatrix[10] = 1.0;
+    tMatrix[11] = 0.0;
+    tMatrix[12] = 0.5;
+    tMatrix[13] = 0.5;
+    tMatrix[14] = 0.0;
+    tMatrix[15] = 1.0;
+    //auto move light range
+    var r = 15 + 10 * Math.sin(cnt * 0.01);
+    lightPosition[0] = -1.0 * r;
+    lightPosition[1] = 1.0 * r;
+    lightPosition[2] = 1.0 * r;
+    //view matrix switch to light
+    tvMatrix = m.viewMatrix(lightPosition, [0, 0, 0], lightUpDirection);
+    tpMatrix = m.perspectiveMatrix(90, 1.0, 0.1, 150);
+    tvpMatrix = m.multiply(tMatrix, tpMatrix);
+    tMatrix = m.multiply(tvpMatrix, tvMatrix);
     //draw torus
     vbo_torus.bind(shader);
     ibo_torus.bind();
+    for (var i = 0; i < 10; i++) {
+        var trans = new Array();
+        trans[0] = (i % 5 - 2.0) * 7.0;
+        trans[1] = Math.floor(i / 5) * 7.0 - 5.0;
+        trans[2] = (i % 5 - 2.0) * 5.0;
+        var rad = ((cnt + i * 36) % 360) * Math.PI / 180;
+        mMatrix = m.identity(mMatrix);
+        mMatrix = m.translate(mMatrix, trans);
+        mMatrix = m.rotate(mMatrix, rad, [1.0, 1.0, 0.0]);
+        mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+        invMatrix = m.inverse(mMatrix);
+        gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+        gl.uniformMatrix4fv(uniLocation[1], false, tMatrix);
+        gl.uniformMatrix4fv(uniLocation[2], false, mvpMatrix);
+        gl.uniformMatrix4fv(uniLocation[3], false, invMatrix);
+        gl.uniform3fv(uniLocation[4], lightPosition);
+        gl.uniform1i(uniLocation[5], 0);
+        ibo_torus.draw(gl.TRIANGLES);
+    }
+    //draw board(down)
+    vbo_board.bind(shader);
+    ibo_board.bind();
     mMatrix = m.identity(mMatrix);
-    mMatrix = m.rotate(mMatrix, rad, [0, 1, 1]);
+    mMatrix = m.translate(mMatrix, [0.0, -10.0, 0.0]);
+    mMatrix = m.scale(mMatrix, [20.0, 0.0, 20.0]);
     mvpMatrix = m.multiply(tmpMatrix, mMatrix);
     invMatrix = m.inverse(mMatrix);
-    gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
-    gl.uniformMatrix4fv(uniLocation[1], false, invMatrix);
-    gl.uniform3fv(uniLocation[2], lightDirection);
-    gl.uniform1i(uniLocation[3], 0);
-    gl.cullFace(gl.BACK);
-    gl.uniform1i(uniLocation[4], false);
-    edgeColor = [0.0, 0.0, 0.0, 0.0];
-    gl.uniform4fv(uniLocation[5], edgeColor);
-    ibo_torus.draw(gl.TRIANGLES);
-    gl.cullFace(gl.FRONT);
-    gl.uniform1i(uniLocation[4], true);
-    edgeColor = [0.0, 0.0, 0.0, 1.0];
-    gl.uniform4fv(uniLocation[5], edgeColor);
-    ibo_torus.draw(gl.TRIANGLES);
-    //draw sphere
-    vbo_sphere.bind(shader);
-    ibo_sphere.bind();
+    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[2], false, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation[3], false, invMatrix);
+    ibo_board.draw(gl.TRIANGLES);
+    // left
     mMatrix = m.identity(mMatrix);
+    mMatrix = m.translate(mMatrix, [0.0, 10.0, -20.0]);
+    mMatrix = m.rotate(mMatrix, Math.PI / 2, [1, 0, 0]);
+    mMatrix = m.scale(mMatrix, [20.0, 0.0, 20.0]);
     mvpMatrix = m.multiply(tmpMatrix, mMatrix);
     invMatrix = m.inverse(mMatrix);
-    gl.uniformMatrix4fv(uniLocation[0], false, mvpMatrix);
-    gl.uniformMatrix4fv(uniLocation[1], false, invMatrix);
-    gl.cullFace(gl.BACK);
-    gl.uniform1i(uniLocation[4], false);
-    edgeColor = [0.0, 0.0, 0.0, 0.0];
-    gl.uniform4fv(uniLocation[5], edgeColor);
-    ibo_sphere.draw(gl.TRIANGLES);
-    gl.cullFace(gl.FRONT);
-    gl.uniform1i(uniLocation[4], true);
-    edgeColor = [0.0, 0.0, 0.0, 1.0];
-    gl.uniform4fv(uniLocation[5], edgeColor);
-    ibo_sphere.draw(gl.TRIANGLES);
+    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[2], false, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation[3], false, invMatrix);
+    ibo_board.draw(gl.TRIANGLES);
+    // right
+    mMatrix = m.identity(mMatrix);
+    mMatrix = m.translate(mMatrix, [20.0, 10.0, 0.0]);
+    mMatrix = m.rotate(mMatrix, Math.PI / 2, [0, 0, 1]);
+    mMatrix = m.scale(mMatrix, [20.0, 0.0, 20.0]);
+    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+    invMatrix = m.inverse(mMatrix);
+    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
+    gl.uniformMatrix4fv(uniLocation[2], false, mvpMatrix);
+    gl.uniformMatrix4fv(uniLocation[3], false, invMatrix);
+    ibo_board.draw(gl.TRIANGLES);
     gl.flush();
     setTimeout(arguments.callee, 1000 / 30);
 })();
