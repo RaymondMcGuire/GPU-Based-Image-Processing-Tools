@@ -776,6 +776,18 @@ var EcognitaMathLib;
             //attach framebuff to texture
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
         };
+        WebGL_FrameBuffer.prototype.renderToShadowTexure = function () {
+            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+            //make sure we have enought memory to render the width x height size texture
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            //texture settings
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            //attach framebuff to texture
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
+        };
         WebGL_FrameBuffer.prototype.renderToCubeTexture = function (cubeTarget) {
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.targetTexture);
             for (var i = 0; i < cubeTarget.length; i++) {
@@ -1062,6 +1074,30 @@ var Shaders = {
         '    vColor = color*vec4(vec3(diffuse),1.0) +ambientColor;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'filterScene-frag': 'precision mediump float;\n\n' +
+        'varying vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	gl_FragColor = vColor;\n' +
+        '}\n',
+    'filterScene-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   mat4 invMatrix;\n' +
+        'uniform   vec3 lightDirection;\n' +
+        'uniform   vec3 eyeDirection;\n' +
+        'uniform   vec4 ambientColor;\n' +
+        'varying   vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '	vec3  invEye   = normalize(invMatrix * vec4(eyeDirection, 0.0)).xyz;\n' +
+        '	vec3  halfLE   = normalize(invLight + invEye);\n' +
+        '	float diffuse  = clamp(dot(normal, invLight), 0.0, 1.0);\n' +
+        '	float specular = pow(clamp(dot(normal, halfLE), 0.0, 1.0), 50.0);\n' +
+        '	vec4  amb      = color * ambientColor;\n' +
+        '	vColor         = amb * vec4(vec3(diffuse), 1.0) + vec4(vec3(specular), 1.0);\n' +
+        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'frameBuffer-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
         'varying vec4      vColor;\n' +
@@ -1091,6 +1127,64 @@ var Shaders = {
         '	}\n' +
         '	vTextureCoord  = textureCoord;\n' +
         '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'grayScaleFilter-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'uniform bool      grayScale;\n' +
+        'varying vec2      vTexCoord;\n\n' +
+        'const float redScale   = 0.298912;\n' +
+        'const float greenScale = 0.586611;\n' +
+        'const float blueScale  = 0.114478;\n' +
+        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
+        'void main(void){\n' +
+        '	vec4 smpColor = texture2D(texture, vTexCoord);\n' +
+        '	if(grayScale){\n' +
+        '		float grayColor = dot(smpColor.rgb, monochromeScale);\n' +
+        '		smpColor = vec4(vec3(grayColor), 1.0);\n' +
+        '	}\n' +
+        '	gl_FragColor = smpColor;\n' +
+        '}\n',
+    'grayScaleFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'laplacianFilter-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n\n' +
+        'uniform float coef[9];\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'const float redScale   = 0.298912;\n' +
+        'const float greenScale = 0.586611;\n' +
+        'const float blueScale  = 0.114478;\n' +
+        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
+        'void main(void){\n' +
+        '    vec2 offset[9];\n' +
+        '    offset[0] = vec2(-1.0, -1.0);\n' +
+        '    offset[1] = vec2( 0.0, -1.0);\n' +
+        '    offset[2] = vec2( 1.0, -1.0);\n' +
+        '    offset[3] = vec2(-1.0,  0.0);\n' +
+        '    offset[4] = vec2( 0.0,  0.0);\n' +
+        '    offset[5] = vec2( 1.0,  0.0);\n' +
+        '    offset[6] = vec2(-1.0,  1.0);\n' +
+        '    offset[7] = vec2( 0.0,  1.0);\n' +
+        '    offset[8] = vec2( 1.0,  1.0);\n' +
+        '    float tFrag = 1.0 / 512.0;\n' +
+        '    vec2  fc = vec2(gl_FragCoord.s, 512.0 - gl_FragCoord.t);\n' +
+        '    vec3  destColor = vec3(0.0);\n\n' +
+        '    destColor  += texture2D(texture, (fc + offset[0]) * tFrag).rgb * coef[0];\n' +
+        '    destColor  += texture2D(texture, (fc + offset[1]) * tFrag).rgb * coef[1];\n' +
+        '    destColor  += texture2D(texture, (fc + offset[2]) * tFrag).rgb * coef[2];\n' +
+        '    destColor  += texture2D(texture, (fc + offset[3]) * tFrag).rgb * coef[3];\n' +
+        '    destColor  += texture2D(texture, (fc + offset[4]) * tFrag).rgb * coef[4];\n' +
+        '    destColor  += texture2D(texture, (fc + offset[5]) * tFrag).rgb * coef[5];\n' +
+        '    destColor  += texture2D(texture, (fc + offset[6]) * tFrag).rgb * coef[6];\n' +
+        '    destColor  += texture2D(texture, (fc + offset[7]) * tFrag).rgb * coef[7];\n' +
+        '    destColor  += texture2D(texture, (fc + offset[8]) * tFrag).rgb * coef[8];\n\n' +
+        '    destColor =max(destColor, 0.0);\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
         '}\n',
     'phong-frag': 'precision mediump float;\n\n' +
         'uniform mat4 invMatrix;\n' +
@@ -1257,6 +1351,194 @@ var Shaders = {
         '	vColor      = color;\n' +
         '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'sepiaFilter-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'uniform bool      sepia;\n' +
+        'varying vec2      vTexCoord;\n\n' +
+        'const float redScale   = 0.298912;\n' +
+        'const float greenScale = 0.586611;\n' +
+        'const float blueScale  = 0.114478;\n' +
+        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
+        'const float sRedScale   = 1.07;\n' +
+        'const float sGreenScale = 0.74;\n' +
+        'const float sBlueScale  = 0.43;\n' +
+        'const vec3  sepiaScale = vec3(sRedScale, sGreenScale, sBlueScale);\n\n' +
+        'void main(void){\n' +
+        '    vec4  smpColor  = texture2D(texture, vTexCoord);\n' +
+        '    float grayColor = dot(smpColor.rgb, monochromeScale);\n\n' +
+        '    vec3 monoColor = vec3(grayColor) * sepiaScale; \n' +
+        '    smpColor = vec4(monoColor, 1.0);\n\n' +
+        '    gl_FragColor = smpColor;\n' +
+        '}\n',
+    'sepiaFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'shadowDepthBuffer-frag': 'precision mediump float;\n\n' +
+        'uniform bool depthBuffer;\n\n' +
+        'varying vec4 vPosition;\n\n' +
+        'vec4 convRGBA(float depth){\n' +
+        '    float r = depth;\n' +
+        '    float g = fract(r*255.0);\n' +
+        '    float b = fract(g*255.0); \n' +
+        '    float a = fract(b*255.0);\n' +
+        '    float coef = 1.0/255.0;\n' +
+        '    r-= g* coef; \n' +
+        '    g-= b* coef; \n' +
+        '    b-= a* coef; \n' +
+        '    return vec4(r,g,b,a);\n' +
+        '}\n\n' +
+        'void main(void){\n' +
+        '    vec4 convColor;\n' +
+        '    if(depthBuffer){\n' +
+        '        convColor = convRGBA(gl_FragCoord.z);\n' +
+        '    }else{\n' +
+        '        float near = 0.1;\n' +
+        '        float far  = 150.0;\n' +
+        '        float linerDepth = 1.0 / (far - near);\n' +
+        '        linerDepth *= length(vPosition);\n' +
+        '        convColor = convRGBA(linerDepth);\n' +
+        '    }\n' +
+        '    gl_FragColor = convColor;\n' +
+        '}\n',
+    'shadowDepthBuffer-vert': 'attribute vec3 position;\n' +
+        'uniform mat4 mvpMatrix;\n\n' +
+        'varying vec4 vPosition;\n\n' +
+        'void main(void){\n' +
+        '    vPosition = mvpMatrix * vec4(position, 1.0);\n' +
+        '    gl_Position = vPosition;\n' +
+        '}\n',
+    'shadowScreen-frag': 'precision mediump float;\n\n' +
+        'uniform mat4      invMatrix;\n' +
+        'uniform vec3      lightPosition;\n' +
+        'uniform sampler2D texture;\n' +
+        'uniform bool      depthBuffer;\n' +
+        'varying vec3      vPosition;\n' +
+        'varying vec3      vNormal;\n' +
+        'varying vec4      vColor;\n' +
+        'varying vec4      vTexCoord;\n' +
+        'varying vec4      vDepth;\n\n' +
+        'float restDepth(vec4 RGBA){\n' +
+        '    const float rMask = 1.0;\n' +
+        '    const float gMask = 1.0 / 255.0;\n' +
+        '    const float bMask = 1.0 / (255.0 * 255.0);\n' +
+        '    const float aMask = 1.0 / (255.0 * 255.0 * 255.0);\n' +
+        '    float depth = dot(RGBA, vec4(rMask, gMask, bMask, aMask));\n' +
+        '    return depth;\n' +
+        '}\n\n' +
+        'void main(void){\n' +
+        '    vec3  light     = lightPosition - vPosition;\n' +
+        '    vec3  invLight  = normalize(invMatrix * vec4(light, 0.0)).xyz;\n' +
+        '    float diffuse   = clamp(dot(vNormal, invLight), 0.1, 1.0);\n' +
+        '    float shadow    = restDepth(texture2DProj(texture, vTexCoord));\n' +
+        '    vec4 depthColor = vec4(1.0);\n' +
+        '    if(vDepth.w > 0.0){\n' +
+        '        if(depthBuffer){\n' +
+        '            vec4 lightCoord = vDepth / vDepth.w;\n' +
+        '            if(lightCoord.z - 0.0001 > shadow){\n' +
+        '                depthColor  = vec4(0.5, 0.5, 0.5, 1.0);\n' +
+        '            }\n' +
+        '        }else{\n' +
+        '            float near = 0.1;\n' +
+        '            float far  = 150.0;\n' +
+        '            float linerDepth = 1.0 / (far - near);\n' +
+        '            linerDepth *= length(vPosition.xyz - lightPosition);\n' +
+        '            if(linerDepth - 0.0001 > shadow){\n' +
+        '                depthColor  = vec4(0.5, 0.5, 0.5, 1.0);\n' +
+        '            }\n' +
+        '        }\n' +
+        '    }\n' +
+        '    gl_FragColor = vColor * (vec3(diffuse),1.0) * depthColor;\n' +
+        '}\n',
+    'shadowScreen-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mMatrix;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   mat4 tMatrix;\n' +
+        'uniform   mat4 lgtMatrix;\n' +
+        'varying   vec3 vPosition;\n' +
+        'varying   vec3 vNormal;\n' +
+        'varying   vec4 vColor;\n' +
+        'varying   vec4 vTexCoord;\n' +
+        'varying   vec4 vDepth;\n\n' +
+        'void main(void){\n' +
+        '    vPosition   = (mMatrix * vec4(position, 1.0)).xyz;\n' +
+        '    vNormal     = normal;\n' +
+        '    vColor      = color;\n' +
+        '    vTexCoord   = tMatrix * vec4(vPosition, 1.0);\n' +
+        '    vDepth      = lgtMatrix * vec4(position, 1.0);\n' +
+        '    gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'sobelFilter-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n\n' +
+        'uniform float hCoef[9];\n' +
+        'uniform float vCoef[9];\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'const float redScale   = 0.298912;\n' +
+        'const float greenScale = 0.586611;\n' +
+        'const float blueScale  = 0.114478;\n' +
+        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
+        'void main(void){\n' +
+        '    vec2 offset[9];\n' +
+        '    offset[0] = vec2(-1.0, -1.0);\n' +
+        '    offset[1] = vec2( 0.0, -1.0);\n' +
+        '    offset[2] = vec2( 1.0, -1.0);\n' +
+        '    offset[3] = vec2(-1.0,  0.0);\n' +
+        '    offset[4] = vec2( 0.0,  0.0);\n' +
+        '    offset[5] = vec2( 1.0,  0.0);\n' +
+        '    offset[6] = vec2(-1.0,  1.0);\n' +
+        '    offset[7] = vec2( 0.0,  1.0);\n' +
+        '    offset[8] = vec2( 1.0,  1.0);\n' +
+        '    float tFrag = 1.0 / 512.0;\n' +
+        '    vec2  fc = vec2(gl_FragCoord.s, 512.0 - gl_FragCoord.t);\n' +
+        '    vec3  horizonColor = vec3(0.0);\n' +
+        '    vec3  verticalColor = vec3(0.0);\n' +
+        '    vec4  destColor = vec4(0.0);\n\n' +
+        '    horizonColor  += texture2D(texture, (fc + offset[0]) * tFrag).rgb * hCoef[0]' +
+        ';\n' +
+        '    horizonColor  += texture2D(texture, (fc + offset[1]) * tFrag).rgb * hCoef[1]' +
+        ';\n' +
+        '    horizonColor  += texture2D(texture, (fc + offset[2]) * tFrag).rgb * hCoef[2]' +
+        ';\n' +
+        '    horizonColor  += texture2D(texture, (fc + offset[3]) * tFrag).rgb * hCoef[3]' +
+        ';\n' +
+        '    horizonColor  += texture2D(texture, (fc + offset[4]) * tFrag).rgb * hCoef[4]' +
+        ';\n' +
+        '    horizonColor  += texture2D(texture, (fc + offset[5]) * tFrag).rgb * hCoef[5]' +
+        ';\n' +
+        '    horizonColor  += texture2D(texture, (fc + offset[6]) * tFrag).rgb * hCoef[6]' +
+        ';\n' +
+        '    horizonColor  += texture2D(texture, (fc + offset[7]) * tFrag).rgb * hCoef[7]' +
+        ';\n' +
+        '    horizonColor  += texture2D(texture, (fc + offset[8]) * tFrag).rgb * hCoef[8]' +
+        ';\n\n' +
+        '    verticalColor += texture2D(texture, (fc + offset[0]) * tFrag).rgb * vCoef[0]' +
+        ';\n' +
+        '    verticalColor += texture2D(texture, (fc + offset[1]) * tFrag).rgb * vCoef[1]' +
+        ';\n' +
+        '    verticalColor += texture2D(texture, (fc + offset[2]) * tFrag).rgb * vCoef[2]' +
+        ';\n' +
+        '    verticalColor += texture2D(texture, (fc + offset[3]) * tFrag).rgb * vCoef[3]' +
+        ';\n' +
+        '    verticalColor += texture2D(texture, (fc + offset[4]) * tFrag).rgb * vCoef[4]' +
+        ';\n' +
+        '    verticalColor += texture2D(texture, (fc + offset[5]) * tFrag).rgb * vCoef[5]' +
+        ';\n' +
+        '    verticalColor += texture2D(texture, (fc + offset[6]) * tFrag).rgb * vCoef[6]' +
+        ';\n' +
+        '    verticalColor += texture2D(texture, (fc + offset[7]) * tFrag).rgb * vCoef[7]' +
+        ';\n' +
+        '    verticalColor += texture2D(texture, (fc + offset[8]) * tFrag).rgb * vCoef[8]' +
+        ';\n\n' +
+        '    destColor = vec4(vec3(sqrt(horizonColor * horizonColor + verticalColor * ver' +
+        'ticalColor)), 1.0);\n' +
+        '    gl_FragColor = destColor;\n' +
+        '}\n',
     'specular-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +
         'void main(void){\n' +
@@ -1416,9 +1698,12 @@ var EcognitaMathLib;
 var EcognitaMathLib;
 (function (EcognitaMathLib) {
     var BoardModel = /** @class */ (function () {
-        function BoardModel(need_normal, need_color) {
+        function BoardModel(u_position, u_color, need_normal, need_color, need_texCoord) {
+            if (u_position === void 0) { u_position = undefined; }
+            if (u_color === void 0) { u_color = undefined; }
             if (need_normal === void 0) { need_normal = true; }
             if (need_color === void 0) { need_color = true; }
+            if (need_texCoord === void 0) { need_texCoord = false; }
             this.data = new Array();
             var position = [
                 -1.0, 0.0, -1.0,
@@ -1432,23 +1717,39 @@ var EcognitaMathLib;
                 0.0, 1.0, 0.0,
                 0.0, 1.0, 0.0
             ];
-            var color = [
-                1.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0
-            ];
             this.index = [
                 0, 1, 2,
                 3, 2, 1
             ];
+            var texCoord = [
+                0.0, 0.0,
+                1.0, 0.0,
+                0.0, 1.0,
+                1.0, 1.0
+            ];
             for (var i = 0; i < 4; i++) {
-                this.data.push(position[i * 3 + 0], position[i * 3 + 1], position[i * 3 + 2]);
+                if (u_position == undefined)
+                    this.data.push(position[i * 3 + 0], position[i * 3 + 1], position[i * 3 + 2]);
+                else
+                    this.data.push(u_position[i * 3 + 0], u_position[i * 3 + 1], u_position[i * 3 + 2]);
                 if (need_normal)
                     this.data.push(normal[i * 3 + 0], normal[i * 3 + 1], normal[i * 3 + 2]);
-                if (need_color)
-                    this.data.push(color[i * 4 + 0], color[i * 4 + 1], color[i * 4 + 2], color[i * 4 + 3]);
-                //console.log(this.data);
+                if (u_color == undefined) {
+                    var color = [
+                        1.0, 1.0, 1.0, 1.0,
+                        1.0, 1.0, 1.0, 1.0,
+                        1.0, 1.0, 1.0, 1.0,
+                        1.0, 1.0, 1.0, 1.0
+                    ];
+                    if (need_color)
+                        this.data.push(color[i * 4 + 0], color[i * 4 + 1], color[i * 4 + 2], color[i * 4 + 3]);
+                }
+                else {
+                    if (need_color)
+                        this.data.push(u_color[i * 4 + 0], u_color[i * 4 + 1], u_color[i * 4 + 2], u_color[i * 4 + 3]);
+                }
+                if (need_texCoord)
+                    this.data.push(texCoord[i * 2 + 0], texCoord[i * 2 + 1]);
             }
         }
         return BoardModel;
@@ -1639,8 +1940,8 @@ var EcognitaMathLib;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
- *  demo27.ts
- *  projection texture
+ *  demo32.ts
+ *  filter:laplacian
  *
  * ========================================================================= */
 /// <reference path="../lib/cv_imread.ts" />
@@ -1650,18 +1951,20 @@ var EcognitaMathLib;
 /// <reference path="../lib/webgl_utils.ts" />
 /// <reference path="../lib/webgl_shaders.ts" />
 /// <reference path="../lib/webgl_model.ts" />
+/// <reference path="../lib/cv_colorSpace.ts" />
 var canvas = document.getElementById('canvas');
-canvas.width = 500;
-canvas.height = 300;
+canvas.width = 512;
+canvas.height = 512;
 try {
     var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
 }
 catch (e) { }
 if (!gl)
     throw new Error("Could not initialise WebGL");
-var shader = new EcognitaMathLib.WebGL_Shader(Shaders, "projTexture-vert", "projTexture-frag");
+var sceneShader = new EcognitaMathLib.WebGL_Shader(Shaders, "filterScene-vert", "filterScene-frag");
+var filterShader = new EcognitaMathLib.WebGL_Shader(Shaders, "sepiaFilter-vert", "laplacianFilter-frag");
 //scene model : torus
-var torusData = new EcognitaMathLib.TorusModel(64, 64, 0.5, 2.5, [1.0, 1.0, 1.0, 1.0], true, false);
+var torusData = new EcognitaMathLib.TorusModel(64, 64, 1.0, 2.0, [1.0, 1.0, 1.0, 1.0], true, false);
 var vbo_torus = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo_torus = new EcognitaMathLib.WebGL_IndexBuffer();
 vbo_torus.addAttribute("position", 3, gl.FLOAT, false);
@@ -1670,24 +1973,34 @@ vbo_torus.addAttribute("color", 4, gl.FLOAT, false);
 vbo_torus.init(torusData.data.length / 10);
 vbo_torus.copy(torusData.data);
 ibo_torus.init(torusData.index);
-//scene model : board
-var boardData = new EcognitaMathLib.BoardModel();
+var position = [
+    -1.0, 1.0, 0.0,
+    1.0, 1.0, 0.0,
+    -1.0, -1.0, 0.0,
+    1.0, -1.0, 0.0
+];
+var boardData = new EcognitaMathLib.BoardModel(position, undefined, false, false, true);
 var vbo_board = new EcognitaMathLib.WebGL_VertexBuffer();
 var ibo_board = new EcognitaMathLib.WebGL_IndexBuffer();
 vbo_board.addAttribute("position", 3, gl.FLOAT, false);
-vbo_board.addAttribute("normal", 3, gl.FLOAT, false);
-vbo_board.addAttribute("color", 4, gl.FLOAT, false);
-vbo_board.init(boardData.data.length / 10);
+vbo_board.addAttribute("texCoord", 2, gl.FLOAT, false);
+boardData.index = [
+    0, 2, 1,
+    2, 3, 1
+];
+vbo_board.init(boardData.data.length / 5);
 vbo_board.copy(boardData.data);
 ibo_board.init(boardData.index);
-shader.bind();
-var uniLocation = new Array();
-uniLocation.push(shader.uniformIndex('mMatrix'));
-uniLocation.push(shader.uniformIndex('tMatrix'));
-uniLocation.push(shader.uniformIndex('mvpMatrix'));
-uniLocation.push(shader.uniformIndex('invMatrix'));
-uniLocation.push(shader.uniformIndex('lightPosition'));
-uniLocation.push(shader.uniformIndex('texture'));
+var uniLocation_f = new Array();
+uniLocation_f.push(sceneShader.uniformIndex('mvpMatrix'));
+uniLocation_f.push(sceneShader.uniformIndex('invMatrix'));
+uniLocation_f.push(sceneShader.uniformIndex('lightDirection'));
+uniLocation_f.push(sceneShader.uniformIndex('eyeDirection'));
+uniLocation_f.push(sceneShader.uniformIndex('ambientColor'));
+var uniLocation_s = new Array();
+uniLocation_s.push(filterShader.uniformIndex('mvpMatrix'));
+uniLocation_s.push(filterShader.uniformIndex('texture'));
+uniLocation_s.push(filterShader.uniformIndex('coef'));
 var m = new EcognitaMathLib.WebGLMatrix();
 var q = new EcognitaMathLib.WebGLQuaternion();
 var mMatrix = m.identity(m.create());
@@ -1696,10 +2009,6 @@ var pMatrix = m.identity(m.create());
 var tmpMatrix = m.identity(m.create());
 var mvpMatrix = m.identity(m.create());
 var invMatrix = m.identity(m.create());
-var tMatrix = m.identity(m.create());
-var tvMatrix = m.identity(m.create());
-var tpMatrix = m.identity(m.create());
-var tvpMatrix = m.identity(m.create());
 var xQuaternion = q.identity(q.create());
 var lastPosX = 0;
 var lastPosY = 0;
@@ -1735,114 +2044,76 @@ hammer.enablePan();
 //depth test
 gl.enable(gl.DEPTH_TEST);
 gl.depthFunc(gl.LEQUAL);
-//projection texture
-var projTex = null;
-var projImage = EcognitaMathLib.imread("./img/tex4.png");
-projImage.onload = function () {
-    projTex = new EcognitaMathLib.WebGL_Texture(4, false, projImage, gl.CLAMP_TO_EDGE);
-};
-gl.activeTexture(gl.TEXTURE0);
-var lightPosition = [-10.0, 10.0, 10.0];
-var lightUpDirection = [0.577, 0.577, -0.577];
+gl.enable(gl.CULL_FACE);
+var lightDirection = [-0.577, 0.577, 0.577];
+//frame buffer
+var fBufferWidth = 512;
+var fBufferHeight = 512;
+var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
+frameBuffer.bindFrameBuffer();
+frameBuffer.bindDepthBuffer();
+frameBuffer.renderToShadowTexure();
+frameBuffer.release();
 var cnt = 0;
+var cnt1 = 0;
+var coef = [1.0, 1.0, 1.0,
+    1.0, -8.0, 1.0,
+    1.0, 1.0, 1.0];
 (function () {
-    gl.clearColor(0.0, 0.7, 0.7, 1.0);
+    cnt++;
+    if (cnt % 2 == 0) {
+        cnt1++;
+    }
+    var rad = (cnt % 360) * Math.PI / 180;
+    sceneShader.bind();
+    frameBuffer.bindFrameBuffer();
+    var hsv = EcognitaMathLib.HSV2RGB(cnt1 % 360, 1, 1, 1);
+    gl.clearColor(hsv[0], hsv[1], hsv[2], hsv[3]);
     gl.clearDepth(1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    cnt++;
     var eyePosition = new Array();
     var camUpDirection = new Array();
-    eyePosition = q.ToV3([0.0, 0.0, 70.0], xQuaternion);
-    camUpDirection = q.ToV3([0.0, 1.0, 0.0], xQuaternion);
+    eyePosition = q.ToV3([0.0, 20.0, 0.0], xQuaternion);
+    camUpDirection = q.ToV3([0.0, 0.0, -1.0], xQuaternion);
     //camera setting
     vMatrix = m.viewMatrix(eyePosition, [0, 0, 0], camUpDirection);
-    pMatrix = m.perspectiveMatrix(45, canvas.width / canvas.height, 0.1, 150);
+    pMatrix = m.perspectiveMatrix(90, canvas.width / canvas.height, 0.1, 100);
     tmpMatrix = m.multiply(pMatrix, vMatrix);
-    if (projTex != null) {
-        projTex.bind(projTex.texture);
-    }
-    //st?w =  tMatrix * xyzw
-    tMatrix[0] = 0.5;
-    tMatrix[1] = 0.0;
-    tMatrix[2] = 0.0;
-    tMatrix[3] = 0.0;
-    tMatrix[4] = 0.0;
-    tMatrix[5] = -0.5;
-    tMatrix[6] = 0.0;
-    tMatrix[7] = 0.0;
-    tMatrix[8] = 0.0;
-    tMatrix[9] = 0.0;
-    tMatrix[10] = 1.0;
-    tMatrix[11] = 0.0;
-    tMatrix[12] = 0.5;
-    tMatrix[13] = 0.5;
-    tMatrix[14] = 0.0;
-    tMatrix[15] = 1.0;
-    //auto move light range
-    var r = 15 + 10 * Math.sin(cnt * 0.01);
-    lightPosition[0] = -1.0 * r;
-    lightPosition[1] = 1.0 * r;
-    lightPosition[2] = 1.0 * r;
-    //view matrix switch to light
-    tvMatrix = m.viewMatrix(lightPosition, [0, 0, 0], lightUpDirection);
-    tpMatrix = m.perspectiveMatrix(90, 1.0, 0.1, 150);
-    tvpMatrix = m.multiply(tMatrix, tpMatrix);
-    tMatrix = m.multiply(tvpMatrix, tvMatrix);
     //draw torus
-    vbo_torus.bind(shader);
+    vbo_torus.bind(sceneShader);
     ibo_torus.bind();
-    for (var i = 0; i < 10; i++) {
-        var trans = new Array();
-        trans[0] = (i % 5 - 2.0) * 7.0;
-        trans[1] = Math.floor(i / 5) * 7.0 - 5.0;
-        trans[2] = (i % 5 - 2.0) * 5.0;
-        var rad = ((cnt + i * 36) % 360) * Math.PI / 180;
+    for (var i = 0; i < 9; i++) {
+        var amb = EcognitaMathLib.HSV2RGB(i * 40, 1, 1, 1);
         mMatrix = m.identity(mMatrix);
-        mMatrix = m.translate(mMatrix, trans);
-        mMatrix = m.rotate(mMatrix, rad, [1.0, 1.0, 0.0]);
+        mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
+        mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
+        mMatrix = m.rotate(mMatrix, rad, [1, 1, 0]);
         mvpMatrix = m.multiply(tmpMatrix, mMatrix);
         invMatrix = m.inverse(mMatrix);
-        gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
-        gl.uniformMatrix4fv(uniLocation[1], false, tMatrix);
-        gl.uniformMatrix4fv(uniLocation[2], false, mvpMatrix);
-        gl.uniformMatrix4fv(uniLocation[3], false, invMatrix);
-        gl.uniform3fv(uniLocation[4], lightPosition);
-        gl.uniform1i(uniLocation[5], 0);
+        gl.uniformMatrix4fv(uniLocation_f[0], false, mvpMatrix);
+        gl.uniformMatrix4fv(uniLocation_f[1], false, invMatrix);
+        gl.uniform3fv(uniLocation_f[2], lightDirection);
+        gl.uniform3fv(uniLocation_f[3], eyePosition);
+        gl.uniform4fv(uniLocation_f[4], amb);
         ibo_torus.draw(gl.TRIANGLES);
     }
-    //draw board(down)
-    vbo_board.bind(shader);
+    filterShader.bind();
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // orth matrix
+    vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+    pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
+    tmpMatrix = m.multiply(pMatrix, vMatrix);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, frameBuffer.targetTexture);
+    //draw filter image into board
+    vbo_board.bind(filterShader);
     ibo_board.bind();
-    mMatrix = m.identity(mMatrix);
-    mMatrix = m.translate(mMatrix, [0.0, -10.0, 0.0]);
-    mMatrix = m.scale(mMatrix, [20.0, 0.0, 20.0]);
-    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-    invMatrix = m.inverse(mMatrix);
-    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
-    gl.uniformMatrix4fv(uniLocation[2], false, mvpMatrix);
-    gl.uniformMatrix4fv(uniLocation[3], false, invMatrix);
-    ibo_board.draw(gl.TRIANGLES);
-    // left
-    mMatrix = m.identity(mMatrix);
-    mMatrix = m.translate(mMatrix, [0.0, 10.0, -20.0]);
-    mMatrix = m.rotate(mMatrix, Math.PI / 2, [1, 0, 0]);
-    mMatrix = m.scale(mMatrix, [20.0, 0.0, 20.0]);
-    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-    invMatrix = m.inverse(mMatrix);
-    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
-    gl.uniformMatrix4fv(uniLocation[2], false, mvpMatrix);
-    gl.uniformMatrix4fv(uniLocation[3], false, invMatrix);
-    ibo_board.draw(gl.TRIANGLES);
-    // right
-    mMatrix = m.identity(mMatrix);
-    mMatrix = m.translate(mMatrix, [20.0, 10.0, 0.0]);
-    mMatrix = m.rotate(mMatrix, Math.PI / 2, [0, 0, 1]);
-    mMatrix = m.scale(mMatrix, [20.0, 0.0, 20.0]);
-    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-    invMatrix = m.inverse(mMatrix);
-    gl.uniformMatrix4fv(uniLocation[0], false, mMatrix);
-    gl.uniformMatrix4fv(uniLocation[2], false, mvpMatrix);
-    gl.uniformMatrix4fv(uniLocation[3], false, invMatrix);
+    gl.uniformMatrix4fv(uniLocation_s[0], false, tmpMatrix);
+    gl.uniform1i(uniLocation_s[1], 0);
+    gl.uniform1fv(uniLocation_s[2], coef);
     ibo_board.draw(gl.TRIANGLES);
     gl.flush();
     setTimeout(arguments.callee, 1000 / 30);

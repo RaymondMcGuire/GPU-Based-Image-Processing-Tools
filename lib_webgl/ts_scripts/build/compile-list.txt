@@ -1,4 +1,4 @@
-../demo/demo27.ts
+../demo/demo32.ts
 ../lib/cv_imread.ts
 ../lib/cv_colorSpace.ts
 ../lib/extra_utils.ts
