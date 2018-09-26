@@ -7,6 +7,61 @@
 /// <reference path="./cv_colorSpace.ts" />
  module EcognitaMathLib {
 
+    export class BoardModel{
+        data:Array<number>;
+        index:Array<number>;
+        constructor(u_position:any = undefined, u_color:any = undefined,need_normal:boolean=true,need_color:boolean=true,need_texCoord:boolean=false){
+            this.data = new Array<any>();
+            var position = [
+                -1.0,  0.0, -1.0,
+                 1.0,  0.0, -1.0,
+                -1.0,  0.0,  1.0,
+                 1.0,  0.0,  1.0
+            ];
+            var normal = [
+                0.0, 1.0, 0.0,
+                0.0, 1.0, 0.0,
+                0.0, 1.0, 0.0,
+                0.0, 1.0, 0.0
+            ];
+
+            this.index = [
+                0, 1, 2,
+                3, 2, 1
+            ];
+
+            var texCoord = [
+                0.0, 0.0,
+                1.0, 0.0,
+                0.0, 1.0,
+                1.0, 1.0
+            ];
+
+            for(var i=0;i<4;i++){
+                if(u_position == undefined)this.data.push(position[i*3+0],position[i*3+1],position[i*3+2]);
+                else this.data.push(u_position[i*3+0],u_position[i*3+1],u_position[i*3+2]);
+                
+                if(need_normal)this.data.push(normal[i*3+0],normal[i*3+1],normal[i*3+2]);
+                
+                if(u_color == undefined){
+                    var color = [
+                        1.0, 1.0, 1.0, 1.0,
+                        1.0, 1.0, 1.0, 1.0,
+                        1.0, 1.0, 1.0, 1.0,
+                        1.0, 1.0, 1.0, 1.0
+                    ];
+                    if(need_color)this.data.push(color[i*4+0],color[i*4+1],color[i*4+2],color[i*4+3]);
+                }else{
+                    if(need_color)this.data.push(u_color[i*4+0],u_color[i*4+1],u_color[i*4+2],u_color[i*4+3]);
+                }
+
+                if(need_texCoord)this.data.push(texCoord[i*2+0],texCoord[i*2+1]);
+
+            }
+        }
+
+    }
+
     export class TorusModel {
         horCrossSectionSmooth:number;
         verCrossSectionSmooth:number;
