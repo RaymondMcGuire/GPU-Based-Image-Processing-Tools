@@ -6,5 +6,6 @@
 ../../../../lib_webgl/ts_scripts/lib/webgl_shaders.ts
 ../../../../lib_webgl/ts_scripts/lib/webgl_model.ts
 ../../../../lib_webgl/ts_scripts/lib/webgl_utils.ts
+../lib/HashSet.ts
 ../package/pkg_FilterViewHub.ts
 ../FilterViewer.ts
