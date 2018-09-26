@@ -23,7 +23,7 @@ if (!gl)
     throw new Error("Could not initialise WebGL");
 
 var sceneShader = new EcognitaMathLib.WebGL_Shader(Shaders,"filterScene-vert", "filterScene-frag");
-var filterShader = new EcognitaMathLib.WebGL_Shader(Shaders,"sepiaFilter-vert", "laplacianFilter-frag");
+var filterShader = new EcognitaMathLib.WebGL_Shader(Shaders,"laplacianFilter-vert", "laplacianFilter-frag");
 
 //scene model : torus
 var torusData = new EcognitaMathLib.TorusModel(64, 64, 1.0, 2.0,[1.0, 1.0, 1.0, 1.0],true,false); 

@@ -1,3 +1,13 @@
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
 /* =========================================================================
  *
  *  cv_imread.ts
@@ -12,6 +22,40 @@ var EcognitaMathLib;
         return img;
     }
     EcognitaMathLib.imread = imread;
+})(EcognitaMathLib || (EcognitaMathLib = {}));
+/* =========================================================================
+ *
+ *  cv_colorSpace.ts
+ *  color space transformation
+ *
+ * ========================================================================= */
+var EcognitaMathLib;
+(function (EcognitaMathLib) {
+    //hsv space transform to rgb space
+    //h(0~360) sva(0~1)
+    function HSV2RGB(h, s, v, a) {
+        if (s > 1 || v > 1 || a > 1) {
+            return;
+        }
+        var th = h % 360;
+        var i = Math.floor(th / 60);
+        var f = th / 60 - i;
+        var m = v * (1 - s);
+        var n = v * (1 - s * f);
+        var k = v * (1 - s * (1 - f));
+        var color = new Array();
+        if (!(s > 0) && !(s < 0)) {
+            color.push(v, v, v, a);
+        }
+        else {
+            var r = new Array(v, n, m, m, k, v);
+            var g = new Array(k, v, v, n, m, m);
+            var b = new Array(m, m, k, v, v, n);
+            color.push(r[i], g[i], b[i], a);
+        }
+        return color;
+    }
+    EcognitaMathLib.HSV2RGB = HSV2RGB;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
@@ -484,333 +528,6 @@ var EcognitaMathLib;
         return WebGLQuaternion;
     }());
     EcognitaMathLib.WebGLQuaternion = WebGLQuaternion;
-})(EcognitaMathLib || (EcognitaMathLib = {}));
-/* =========================================================================
- *
- *  webgl_utils.ts
- *  utils for webgl
- *  part of source code referenced by tantalum-gl.js
- * ========================================================================= */
-var EcognitaMathLib;
-(function (EcognitaMathLib) {
-    function GetGLTypeSize(type) {
-        switch (type) {
-            case gl.BYTE:
-            case gl.UNSIGNED_BYTE:
-                return 1;
-            case gl.SHORT:
-            case gl.UNSIGNED_SHORT:
-                return 2;
-            case gl.INT:
-            case gl.UNSIGNED_INT:
-            case gl.FLOAT:
-                return 4;
-            default:
-                return 0;
-        }
-    }
-    EcognitaMathLib.GetGLTypeSize = GetGLTypeSize;
-    var WebGL_Texture = /** @class */ (function () {
-        function WebGL_Texture(channels, isFloat, texels, texType) {
-            if (texType === void 0) { texType = gl.REPEAT; }
-            this.type = isFloat ? gl.FLOAT : gl.UNSIGNED_BYTE;
-            this.format = [gl.LUMINANCE, gl.RG, gl.RGB, gl.RGBA][channels - 1];
-            this.glName = gl.createTexture();
-            this.bind(this.glName);
-            gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, texels);
-            gl.generateMipmap(gl.TEXTURE_2D);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, texType);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, texType);
-            this.texture = this.glName;
-            this.bind(null);
-        }
-        WebGL_Texture.prototype.bind = function (tex) {
-            gl.bindTexture(gl.TEXTURE_2D, tex);
-        };
-        return WebGL_Texture;
-    }());
-    EcognitaMathLib.WebGL_Texture = WebGL_Texture;
-    var WebGL_CubeMapTexture = /** @class */ (function () {
-        function WebGL_CubeMapTexture(texArray) {
-            this.cubeSource = texArray;
-            this.cubeTarget = new Array(gl.TEXTURE_CUBE_MAP_POSITIVE_X, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z);
-            this.loadCubeTexture();
-            this.cubeTexture = undefined;
-        }
-        WebGL_CubeMapTexture.prototype.loadCubeTexture = function () {
-            var _this = this;
-            var cubeImage = new Array();
-            var loadFlagCnt = 0;
-            this.cubeImage = cubeImage;
-            for (var i = 0; i < this.cubeSource.length; i++) {
-                cubeImage[i] = new Object();
-                cubeImage[i].data = new Image();
-                cubeImage[i].data.src = this.cubeSource[i];
-                cubeImage[i].data.onload = (function () {
-                    loadFlagCnt++;
-                    //check image load
-                    if (loadFlagCnt == _this.cubeSource.length) {
-                        _this.generateCubeMap();
-                    }
-                });
-            }
-        };
-        WebGL_CubeMapTexture.prototype.generateCubeMap = function () {
-            var tex = gl.createTexture();
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
-            for (var j = 0; j < this.cubeSource.length; j++) {
-                gl.texImage2D(this.cubeTarget[j], 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.cubeImage[j].data);
-            }
-            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
-            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            this.cubeTexture = tex;
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
-        };
-        return WebGL_CubeMapTexture;
-    }());
-    EcognitaMathLib.WebGL_CubeMapTexture = WebGL_CubeMapTexture;
-    var WebGL_RenderTarget = /** @class */ (function () {
-        function WebGL_RenderTarget() {
-            this.glName = gl.createFramebuffer();
-        }
-        WebGL_RenderTarget.prototype.bind = function () { gl.bindFramebuffer(gl.FRAMEBUFFER, this.glName); };
-        WebGL_RenderTarget.prototype.unbind = function () { gl.bindFramebuffer(gl.FRAMEBUFFER, null); };
-        WebGL_RenderTarget.prototype.attachTexture = function (texture, index) {
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, gl.TEXTURE_2D, texture.glName, 0);
-        };
-        WebGL_RenderTarget.prototype.detachTexture = function (index) {
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, gl.TEXTURE_2D, null, 0);
-        };
-        WebGL_RenderTarget.prototype.drawBuffers = function (numBufs) {
-            var buffers = [];
-            for (var i = 0; i < numBufs; ++i)
-                buffers.push(gl.COLOR_ATTACHMENT0 + i);
-            multiBufExt.drawBuffersWEBGL(buffers);
-        };
-        return WebGL_RenderTarget;
-    }());
-    EcognitaMathLib.WebGL_RenderTarget = WebGL_RenderTarget;
-    var WebGL_Shader = /** @class */ (function () {
-        function WebGL_Shader(shaderDict, vert, frag) {
-            this.vertex = this.createShaderObject(shaderDict, vert, false);
-            this.fragment = this.createShaderObject(shaderDict, frag, true);
-            this.program = gl.createProgram();
-            gl.attachShader(this.program, this.vertex);
-            gl.attachShader(this.program, this.fragment);
-            gl.linkProgram(this.program);
-            this.uniforms = {};
-            if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
-                alert("Could not initialise shaders");
-        }
-        WebGL_Shader.prototype.bind = function () {
-            gl.useProgram(this.program);
-        };
-        WebGL_Shader.prototype.createShaderObject = function (shaderDict, name, isFragment) {
-            var shaderSource = this.resolveShaderSource(shaderDict, name);
-            var shaderObject = gl.createShader(isFragment ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER);
-            gl.shaderSource(shaderObject, shaderSource);
-            gl.compileShader(shaderObject);
-            if (!gl.getShaderParameter(shaderObject, gl.COMPILE_STATUS)) {
-                /* Add some line numbers for convenience */
-                var lines = shaderSource.split("\n");
-                for (var i = 0; i < lines.length; ++i)
-                    lines[i] = ("   " + (i + 1)).slice(-4) + " | " + lines[i];
-                shaderSource = lines.join("\n");
-                throw new Error((isFragment ? "Fragment" : "Vertex") + " shader compilation error for shader '" + name + "':\n\n    " +
-                    gl.getShaderInfoLog(shaderObject).split("\n").join("\n    ") +
-                    "\nThe expanded shader source code was:\n\n" +
-                    shaderSource);
-            }
-            return shaderObject;
-        };
-        WebGL_Shader.prototype.resolveShaderSource = function (shaderDict, name) {
-            if (!(name in shaderDict))
-                throw new Error("Unable to find shader source for '" + name + "'");
-            var shaderSource = shaderDict[name];
-            /* Rudimentary include handling for convenience.
-               Not the most robust, but it will do for our purposes */
-            var pattern = new RegExp('#include "(.+)"');
-            var match;
-            while (match = pattern.exec(shaderSource)) {
-                shaderSource = shaderSource.slice(0, match.index) +
-                    this.resolveShaderSource(shaderDict, match[1]) +
-                    shaderSource.slice(match.index + match[0].length);
-            }
-            return shaderSource;
-        };
-        WebGL_Shader.prototype.uniformIndex = function (name) {
-            if (!(name in this.uniforms))
-                this.uniforms[name] = gl.getUniformLocation(this.program, name);
-            return this.uniforms[name];
-        };
-        WebGL_Shader.prototype.uniformTexture = function (name, texture) {
-            var id = this.uniformIndex(name);
-            if (id != -1)
-                gl.uniform1i(id, texture.boundUnit);
-        };
-        WebGL_Shader.prototype.uniformF = function (name, f) {
-            var id = this.uniformIndex(name);
-            if (id != -1)
-                gl.uniform1f(id, f);
-        };
-        WebGL_Shader.prototype.uniform2F = function (name, f1, f2) {
-            var id = this.uniformIndex(name);
-            if (id != -1)
-                gl.uniform2f(id, f1, f2);
-        };
-        return WebGL_Shader;
-    }());
-    EcognitaMathLib.WebGL_Shader = WebGL_Shader;
-    //add attribute -> init -> copy -> bind -> draw -> release
-    var WebGL_VertexBuffer = /** @class */ (function () {
-        function WebGL_VertexBuffer() {
-            this.attributes = [];
-            this.elementSize = 0;
-        }
-        WebGL_VertexBuffer.prototype.bind = function (shader) {
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.glName);
-            for (var i = 0; i < this.attributes.length; ++i) {
-                this.attributes[i].index = gl.getAttribLocation(shader.program, this.attributes[i].name);
-                if (this.attributes[i].index >= 0) {
-                    var attr = this.attributes[i];
-                    gl.enableVertexAttribArray(attr.index);
-                    gl.vertexAttribPointer(attr.index, attr.size, attr.type, attr.norm, this.elementSize, attr.offset);
-                }
-            }
-        };
-        WebGL_VertexBuffer.prototype.release = function () {
-            for (var i = 0; i < this.attributes.length; ++i) {
-                if (this.attributes[i].index >= 0) {
-                    gl.disableVertexAttribArray(this.attributes[i].index);
-                    this.attributes[i].index = -1;
-                }
-            }
-        };
-        WebGL_VertexBuffer.prototype.addAttribute = function (name, size, type, norm) {
-            this.attributes.push({
-                "name": name,
-                "size": size,
-                "type": type,
-                "norm": norm,
-                "offset": this.elementSize,
-                "index": -1
-            });
-            this.elementSize += size * GetGLTypeSize(type);
-        };
-        WebGL_VertexBuffer.prototype.addAttributes = function (attrArray, sizeArray) {
-            for (var i = 0; i < attrArray.length; i++) {
-                this.addAttribute(attrArray[i], sizeArray[i], gl.FLOAT, false);
-            }
-        };
-        WebGL_VertexBuffer.prototype.init = function (numVerts) {
-            this.length = numVerts;
-            this.glName = gl.createBuffer();
-            gl.bindBuffer(gl.ARRAY_BUFFER, this.glName);
-            gl.bufferData(gl.ARRAY_BUFFER, this.length * this.elementSize, gl.STATIC_DRAW);
-        };
-        WebGL_VertexBuffer.prototype.copy = function (data) {
-            data = new Float32Array(data);
-            if (data.byteLength != this.length * this.elementSize)
-                throw new Error("Resizing VBO during copy strongly discouraged");
-            gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-            gl.bindBuffer(gl.ARRAY_BUFFER, null);
-        };
-        WebGL_VertexBuffer.prototype.draw = function (mode, length) {
-            gl.drawArrays(mode, 0, length ? length : this.length);
-        };
-        return WebGL_VertexBuffer;
-    }());
-    EcognitaMathLib.WebGL_VertexBuffer = WebGL_VertexBuffer;
-    var WebGL_IndexBuffer = /** @class */ (function () {
-        function WebGL_IndexBuffer() {
-        }
-        WebGL_IndexBuffer.prototype.bind = function () {
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glName);
-        };
-        WebGL_IndexBuffer.prototype.init = function (index) {
-            this.length = index.length;
-            this.glName = gl.createBuffer();
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glName);
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Int16Array(index), gl.STATIC_DRAW);
-            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-        };
-        WebGL_IndexBuffer.prototype.draw = function (mode, length) {
-            gl.drawElements(mode, length ? length : this.length, gl.UNSIGNED_SHORT, 0);
-        };
-        return WebGL_IndexBuffer;
-    }());
-    EcognitaMathLib.WebGL_IndexBuffer = WebGL_IndexBuffer;
-    var WebGL_FrameBuffer = /** @class */ (function () {
-        function WebGL_FrameBuffer(width, height) {
-            this.width = width;
-            this.height = height;
-            var frameBuffer = gl.createFramebuffer();
-            this.framebuffer = frameBuffer;
-            var depthRenderBuffer = gl.createRenderbuffer();
-            this.depthbuffer = depthRenderBuffer;
-            var fTexture = gl.createTexture();
-            this.targetTexture = fTexture;
-        }
-        WebGL_FrameBuffer.prototype.bindFrameBuffer = function () {
-            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
-        };
-        WebGL_FrameBuffer.prototype.bindDepthBuffer = function () {
-            gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthbuffer);
-            //setiing render buffer to depth buffer
-            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
-            //attach depthbuffer to framebuffer
-            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthbuffer);
-        };
-        WebGL_FrameBuffer.prototype.renderToTexure = function () {
-            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
-            //make sure we have enought memory to render the width x height size texture
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-            //texture settings
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            //attach framebuff to texture
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
-        };
-        WebGL_FrameBuffer.prototype.renderToShadowTexure = function () {
-            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
-            //make sure we have enought memory to render the width x height size texture
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-            //texture settings
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-            //attach framebuff to texture
-            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
-        };
-        WebGL_FrameBuffer.prototype.renderToCubeTexture = function (cubeTarget) {
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.targetTexture);
-            for (var i = 0; i < cubeTarget.length; i++) {
-                gl.texImage2D(cubeTarget[i], 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-            }
-            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        };
-        WebGL_FrameBuffer.prototype.releaseCubeTex = function () {
-            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
-            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        };
-        WebGL_FrameBuffer.prototype.release = function () {
-            gl.bindTexture(gl.TEXTURE_2D, null);
-            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
-            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-        };
-        return WebGL_FrameBuffer;
-    }());
-    EcognitaMathLib.WebGL_FrameBuffer = WebGL_FrameBuffer;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 var Shaders = {
     'toonShading-frag': 'precision mediump float;\n\n' +
@@ -1664,40 +1381,6 @@ var Shaders = {
 };
 /* =========================================================================
  *
- *  cv_colorSpace.ts
- *  color space transformation
- *
- * ========================================================================= */
-var EcognitaMathLib;
-(function (EcognitaMathLib) {
-    //hsv space transform to rgb space
-    //h(0~360) sva(0~1)
-    function HSV2RGB(h, s, v, a) {
-        if (s > 1 || v > 1 || a > 1) {
-            return;
-        }
-        var th = h % 360;
-        var i = Math.floor(th / 60);
-        var f = th / 60 - i;
-        var m = v * (1 - s);
-        var n = v * (1 - s * f);
-        var k = v * (1 - s * (1 - f));
-        var color = new Array();
-        if (!(s > 0) && !(s < 0)) {
-            color.push(v, v, v, a);
-        }
-        else {
-            var r = new Array(v, n, m, m, k, v);
-            var g = new Array(k, v, v, n, m, m);
-            var b = new Array(m, m, k, v, v, n);
-            color.push(r[i], g[i], b[i], a);
-        }
-        return color;
-    }
-    EcognitaMathLib.HSV2RGB = HSV2RGB;
-})(EcognitaMathLib || (EcognitaMathLib = {}));
-/* =========================================================================
- *
  *  webgl_model.ts
  *  simple 3d model for webgl
  *
@@ -1948,181 +1631,626 @@ var EcognitaMathLib;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
- *  demo32.ts
- *  filter:laplacian
+ *  webgl_utils.ts
+ *  utils for webgl
+ *  part of source code referenced by tantalum-gl.js
+ * ========================================================================= */
+var EcognitaMathLib;
+(function (EcognitaMathLib) {
+    function GetGLTypeSize(type) {
+        switch (type) {
+            case gl.BYTE:
+            case gl.UNSIGNED_BYTE:
+                return 1;
+            case gl.SHORT:
+            case gl.UNSIGNED_SHORT:
+                return 2;
+            case gl.INT:
+            case gl.UNSIGNED_INT:
+            case gl.FLOAT:
+                return 4;
+            default:
+                return 0;
+        }
+    }
+    EcognitaMathLib.GetGLTypeSize = GetGLTypeSize;
+    var WebGL_Texture = /** @class */ (function () {
+        function WebGL_Texture(channels, isFloat, texels, texType) {
+            if (texType === void 0) { texType = gl.REPEAT; }
+            this.type = isFloat ? gl.FLOAT : gl.UNSIGNED_BYTE;
+            this.format = [gl.LUMINANCE, gl.RG, gl.RGB, gl.RGBA][channels - 1];
+            this.glName = gl.createTexture();
+            this.bind(this.glName);
+            gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, texels);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, texType);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, texType);
+            this.texture = this.glName;
+            this.bind(null);
+        }
+        WebGL_Texture.prototype.bind = function (tex) {
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+        };
+        return WebGL_Texture;
+    }());
+    EcognitaMathLib.WebGL_Texture = WebGL_Texture;
+    var WebGL_CubeMapTexture = /** @class */ (function () {
+        function WebGL_CubeMapTexture(texArray) {
+            this.cubeSource = texArray;
+            this.cubeTarget = new Array(gl.TEXTURE_CUBE_MAP_POSITIVE_X, gl.TEXTURE_CUBE_MAP_POSITIVE_Y, gl.TEXTURE_CUBE_MAP_POSITIVE_Z, gl.TEXTURE_CUBE_MAP_NEGATIVE_X, gl.TEXTURE_CUBE_MAP_NEGATIVE_Y, gl.TEXTURE_CUBE_MAP_NEGATIVE_Z);
+            this.loadCubeTexture();
+            this.cubeTexture = undefined;
+        }
+        WebGL_CubeMapTexture.prototype.loadCubeTexture = function () {
+            var _this = this;
+            var cubeImage = new Array();
+            var loadFlagCnt = 0;
+            this.cubeImage = cubeImage;
+            for (var i = 0; i < this.cubeSource.length; i++) {
+                cubeImage[i] = new Object();
+                cubeImage[i].data = new Image();
+                cubeImage[i].data.src = this.cubeSource[i];
+                cubeImage[i].data.onload = (function () {
+                    loadFlagCnt++;
+                    //check image load
+                    if (loadFlagCnt == _this.cubeSource.length) {
+                        _this.generateCubeMap();
+                    }
+                });
+            }
+        };
+        WebGL_CubeMapTexture.prototype.generateCubeMap = function () {
+            var tex = gl.createTexture();
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, tex);
+            for (var j = 0; j < this.cubeSource.length; j++) {
+                gl.texImage2D(this.cubeTarget[j], 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.cubeImage[j].data);
+            }
+            gl.generateMipmap(gl.TEXTURE_CUBE_MAP);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            this.cubeTexture = tex;
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+        };
+        return WebGL_CubeMapTexture;
+    }());
+    EcognitaMathLib.WebGL_CubeMapTexture = WebGL_CubeMapTexture;
+    var WebGL_RenderTarget = /** @class */ (function () {
+        function WebGL_RenderTarget() {
+            this.glName = gl.createFramebuffer();
+        }
+        WebGL_RenderTarget.prototype.bind = function () { gl.bindFramebuffer(gl.FRAMEBUFFER, this.glName); };
+        WebGL_RenderTarget.prototype.unbind = function () { gl.bindFramebuffer(gl.FRAMEBUFFER, null); };
+        WebGL_RenderTarget.prototype.attachTexture = function (texture, index) {
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, gl.TEXTURE_2D, texture.glName, 0);
+        };
+        WebGL_RenderTarget.prototype.detachTexture = function (index) {
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0 + index, gl.TEXTURE_2D, null, 0);
+        };
+        WebGL_RenderTarget.prototype.drawBuffers = function (numBufs) {
+            var buffers = [];
+            for (var i = 0; i < numBufs; ++i)
+                buffers.push(gl.COLOR_ATTACHMENT0 + i);
+            multiBufExt.drawBuffersWEBGL(buffers);
+        };
+        return WebGL_RenderTarget;
+    }());
+    EcognitaMathLib.WebGL_RenderTarget = WebGL_RenderTarget;
+    var WebGL_Shader = /** @class */ (function () {
+        function WebGL_Shader(shaderDict, vert, frag) {
+            this.vertex = this.createShaderObject(shaderDict, vert, false);
+            this.fragment = this.createShaderObject(shaderDict, frag, true);
+            this.program = gl.createProgram();
+            gl.attachShader(this.program, this.vertex);
+            gl.attachShader(this.program, this.fragment);
+            gl.linkProgram(this.program);
+            this.uniforms = {};
+            if (!gl.getProgramParameter(this.program, gl.LINK_STATUS))
+                alert("Could not initialise shaders");
+        }
+        WebGL_Shader.prototype.bind = function () {
+            gl.useProgram(this.program);
+        };
+        WebGL_Shader.prototype.createShaderObject = function (shaderDict, name, isFragment) {
+            var shaderSource = this.resolveShaderSource(shaderDict, name);
+            var shaderObject = gl.createShader(isFragment ? gl.FRAGMENT_SHADER : gl.VERTEX_SHADER);
+            gl.shaderSource(shaderObject, shaderSource);
+            gl.compileShader(shaderObject);
+            if (!gl.getShaderParameter(shaderObject, gl.COMPILE_STATUS)) {
+                /* Add some line numbers for convenience */
+                var lines = shaderSource.split("\n");
+                for (var i = 0; i < lines.length; ++i)
+                    lines[i] = ("   " + (i + 1)).slice(-4) + " | " + lines[i];
+                shaderSource = lines.join("\n");
+                throw new Error((isFragment ? "Fragment" : "Vertex") + " shader compilation error for shader '" + name + "':\n\n    " +
+                    gl.getShaderInfoLog(shaderObject).split("\n").join("\n    ") +
+                    "\nThe expanded shader source code was:\n\n" +
+                    shaderSource);
+            }
+            return shaderObject;
+        };
+        WebGL_Shader.prototype.resolveShaderSource = function (shaderDict, name) {
+            if (!(name in shaderDict))
+                throw new Error("Unable to find shader source for '" + name + "'");
+            var shaderSource = shaderDict[name];
+            /* Rudimentary include handling for convenience.
+               Not the most robust, but it will do for our purposes */
+            var pattern = new RegExp('#include "(.+)"');
+            var match;
+            while (match = pattern.exec(shaderSource)) {
+                shaderSource = shaderSource.slice(0, match.index) +
+                    this.resolveShaderSource(shaderDict, match[1]) +
+                    shaderSource.slice(match.index + match[0].length);
+            }
+            return shaderSource;
+        };
+        WebGL_Shader.prototype.uniformIndex = function (name) {
+            if (!(name in this.uniforms))
+                this.uniforms[name] = gl.getUniformLocation(this.program, name);
+            return this.uniforms[name];
+        };
+        WebGL_Shader.prototype.uniformTexture = function (name, texture) {
+            var id = this.uniformIndex(name);
+            if (id != -1)
+                gl.uniform1i(id, texture.boundUnit);
+        };
+        WebGL_Shader.prototype.uniformF = function (name, f) {
+            var id = this.uniformIndex(name);
+            if (id != -1)
+                gl.uniform1f(id, f);
+        };
+        WebGL_Shader.prototype.uniform2F = function (name, f1, f2) {
+            var id = this.uniformIndex(name);
+            if (id != -1)
+                gl.uniform2f(id, f1, f2);
+        };
+        return WebGL_Shader;
+    }());
+    EcognitaMathLib.WebGL_Shader = WebGL_Shader;
+    //add attribute -> init -> copy -> bind -> draw -> release
+    var WebGL_VertexBuffer = /** @class */ (function () {
+        function WebGL_VertexBuffer() {
+            this.attributes = [];
+            this.elementSize = 0;
+        }
+        WebGL_VertexBuffer.prototype.bind = function (shader) {
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.glName);
+            for (var i = 0; i < this.attributes.length; ++i) {
+                this.attributes[i].index = gl.getAttribLocation(shader.program, this.attributes[i].name);
+                if (this.attributes[i].index >= 0) {
+                    var attr = this.attributes[i];
+                    gl.enableVertexAttribArray(attr.index);
+                    gl.vertexAttribPointer(attr.index, attr.size, attr.type, attr.norm, this.elementSize, attr.offset);
+                }
+            }
+        };
+        WebGL_VertexBuffer.prototype.release = function () {
+            for (var i = 0; i < this.attributes.length; ++i) {
+                if (this.attributes[i].index >= 0) {
+                    gl.disableVertexAttribArray(this.attributes[i].index);
+                    this.attributes[i].index = -1;
+                }
+            }
+        };
+        WebGL_VertexBuffer.prototype.addAttribute = function (name, size, type, norm) {
+            this.attributes.push({
+                "name": name,
+                "size": size,
+                "type": type,
+                "norm": norm,
+                "offset": this.elementSize,
+                "index": -1
+            });
+            this.elementSize += size * GetGLTypeSize(type);
+        };
+        WebGL_VertexBuffer.prototype.addAttributes = function (attrArray, sizeArray) {
+            for (var i = 0; i < attrArray.length; i++) {
+                this.addAttribute(attrArray[i], sizeArray[i], gl.FLOAT, false);
+            }
+        };
+        WebGL_VertexBuffer.prototype.init = function (numVerts) {
+            this.length = numVerts;
+            this.glName = gl.createBuffer();
+            gl.bindBuffer(gl.ARRAY_BUFFER, this.glName);
+            gl.bufferData(gl.ARRAY_BUFFER, this.length * this.elementSize, gl.STATIC_DRAW);
+        };
+        WebGL_VertexBuffer.prototype.copy = function (data) {
+            data = new Float32Array(data);
+            if (data.byteLength != this.length * this.elementSize)
+                throw new Error("Resizing VBO during copy strongly discouraged");
+            gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ARRAY_BUFFER, null);
+        };
+        WebGL_VertexBuffer.prototype.draw = function (mode, length) {
+            gl.drawArrays(mode, 0, length ? length : this.length);
+        };
+        return WebGL_VertexBuffer;
+    }());
+    EcognitaMathLib.WebGL_VertexBuffer = WebGL_VertexBuffer;
+    var WebGL_IndexBuffer = /** @class */ (function () {
+        function WebGL_IndexBuffer() {
+        }
+        WebGL_IndexBuffer.prototype.bind = function () {
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glName);
+        };
+        WebGL_IndexBuffer.prototype.init = function (index) {
+            this.length = index.length;
+            this.glName = gl.createBuffer();
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.glName);
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Int16Array(index), gl.STATIC_DRAW);
+            gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+        };
+        WebGL_IndexBuffer.prototype.draw = function (mode, length) {
+            gl.drawElements(mode, length ? length : this.length, gl.UNSIGNED_SHORT, 0);
+        };
+        return WebGL_IndexBuffer;
+    }());
+    EcognitaMathLib.WebGL_IndexBuffer = WebGL_IndexBuffer;
+    var WebGL_FrameBuffer = /** @class */ (function () {
+        function WebGL_FrameBuffer(width, height) {
+            this.width = width;
+            this.height = height;
+            var frameBuffer = gl.createFramebuffer();
+            this.framebuffer = frameBuffer;
+            var depthRenderBuffer = gl.createRenderbuffer();
+            this.depthbuffer = depthRenderBuffer;
+            var fTexture = gl.createTexture();
+            this.targetTexture = fTexture;
+        }
+        WebGL_FrameBuffer.prototype.bindFrameBuffer = function () {
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebuffer);
+        };
+        WebGL_FrameBuffer.prototype.bindDepthBuffer = function () {
+            gl.bindRenderbuffer(gl.RENDERBUFFER, this.depthbuffer);
+            //setiing render buffer to depth buffer
+            gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, this.width, this.height);
+            //attach depthbuffer to framebuffer
+            gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, this.depthbuffer);
+        };
+        WebGL_FrameBuffer.prototype.renderToTexure = function () {
+            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+            //make sure we have enought memory to render the width x height size texture
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            //texture settings
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            //attach framebuff to texture
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
+        };
+        WebGL_FrameBuffer.prototype.renderToShadowTexure = function () {
+            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+            //make sure we have enought memory to render the width x height size texture
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            //texture settings
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            //attach framebuff to texture
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
+        };
+        WebGL_FrameBuffer.prototype.renderToCubeTexture = function (cubeTarget) {
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.targetTexture);
+            for (var i = 0; i < cubeTarget.length; i++) {
+                gl.texImage2D(cubeTarget[i], 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+            }
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        };
+        WebGL_FrameBuffer.prototype.releaseCubeTex = function () {
+            gl.bindTexture(gl.TEXTURE_CUBE_MAP, null);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        };
+        WebGL_FrameBuffer.prototype.release = function () {
+            gl.bindTexture(gl.TEXTURE_2D, null);
+            gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        };
+        return WebGL_FrameBuffer;
+    }());
+    EcognitaMathLib.WebGL_FrameBuffer = WebGL_FrameBuffer;
+})(EcognitaMathLib || (EcognitaMathLib = {}));
+var Utils;
+(function (Utils) {
+    ;
+    var HashSet = /** @class */ (function () {
+        function HashSet() {
+            this.items = {};
+        }
+        HashSet.prototype.set = function (key, value) {
+            this.items[key] = value;
+        };
+        HashSet.prototype["delete"] = function (key) {
+            return delete this.items[key];
+        };
+        HashSet.prototype.has = function (key) {
+            return key in this.items;
+        };
+        HashSet.prototype.get = function (key) {
+            return this.items[key];
+        };
+        HashSet.prototype.len = function () {
+            return Object.keys(this.items).length;
+        };
+        HashSet.prototype.forEach = function (f) {
+            for (var k in this.items) {
+                f(k, this.items[k]);
+            }
+        };
+        return HashSet;
+    }());
+    Utils.HashSet = HashSet;
+})(Utils || (Utils = {}));
+/* =========================================================================
+ *
+ *  FilterViewHub.ts
+ *  pkg for filter viewer
+ *  v0.1
  *
  * ========================================================================= */
-/// <reference path="../lib/cv_imread.ts" />
-/// <reference path="../lib/extra_utils.ts" />
-/// <reference path="../lib/webgl_matrix.ts" />
-/// <reference path="../lib/webgl_quaternion.ts" />
-/// <reference path="../lib/webgl_utils.ts" />
-/// <reference path="../lib/webgl_shaders.ts" />
-/// <reference path="../lib/webgl_model.ts" />
-/// <reference path="../lib/cv_colorSpace.ts" />
-var canvas = document.getElementById('canvas');
-canvas.width = 512;
-canvas.height = 512;
-try {
-    var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
-}
-catch (e) { }
-if (!gl)
-    throw new Error("Could not initialise WebGL");
-var sceneShader = new EcognitaMathLib.WebGL_Shader(Shaders, "filterScene-vert", "filterScene-frag");
-var filterShader = new EcognitaMathLib.WebGL_Shader(Shaders, "laplacianFilter-vert", "laplacianFilter-frag");
-//scene model : torus
-var torusData = new EcognitaMathLib.TorusModel(64, 64, 1.0, 2.0, [1.0, 1.0, 1.0, 1.0], true, false);
-var vbo_torus = new EcognitaMathLib.WebGL_VertexBuffer();
-var ibo_torus = new EcognitaMathLib.WebGL_IndexBuffer();
-vbo_torus.addAttribute("position", 3, gl.FLOAT, false);
-vbo_torus.addAttribute("normal", 3, gl.FLOAT, false);
-vbo_torus.addAttribute("color", 4, gl.FLOAT, false);
-vbo_torus.init(torusData.data.length / 10);
-vbo_torus.copy(torusData.data);
-ibo_torus.init(torusData.index);
-var position = [
-    -1.0, 1.0, 0.0,
-    1.0, 1.0, 0.0,
-    -1.0, -1.0, 0.0,
-    1.0, -1.0, 0.0
-];
-var boardData = new EcognitaMathLib.BoardModel(position, undefined, false, false, true);
-var vbo_board = new EcognitaMathLib.WebGL_VertexBuffer();
-var ibo_board = new EcognitaMathLib.WebGL_IndexBuffer();
-vbo_board.addAttribute("position", 3, gl.FLOAT, false);
-vbo_board.addAttribute("texCoord", 2, gl.FLOAT, false);
-boardData.index = [
-    0, 2, 1,
-    2, 3, 1
-];
-vbo_board.init(boardData.data.length / 5);
-vbo_board.copy(boardData.data);
-ibo_board.init(boardData.index);
-var uniLocation_f = new Array();
-uniLocation_f.push(sceneShader.uniformIndex('mvpMatrix'));
-uniLocation_f.push(sceneShader.uniformIndex('invMatrix'));
-uniLocation_f.push(sceneShader.uniformIndex('lightDirection'));
-uniLocation_f.push(sceneShader.uniformIndex('eyeDirection'));
-uniLocation_f.push(sceneShader.uniformIndex('ambientColor'));
-var uniLocation_s = new Array();
-uniLocation_s.push(filterShader.uniformIndex('mvpMatrix'));
-uniLocation_s.push(filterShader.uniformIndex('texture'));
-uniLocation_s.push(filterShader.uniformIndex('coef'));
-var m = new EcognitaMathLib.WebGLMatrix();
-var q = new EcognitaMathLib.WebGLQuaternion();
-var mMatrix = m.identity(m.create());
-var vMatrix = m.identity(m.create());
-var pMatrix = m.identity(m.create());
-var tmpMatrix = m.identity(m.create());
-var mvpMatrix = m.identity(m.create());
-var invMatrix = m.identity(m.create());
-var xQuaternion = q.identity(q.create());
-var lastPosX = 0;
-var lastPosY = 0;
-var isDragging = false;
-var hammer = new EcognitaMathLib.Hammer_Utils(canvas);
-hammer.on_pan = function (ev) {
-    var elem = ev.target;
-    if (!isDragging) {
-        isDragging = true;
-        lastPosX = elem.offsetLeft;
-        lastPosY = elem.offsetTop;
-    }
-    var posX = ev.center.x - lastPosX;
-    var posY = ev.center.y - lastPosY;
-    var cw = canvas.width;
-    var ch = canvas.height;
-    var wh = 1 / Math.sqrt(cw * cw + ch * ch);
-    var x = posX - cw * 0.5;
-    var y = posY - ch * 0.5;
-    var sq = Math.sqrt(x * x + y * y);
-    var r = sq * 2.0 * Math.PI * wh;
-    if (sq != 1) {
-        sq = 1 / sq;
-        x *= sq;
-        y *= sq;
-    }
-    xQuaternion = q.rotate(r, [y, x, 0.0]);
-    if (ev.isFinal) {
-        isDragging = false;
-    }
-};
-hammer.enablePan();
-//depth test
-gl.enable(gl.DEPTH_TEST);
-gl.depthFunc(gl.LEQUAL);
-gl.enable(gl.CULL_FACE);
-var lightDirection = [-0.577, 0.577, 0.577];
-//frame buffer
-var fBufferWidth = 512;
-var fBufferHeight = 512;
-var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
-frameBuffer.bindFrameBuffer();
-frameBuffer.bindDepthBuffer();
-frameBuffer.renderToShadowTexure();
-frameBuffer.release();
-var cnt = 0;
-var cnt1 = 0;
-var coef = [1.0, 1.0, 1.0,
-    1.0, -8.0, 1.0,
-    1.0, 1.0, 1.0];
-(function () {
-    cnt++;
-    if (cnt % 2 == 0) {
-        cnt1++;
-    }
-    var rad = (cnt % 360) * Math.PI / 180;
-    sceneShader.bind();
-    frameBuffer.bindFrameBuffer();
-    var hsv = EcognitaMathLib.HSV2RGB(cnt1 % 360, 1, 1, 1);
-    gl.clearColor(hsv[0], hsv[1], hsv[2], hsv[3]);
-    gl.clearDepth(1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    var eyePosition = new Array();
-    var camUpDirection = new Array();
-    eyePosition = q.ToV3([0.0, 20.0, 0.0], xQuaternion);
-    camUpDirection = q.ToV3([0.0, 0.0, -1.0], xQuaternion);
-    //camera setting
-    vMatrix = m.viewMatrix(eyePosition, [0, 0, 0], camUpDirection);
-    pMatrix = m.perspectiveMatrix(90, canvas.width / canvas.height, 0.1, 100);
-    tmpMatrix = m.multiply(pMatrix, vMatrix);
-    //draw torus
-    vbo_torus.bind(sceneShader);
-    ibo_torus.bind();
-    for (var i = 0; i < 9; i++) {
-        var amb = EcognitaMathLib.HSV2RGB(i * 40, 1, 1, 1);
-        mMatrix = m.identity(mMatrix);
-        mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
-        mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
-        mMatrix = m.rotate(mMatrix, rad, [1, 1, 0]);
-        mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-        invMatrix = m.inverse(mMatrix);
-        gl.uniformMatrix4fv(uniLocation_f[0], false, mvpMatrix);
-        gl.uniformMatrix4fv(uniLocation_f[1], false, invMatrix);
-        gl.uniform3fv(uniLocation_f[2], lightDirection);
-        gl.uniform3fv(uniLocation_f[3], eyePosition);
-        gl.uniform4fv(uniLocation_f[4], amb);
-        ibo_torus.draw(gl.TRIANGLES);
-    }
-    filterShader.bind();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clearDepth(1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    // orth matrix
-    vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
-    pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
-    tmpMatrix = m.multiply(pMatrix, vMatrix);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, frameBuffer.targetTexture);
-    //draw filter image into board
-    vbo_board.bind(filterShader);
-    ibo_board.bind();
-    gl.uniformMatrix4fv(uniLocation_s[0], false, tmpMatrix);
-    gl.uniform1i(uniLocation_s[1], 0);
-    gl.uniform1fv(uniLocation_s[2], coef);
-    ibo_board.draw(gl.TRIANGLES);
-    gl.flush();
-    setTimeout(arguments.callee, 1000 / 30);
-})();
+/// <reference path="../lib/HashSet.ts" />
+/// <reference path="../../../../lib_webgl/ts_scripts/lib/cv_imread.ts" />
+/// <reference path="../../../../lib_webgl/ts_scripts/lib/cv_colorSpace.ts" />
+/// <reference path="../../../../lib_webgl/ts_scripts/lib/extra_utils.ts" />
+/// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_matrix.ts" />
+/// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_quaternion.ts" />
+/// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_utils.ts" />
+/// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_shaders.ts" />
+/// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_model.ts" />
+var EcognitaWeb3DFunction;
+(function (EcognitaWeb3DFunction) {
+    var InitWeb3DEnv = /** @class */ (function () {
+        function InitWeb3DEnv(cvs, shaderlist) {
+            var _this = this;
+            this.canvas = cvs;
+            this.chkWebGLEnvi();
+            this.vbo = new Array();
+            this.ibo = new Array();
+            this.Texture = new Array();
+            this.matUtil = new EcognitaMathLib.WebGLMatrix();
+            this.quatUtil = new EcognitaMathLib.WebGLQuaternion();
+            this.extHammer = new EcognitaMathLib.Hammer_Utils(this.canvas);
+            this.shaders = new Utils.HashSet();
+            shaderlist.forEach(function (shaderName) {
+                var shader = new EcognitaMathLib.WebGL_Shader(Shaders, shaderName + "-vert", shaderName + "-frag");
+                _this.shaders.set(shaderName, shader);
+            });
+        }
+        InitWeb3DEnv.prototype.loadTexture = function (file_name) {
+            var _this = this;
+            var tex = null;
+            var image = EcognitaMathLib.imread(file_name);
+            image.onload = (function () {
+                tex = new EcognitaMathLib.WebGL_Texture(4, false, image);
+                _this.Texture.push(tex);
+            });
+        };
+        InitWeb3DEnv.prototype.chkWebGLEnvi = function () {
+            try {
+                gl = this.canvas.getContext("webgl") || this.canvas.getContext("experimental-webgl");
+            }
+            catch (e) { }
+            if (!gl)
+                throw new Error("Could not initialise WebGL");
+        };
+        return InitWeb3DEnv;
+    }());
+    EcognitaWeb3DFunction.InitWeb3DEnv = InitWeb3DEnv;
+    var FilterViewer = /** @class */ (function (_super) {
+        __extends(FilterViewer, _super);
+        function FilterViewer(cvs) {
+            var _this = this;
+            var shaderList = ["filterScene", "laplacianFilter"];
+            _this = _super.call(this, cvs, shaderList) || this;
+            _this.initModel();
+            _this.settingUniform();
+            _this.regisEvent();
+            _this.settingRenderPipeline();
+            _this.regisLoopFunc();
+            return _this;
+        }
+        FilterViewer.prototype.initModel = function () {
+            //scene model : torus
+            var torusData = new EcognitaMathLib.TorusModel(64, 64, 1.0, 2.0, [1.0, 1.0, 1.0, 1.0], true, false);
+            var vbo_torus = new EcognitaMathLib.WebGL_VertexBuffer();
+            var ibo_torus = new EcognitaMathLib.WebGL_IndexBuffer();
+            this.vbo.push(vbo_torus);
+            this.ibo.push(ibo_torus);
+            vbo_torus.addAttribute("position", 3, gl.FLOAT, false);
+            vbo_torus.addAttribute("normal", 3, gl.FLOAT, false);
+            vbo_torus.addAttribute("color", 4, gl.FLOAT, false);
+            vbo_torus.init(torusData.data.length / 10);
+            vbo_torus.copy(torusData.data);
+            ibo_torus.init(torusData.index);
+            var position = [
+                -1.0, 1.0, 0.0,
+                1.0, 1.0, 0.0,
+                -1.0, -1.0, 0.0,
+                1.0, -1.0, 0.0
+            ];
+            var boardData = new EcognitaMathLib.BoardModel(position, undefined, false, false, true);
+            var vbo_board = new EcognitaMathLib.WebGL_VertexBuffer();
+            var ibo_board = new EcognitaMathLib.WebGL_IndexBuffer();
+            this.vbo.push(vbo_board);
+            this.ibo.push(ibo_board);
+            vbo_board.addAttribute("position", 3, gl.FLOAT, false);
+            vbo_board.addAttribute("texCoord", 2, gl.FLOAT, false);
+            boardData.index = [
+                0, 2, 1,
+                2, 3, 1
+            ];
+            vbo_board.init(boardData.data.length / 5);
+            vbo_board.copy(boardData.data);
+            ibo_board.init(boardData.index);
+        };
+        FilterViewer.prototype.settingUniform = function () {
+            var uniLocation_f = new Array();
+            var sceneShader = this.shaders.get("filterScene");
+            var filterShader = this.shaders.get("laplacianFilter");
+            uniLocation_f.push(sceneShader.uniformIndex('mvpMatrix'));
+            uniLocation_f.push(sceneShader.uniformIndex('invMatrix'));
+            uniLocation_f.push(sceneShader.uniformIndex('lightDirection'));
+            uniLocation_f.push(sceneShader.uniformIndex('eyeDirection'));
+            uniLocation_f.push(sceneShader.uniformIndex('ambientColor'));
+            var uniLocation_s = new Array();
+            uniLocation_s.push(filterShader.uniformIndex('mvpMatrix'));
+            uniLocation_s.push(filterShader.uniformIndex('texture'));
+            uniLocation_s.push(filterShader.uniformIndex('coef'));
+            this.uniLocation_f = uniLocation_f;
+            this.uniLocation_s = uniLocation_s;
+        };
+        FilterViewer.prototype.settingRenderPipeline = function () {
+            gl.enable(gl.DEPTH_TEST);
+            gl.depthFunc(gl.LEQUAL);
+            gl.enable(gl.CULL_FACE);
+        };
+        FilterViewer.prototype.regisEvent = function () {
+            var _this = this;
+            var lastPosX = 0;
+            var lastPosY = 0;
+            var isDragging = false;
+            var hammer = this.extHammer;
+            hammer.on_pan = function (ev) {
+                var elem = ev.target;
+                if (!isDragging) {
+                    isDragging = true;
+                    lastPosX = elem.offsetLeft;
+                    lastPosY = elem.offsetTop;
+                }
+                var posX = ev.center.x - lastPosX;
+                var posY = ev.center.y - lastPosY;
+                var cw = _this.canvas.width;
+                var ch = _this.canvas.height;
+                var wh = 1 / Math.sqrt(cw * cw + ch * ch);
+                var x = posX - cw * 0.5;
+                var y = posY - ch * 0.5;
+                var sq = Math.sqrt(x * x + y * y);
+                var r = sq * 2.0 * Math.PI * wh;
+                if (sq != 1) {
+                    sq = 1 / sq;
+                    x *= sq;
+                    y *= sq;
+                }
+                _this.usrQuaternion = _this.quatUtil.rotate(r, [y, x, 0.0]);
+                if (ev.isFinal) {
+                    isDragging = false;
+                }
+            };
+            hammer.enablePan();
+        };
+        FilterViewer.prototype.regisLoopFunc = function () {
+            var _this = this;
+            var cnt = 0;
+            var cnt1 = 0;
+            var coef = [1.0, 1.0, 1.0,
+                1.0, -8.0, 1.0,
+                1.0, 1.0, 1.0];
+            var lightDirection = [-0.577, 0.577, 0.577];
+            var m = this.matUtil;
+            var q = this.quatUtil;
+            var mMatrix = m.identity(m.create());
+            var vMatrix = m.identity(m.create());
+            var pMatrix = m.identity(m.create());
+            var tmpMatrix = m.identity(m.create());
+            var mvpMatrix = m.identity(m.create());
+            var invMatrix = m.identity(m.create());
+            this.usrQuaternion = q.identity(q.create());
+            //frame buffer
+            var fBufferWidth = 512;
+            var fBufferHeight = 512;
+            var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
+            frameBuffer.bindFrameBuffer();
+            frameBuffer.bindDepthBuffer();
+            frameBuffer.renderToShadowTexure();
+            frameBuffer.release();
+            var uniLocation_f = this.uniLocation_f;
+            var uniLocation_s = this.uniLocation_s;
+            var sceneShader = this.shaders.get("filterScene");
+            var filterShader = this.shaders.get("laplacianFilter");
+            var vbo_torus = this.vbo[0];
+            var ibo_torus = this.ibo[0];
+            var vbo_board = this.vbo[1];
+            var ibo_board = this.ibo[1];
+            var loop = function () {
+                cnt++;
+                if (cnt % 2 == 0) {
+                    cnt1++;
+                }
+                var rad = (cnt % 360) * Math.PI / 180;
+                sceneShader.bind();
+                frameBuffer.bindFrameBuffer();
+                var hsv = EcognitaMathLib.HSV2RGB(cnt1 % 360, 1, 1, 1);
+                gl.clearColor(hsv[0], hsv[1], hsv[2], hsv[3]);
+                gl.clearDepth(1.0);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                var eyePosition = new Array();
+                var camUpDirection = new Array();
+                eyePosition = q.ToV3([0.0, 20.0, 0.0], _this.usrQuaternion);
+                camUpDirection = q.ToV3([0.0, 0.0, -1.0], _this.usrQuaternion);
+                //camera setting
+                vMatrix = m.viewMatrix(eyePosition, [0, 0, 0], camUpDirection);
+                pMatrix = m.perspectiveMatrix(90, _this.canvas.width / _this.canvas.height, 0.1, 100);
+                tmpMatrix = m.multiply(pMatrix, vMatrix);
+                //draw torus
+                vbo_torus.bind(sceneShader);
+                ibo_torus.bind();
+                for (var i = 0; i < 9; i++) {
+                    var amb = EcognitaMathLib.HSV2RGB(i * 40, 1, 1, 1);
+                    mMatrix = m.identity(mMatrix);
+                    mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
+                    mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
+                    mMatrix = m.rotate(mMatrix, rad, [1, 1, 0]);
+                    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+                    invMatrix = m.inverse(mMatrix);
+                    gl.uniformMatrix4fv(uniLocation_f[0], false, mvpMatrix);
+                    gl.uniformMatrix4fv(uniLocation_f[1], false, invMatrix);
+                    gl.uniform3fv(uniLocation_f[2], lightDirection);
+                    gl.uniform3fv(uniLocation_f[3], eyePosition);
+                    gl.uniform4fv(uniLocation_f[4], amb);
+                    ibo_torus.draw(gl.TRIANGLES);
+                }
+                filterShader.bind();
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                gl.clearDepth(1.0);
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                // orth matrix
+                vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+                pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
+                tmpMatrix = m.multiply(pMatrix, vMatrix);
+                gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, frameBuffer.targetTexture);
+                //draw filter image into board
+                vbo_board.bind(filterShader);
+                ibo_board.bind();
+                gl.uniformMatrix4fv(uniLocation_s[0], false, tmpMatrix);
+                gl.uniform1i(uniLocation_s[1], 0);
+                gl.uniform1fv(uniLocation_s[2], coef);
+                ibo_board.draw(gl.TRIANGLES);
+                gl.flush();
+                requestAnimationFrame(loop);
+            };
+            loop();
+        };
+        return FilterViewer;
+    }(InitWeb3DEnv));
+    EcognitaWeb3DFunction.FilterViewer = FilterViewer;
+})(EcognitaWeb3DFunction || (EcognitaWeb3DFunction = {}));
+/* =========================================================================
+ *
+ *  FilterViewer.ts
+ *  tool for test filter in WebGL
+ *  filter viewer
+ *
+ * ========================================================================= */
+/// <reference path="../ts_scripts/package/pkg_FilterViewHub.ts" />
+var cvs_web3d = document.getElementById('canvas_web3d');
+cvs_web3d.width = 512;
+cvs_web3d.height = 512;
+var filterViewer = new EcognitaWeb3DFunction.FilterViewer(cvs_web3d);
