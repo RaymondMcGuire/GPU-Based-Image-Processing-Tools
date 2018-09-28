@@ -1493,6 +1493,9 @@ var Shaders = {
         '}\n',
     'sobelFilter-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n\n' +
+        'uniform bool b_sobel;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
         'uniform float hCoef[9];\n' +
         'uniform float vCoef[9];\n' +
         'varying vec2 vTexCoord;\n\n' +
@@ -1501,60 +1504,74 @@ var Shaders = {
         'const float blueScale  = 0.114478;\n' +
         'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
         'void main(void){\n' +
-        '    vec2 offset[9];\n' +
-        '    offset[0] = vec2(-1.0, -1.0);\n' +
-        '    offset[1] = vec2( 0.0, -1.0);\n' +
-        '    offset[2] = vec2( 1.0, -1.0);\n' +
-        '    offset[3] = vec2(-1.0,  0.0);\n' +
-        '    offset[4] = vec2( 0.0,  0.0);\n' +
-        '    offset[5] = vec2( 1.0,  0.0);\n' +
-        '    offset[6] = vec2(-1.0,  1.0);\n' +
-        '    offset[7] = vec2( 0.0,  1.0);\n' +
-        '    offset[8] = vec2( 1.0,  1.0);\n' +
-        '    float tFrag = 1.0 / 512.0;\n' +
-        '    vec2  fc = vec2(gl_FragCoord.s, 512.0 - gl_FragCoord.t);\n' +
-        '    vec3  horizonColor = vec3(0.0);\n' +
-        '    vec3  verticalColor = vec3(0.0);\n' +
-        '    vec4  destColor = vec4(0.0);\n\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[0]) * tFrag).rgb * hCoef[0]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[1]) * tFrag).rgb * hCoef[1]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[2]) * tFrag).rgb * hCoef[2]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[3]) * tFrag).rgb * hCoef[3]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[4]) * tFrag).rgb * hCoef[4]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[5]) * tFrag).rgb * hCoef[5]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[6]) * tFrag).rgb * hCoef[6]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[7]) * tFrag).rgb * hCoef[7]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[8]) * tFrag).rgb * hCoef[8]' +
-        ';\n\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[0]) * tFrag).rgb * vCoef[0]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[1]) * tFrag).rgb * vCoef[1]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[2]) * tFrag).rgb * vCoef[2]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[3]) * tFrag).rgb * vCoef[3]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[4]) * tFrag).rgb * vCoef[4]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[5]) * tFrag).rgb * vCoef[5]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[6]) * tFrag).rgb * vCoef[6]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[7]) * tFrag).rgb * vCoef[7]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[8]) * tFrag).rgb * vCoef[8]' +
-        ';\n\n' +
-        '    destColor = vec4(vec3(sqrt(horizonColor * horizonColor + verticalColor * ver' +
-        'ticalColor)), 1.0);\n' +
-        '    gl_FragColor = destColor;\n' +
+        '    vec3 destColor = vec3(0.0);\n' +
+        '    if(b_sobel){\n' +
+        '        vec2 offset[9];\n' +
+        '        offset[0] = vec2(-1.0, -1.0);\n' +
+        '        offset[1] = vec2( 0.0, -1.0);\n' +
+        '        offset[2] = vec2( 1.0, -1.0);\n' +
+        '        offset[3] = vec2(-1.0,  0.0);\n' +
+        '        offset[4] = vec2( 0.0,  0.0);\n' +
+        '        offset[5] = vec2( 1.0,  0.0);\n' +
+        '        offset[6] = vec2(-1.0,  1.0);\n' +
+        '        offset[7] = vec2( 0.0,  1.0);\n' +
+        '        offset[8] = vec2( 1.0,  1.0);\n' +
+        '        float tFrag = 1.0 / cvsHeight;\n' +
+        '        float sFrag = 1.0 / cvsWidth;\n' +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '        vec2  fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n' +
+        '        vec3  horizonColor = vec3(0.0);\n' +
+        '        vec3  verticalColor = vec3(0.0);\n\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[0]) * Frag).rgb * hCoef' +
+        '[0];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[1]) * Frag).rgb * hCoef' +
+        '[1];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[2]) * Frag).rgb * hCoef' +
+        '[2];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[3]) * Frag).rgb * hCoef' +
+        '[3];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[4]) * Frag).rgb * hCoef' +
+        '[4];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[5]) * Frag).rgb * hCoef' +
+        '[5];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[6]) * Frag).rgb * hCoef' +
+        '[6];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[7]) * Frag).rgb * hCoef' +
+        '[7];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[8]) * Frag).rgb * hCoef' +
+        '[8];\n\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[0]) * Frag).rgb * vCoef' +
+        '[0];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[1]) * Frag).rgb * vCoef' +
+        '[1];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[2]) * Frag).rgb * vCoef' +
+        '[2];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[3]) * Frag).rgb * vCoef' +
+        '[3];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[4]) * Frag).rgb * vCoef' +
+        '[4];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[5]) * Frag).rgb * vCoef' +
+        '[5];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[6]) * Frag).rgb * vCoef' +
+        '[6];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[7]) * Frag).rgb * vCoef' +
+        '[7];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[8]) * Frag).rgb * vCoef' +
+        '[8];\n' +
+        '        destColor = vec3(sqrt(horizonColor * horizonColor + verticalColor * vert' +
+        'icalColor));\n' +
+        '    }else{\n' +
+        '        destColor = texture2D(texture, vTexCoord).rgb;\n' +
+        '    }\n\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'sobelFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'specular-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +

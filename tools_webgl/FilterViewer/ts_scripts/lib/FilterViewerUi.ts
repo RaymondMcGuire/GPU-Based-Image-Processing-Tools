@@ -36,7 +36,7 @@ module Utils{
                     //judge this key is in folder or not
                     let f_name = key.split("_");
                     if((<any>key).includes('_') && f_name[0]==fn){
-                        let c = f.add(this.data, key);
+                        let c = f.add(this.data, key).listen();
                         this.uiController.set(key, c);
                     } 
                 }
