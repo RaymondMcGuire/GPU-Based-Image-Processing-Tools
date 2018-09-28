@@ -6,6 +6,7 @@
  *  
  * ========================================================================= */
 /// <reference path="../lib/HashSet.ts" />
+/// <reference path="../lib/FilterViewerUi.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/cv_imread.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/cv_colorSpace.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/extra_utils.ts" />
@@ -17,11 +18,15 @@
 
 module EcognitaWeb3DFunction {
     declare var gl: any;
+    declare var Stats:any;
     export class InitWeb3DEnv{
         canvas:any;
+        stats:any;
         shaders:any;
         matUtil:any;
         quatUtil:any;
+        uiUtil:any;
+        ui_data:any;
         extHammer:any;
         Texture:Array<any>;
         vbo:Array<any>;
@@ -38,6 +43,8 @@ module EcognitaWeb3DFunction {
         chkWebGLEnvi(){
             try {
                   gl = this.canvas.getContext("webgl") || this.canvas.getContext("experimental-webgl");
+                  this.stats = new Stats();
+                  document.body.appendChild( this.stats.dom );
             } catch (e) {}
             if (!gl)
                 throw new Error("Could not initialise WebGL");
@@ -52,6 +59,13 @@ module EcognitaWeb3DFunction {
             this.Texture = new Array();
             this.matUtil = new EcognitaMathLib.WebGLMatrix();
             this.quatUtil = new EcognitaMathLib.WebGLQuaternion();
+
+            this.ui_data = {
+                name: 'Filter Viewer',
+                f_LapacianFilter:true
+            };
+        
+            this.uiUtil = new Utils.FilterViewerUI(this.ui_data);
             this.extHammer = new EcognitaMathLib.Hammer_Utils(this.canvas);
 
             this.shaders = new Utils.HashSet<EcognitaMathLib.WebGL_Shader>();
@@ -66,12 +80,19 @@ module EcognitaWeb3DFunction {
         usrQuaternion :any;
         uniLocation_f:any;
         uniLocation_s:any;
+
+        b_laplacian:boolean;
         constructor(cvs:any){
             var shaderList = ["filterScene","laplacianFilter"];
             super(cvs,shaderList);
+
+            //init variable
+            this.b_laplacian = true;
+
             this.initModel();
             this.settingUniform();
             this.regisEvent();
+            this.regisUIEvent();
             this.settingRenderPipeline();
             this.regisLoopFunc();
         }
@@ -134,6 +155,9 @@ module EcognitaWeb3DFunction {
             uniLocation_s.push(filterShader.uniformIndex('mvpMatrix'));
             uniLocation_s.push(filterShader.uniformIndex('texture'));
             uniLocation_s.push(filterShader.uniformIndex('coef'));
+            uniLocation_s.push(filterShader.uniformIndex('cvsHeight'));
+            uniLocation_s.push(filterShader.uniformIndex('cvsWidth'));
+            uniLocation_s.push(filterShader.uniformIndex('b_laplacian'));
 
             this.uniLocation_f= uniLocation_f;
             this.uniLocation_s= uniLocation_s;
@@ -143,6 +167,13 @@ module EcognitaWeb3DFunction {
             gl.enable(gl.DEPTH_TEST);
             gl.depthFunc(gl.LEQUAL);
             gl.enable(gl.CULL_FACE); 
+        }
+
+        regisUIEvent(){
+            this.uiUtil.uiController.get("f_LapacianFilter").onChange((val)=> {
+                //console.log("lap filter switch:"+val);
+                this.b_laplacian = val;
+            });
         }
 
         
@@ -206,8 +237,8 @@ module EcognitaWeb3DFunction {
                 this.usrQuaternion = q.identity(q.create());
 
                 //frame buffer
-                var fBufferWidth  = 512;
-                var fBufferHeight = 512;
+                var fBufferWidth  = this.canvas.width;
+                var fBufferHeight = this.canvas.height;
                 var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth,fBufferHeight);
                 frameBuffer.bindFrameBuffer();
                 frameBuffer.bindDepthBuffer();
@@ -227,6 +258,9 @@ module EcognitaWeb3DFunction {
                 var ibo_board = this.ibo[1];
 
                 var loop = () => { 
+
+                    this.stats.begin();
+
                     cnt++;
                     if(cnt % 2 == 0){cnt1++;}
 
@@ -290,9 +324,14 @@ module EcognitaWeb3DFunction {
                     gl.uniformMatrix4fv(uniLocation_s[0], false, tmpMatrix);
                     gl.uniform1i(uniLocation_s[1], 0);
                     gl.uniform1fv(uniLocation_s[2], coef);
+                    gl.uniform1f(uniLocation_s[3], this.canvas.height);
+                    gl.uniform1f(uniLocation_s[4], this.canvas.width);
+                    gl.uniform1i(uniLocation_s[5], this.b_laplacian);
                     ibo_board.draw(gl.TRIANGLES);
                     
                     gl.flush();
+
+                    this.stats.end();
                     requestAnimationFrame(loop);
                 };
 
