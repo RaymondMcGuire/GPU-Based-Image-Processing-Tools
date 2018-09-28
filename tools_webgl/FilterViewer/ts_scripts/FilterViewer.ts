@@ -6,10 +6,11 @@
  *  
  * ========================================================================= */
 /// <reference path="../ts_scripts/package/pkg_FilterViewHub.ts" />
+let viewer = <any>document.createElement( 'canvas' );
+document.body.appendChild( viewer );
 
-var cvs_web3d = <any>document.getElementById('canvas_web3d');
-cvs_web3d.width = 512;
-cvs_web3d.height = 512;
+viewer.id = "canvas_viewer";
+viewer.width = window.innerWidth;
+viewer.height = window.innerHeight;
 
-var filterViewer = new EcognitaWeb3DFunction.FilterViewer(cvs_web3d);
-
+var filterViewer = new EcognitaWeb3DFunction.FilterViewer(viewer);
