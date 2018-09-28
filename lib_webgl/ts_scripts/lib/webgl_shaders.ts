@@ -197,7 +197,7 @@ var Shaders = {
         'uniform bool        reflection;\n'                                                +
         'varying vec3        vPosition;\n'                                                 +
         'varying vec3        vNormal;\n'                                                   +
-        'varying vec4        vColor;\n\n'                                                  
+        'varying vec4        vColor;\n\n'                                                  +
 
         '//reflect = I - 2.0 * dot(N, I) * N.\n'                                           +
         'vec3 egt_reflect(vec3 p, vec3 n){\n'                                              +
@@ -270,10 +270,322 @@ var Shaders = {
     'directionLighting-frag':
         'precision mediump float;\n\n' +
 
+        'varying vec4 vColor;\n\n'     +
+
+        'void main(void){\n'           +
+        '	gl_FragColor = vColor;\n'    +
+        '}\n',
+
+    'directionLighting-vert':
+        'attribute vec3 position;\n'                                             +
+        'attribute vec4 color;\n'                                                +
+        'attribute vec3 normal;\n\n'                                             +
+
+        'uniform mat4 mvpMatrix;\n'                                              +
+        'uniform mat4 invMatrix;\n'                                              +
+        'uniform vec3 lightDirection;\n'                                         +
+        'varying vec4 vColor;\n\n'                                               +
+
+        'void main(void){\n'                                                     +
+        '    vec3 invLight = normalize(invMatrix*vec4(lightDirection,0)).xyz;\n' +
+        '    float diffuse = clamp(dot(invLight,normal),0.1,1.0);\n'             +
+        '    vColor = color*vec4(vec3(diffuse),1.0);\n'                          +
+        '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n'                +
+        '}\n',
+
+    'dir_ambient-frag':
+        'precision mediump float;\n\n' +
 
         'varying vec4 vColor;\n\n'     +
 
+        'void main(void){\n'           +
+        '	gl_FragColor = vColor;\n'    +
+        '}\n',
 
+    'dir_ambient-vert':
+        'attribute vec3 position;\n'                                             +
+        'attribute vec4 color;\n'                                                +
+        'attribute vec3 normal;\n\n'                                             +
+
+        'uniform mat4 mvpMatrix;\n'                                              +
+        'uniform mat4 invMatrix;\n'                                              +
+        'uniform vec3 lightDirection;\n'                                         +
+        'uniform vec4 ambientColor;\n'                                           +
+        'varying vec4 vColor;\n\n'                                               +
+
+        'void main(void){\n'                                                     +
+        '    vec3 invLight = normalize(invMatrix*vec4(lightDirection,0)).xyz;\n' +
+        '    float diffuse = clamp(dot(invLight,normal),0.1,1.0);\n'             +
+        '    vColor = color*vec4(vec3(diffuse),1.0) +ambientColor;\n'            +
+        '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n'                +
+        '}\n',
+
+    'filterScene-frag':
+        'precision mediump float;\n\n' +
+
+        'varying vec4 vColor;\n\n'     +
+
+        'void main(void){\n'           +
+        '	gl_FragColor = vColor;\n'    +
+        '}\n',
+
+    'filterScene-vert':
+        'attribute vec3 position;\n'                                                      +
+        'attribute vec3 normal;\n'                                                        +
+        'attribute vec4 color;\n'                                                         +
+        'uniform   mat4 mvpMatrix;\n'                                                     +
+        'uniform   mat4 invMatrix;\n'                                                     +
+        'uniform   vec3 lightDirection;\n'                                                +
+        'uniform   vec3 eyeDirection;\n'                                                  +
+        'uniform   vec4 ambientColor;\n'                                                  +
+        'varying   vec4 vColor;\n\n'                                                      +
+
+        'void main(void){\n'                                                              +
+        '	vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n'       +
+        '	vec3  invEye   = normalize(invMatrix * vec4(eyeDirection, 0.0)).xyz;\n'         +
+        '	vec3  halfLE   = normalize(invLight + invEye);\n'                               +
+        '	float diffuse  = clamp(dot(normal, invLight), 0.0, 1.0);\n'                     +
+        '	float specular = pow(clamp(dot(normal, halfLE), 0.0, 1.0), 50.0);\n'            +
+        '	vec4  amb      = color * ambientColor;\n'                                       +
+        '	vColor         = amb * vec4(vec3(diffuse), 1.0) + vec4(vec3(specular), 1.0);\n' +
+        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n'                            +
+        '}\n',
+
+    'frameBuffer-frag':
+        'precision mediump float;\n\n'                          +
+
+        'uniform sampler2D texture;\n'                          +
+        'varying vec4      vColor;\n'                           +
+        'varying vec2      vTextureCoord;\n\n'                  +
+
+        'void main(void){\n'                                    +
+        '	vec4 smpColor = texture2D(texture, vTextureCoord);\n' +
+        '	gl_FragColor  = vColor * smpColor;\n'                 +
+        '}\n',
+
+    'frameBuffer-vert':
+        'attribute vec3 position;\n'                                                 +
+        'attribute vec3 normal;\n'                                                   +
+        'attribute vec4 color;\n'                                                    +
+        'attribute vec2 textureCoord;\n'                                             +
+        'uniform   mat4 mMatrix;\n'                                                  +
+        'uniform   mat4 mvpMatrix;\n'                                                +
+        'uniform   mat4 invMatrix;\n'                                                +
+        'uniform   vec3 lightDirection;\n'                                           +
+        'uniform   bool useLight;\n'                                                 +
+        'varying   vec4 vColor;\n'                                                   +
+        'varying   vec2 vTextureCoord;\n\n'                                          +
+
+        'void main(void){\n'                                                         +
+        '	if(useLight){\n'                                                           +
+        '		vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '		float diffuse  = clamp(dot(normal, invLight), 0.2, 1.0);\n'               +
+        '		vColor         = vec4(color.xyz * vec3(diffuse), 1.0);\n'                 +
+        '	}else{\n'                                                                  +
+        '		vColor         = color;\n'                                                +
+        '	}\n'                                                                       +
+        '	vTextureCoord  = textureCoord;\n'                                          +
+        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n'                       +
+        '}\n',
+
+    'gaussianFilter-frag':
+        'precision mediump float;\n\n'                                                     +
+
+        'uniform sampler2D texture;\n'                                                     +
+        'uniform bool b_gaussian;\n'                                                       +
+        'uniform float cvsHeight;\n'                                                       +
+        'uniform float cvsWidth;\n'                                                        +
+        'uniform float weight[10];\n'                                                      +
+        'uniform bool horizontal;\n'                                                       +
+        'varying vec2 vTexCoord;\n\n'                                                      +
+
+        'void main(void){\n'                                                               +
+        '    vec3  destColor = vec3(0.0);\n'                                               +
+        '	if(b_gaussian){\n'                                                               +
+        '		float tFrag = 1.0 / cvsHeight;\n'                                               +
+        '		float sFrag = 1.0 / cvsWidth;\n'                                                +
+        '		vec2  Frag = vec2(sFrag,tFrag);\n'                                              +
+        '		vec2 fc;\n'                                                                     +
+        '		if(horizontal){\n'                                                              +
+        '			fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n'                      +
+        '			destColor += texture2D(texture, (fc + vec2(-9.0, 0.0)) * Frag).rgb * weight[9' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(-8.0, 0.0)) * Frag).rgb * weight[8' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(-7.0, 0.0)) * Frag).rgb * weight[7' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(-6.0, 0.0)) * Frag).rgb * weight[6' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(-5.0, 0.0)) * Frag).rgb * weight[5' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(-4.0, 0.0)) * Frag).rgb * weight[4' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(-3.0, 0.0)) * Frag).rgb * weight[3' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(-2.0, 0.0)) * Frag).rgb * weight[2' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(-1.0, 0.0)) * Frag).rgb * weight[1' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2( 0.0, 0.0)) * Frag).rgb * weight[0' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2( 1.0, 0.0)) * Frag).rgb * weight[1' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2( 2.0, 0.0)) * Frag).rgb * weight[2' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2( 3.0, 0.0)) * Frag).rgb * weight[3' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2( 4.0, 0.0)) * Frag).rgb * weight[4' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2( 5.0, 0.0)) * Frag).rgb * weight[5' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2( 6.0, 0.0)) * Frag).rgb * weight[6' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2( 7.0, 0.0)) * Frag).rgb * weight[7' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2( 8.0, 0.0)) * Frag).rgb * weight[8' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2( 9.0, 0.0)) * Frag).rgb * weight[9' +
+                                                                                  '];\n'   +
+        '		}else{\n'                                                                       +
+        '			fc = gl_FragCoord.st;\n'                                                       +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -9.0)) * Frag).rgb * weight[9' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -8.0)) * Frag).rgb * weight[8' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -7.0)) * Frag).rgb * weight[7' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -6.0)) * Frag).rgb * weight[6' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -5.0)) * Frag).rgb * weight[5' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -4.0)) * Frag).rgb * weight[4' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -3.0)) * Frag).rgb * weight[3' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -2.0)) * Frag).rgb * weight[2' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -1.0)) * Frag).rgb * weight[1' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  0.0)) * Frag).rgb * weight[0' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  1.0)) * Frag).rgb * weight[1' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  2.0)) * Frag).rgb * weight[2' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  3.0)) * Frag).rgb * weight[3' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  4.0)) * Frag).rgb * weight[4' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  5.0)) * Frag).rgb * weight[5' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  6.0)) * Frag).rgb * weight[6' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  7.0)) * Frag).rgb * weight[7' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  8.0)) * Frag).rgb * weight[8' +
+                                                                                  '];\n'   +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  9.0)) * Frag).rgb * weight[9' +
+                                                                                  '];\n'   +
+        '		}\n'                                                                            +
+        '	}else{\n'                                                                        +
+        ' 		destColor = texture2D(texture, vTexCoord).rgb;\n'                              +
+        '	}\n'                                                                             +
+        '    gl_FragColor = vec4(destColor, 1.0);\n'                                       +
+        '}\n',
+
+    'gaussianFilter-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
+    'grayScaleFilter-frag':
+        'precision mediump float;\n\n'                                             +
+
+        'uniform sampler2D texture;\n'                                             +
+        'uniform bool      grayScale;\n'                                           +
+        'varying vec2      vTexCoord;\n\n'                                         +
+
+        'const float redScale   = 0.298912;\n'                                     +
+        'const float greenScale = 0.586611;\n'                                     +
+        'const float blueScale  = 0.114478;\n'                                     +
+        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
+
+        'void main(void){\n'                                                       +
+        '	vec4 smpColor = texture2D(texture, vTexCoord);\n'                        +
+        '	if(grayScale){\n'                                                        +
+        '		float grayColor = dot(smpColor.rgb, monochromeScale);\n'                +
+        '		smpColor = vec4(vec3(grayColor), 1.0);\n'                               +
+        '	}\n'                                                                     +
+        '	gl_FragColor = smpColor;\n'                                              +
+        '}\n',
+
+    'grayScaleFilter-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
+    'laplacianFilter-frag':
+        'precision mediump float;\n\n'                                                         +
+
+        'uniform sampler2D texture;\n\n'                                                       +
+
+        'uniform bool b_laplacian;\n'                                                          +
+        'uniform float cvsHeight;\n'                                                           +
+        'uniform float cvsWidth;\n'                                                            +
+        'uniform float coef[9];\n'                                                             +
+        'varying vec2 vTexCoord;\n\n'                                                          +
+
+        'const float redScale   = 0.298912;\n'                                                 +
+        'const float greenScale = 0.586611;\n'                                                 +
+        'const float blueScale  = 0.114478;\n'                                                 +
+        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n'             +
+
+        'void main(void){\n'                                                                   +
+        '    vec3  destColor = vec3(0.0);\n'                                                   +
+        '    if(b_laplacian){\n'                                                               +
+        '        vec2 offset[9];\n'                                                            +
+        '        offset[0] = vec2(-1.0, -1.0);\n'                                              +
+        '        offset[1] = vec2( 0.0, -1.0);\n'                                              +
+        '        offset[2] = vec2( 1.0, -1.0);\n'                                              +
+        '        offset[3] = vec2(-1.0,  0.0);\n'                                              +
+        '        offset[4] = vec2( 0.0,  0.0);\n'                                              +
+        '        offset[5] = vec2( 1.0,  0.0);\n'                                              +
+        '        offset[6] = vec2(-1.0,  1.0);\n'                                              +
+        '        offset[7] = vec2( 0.0,  1.0);\n'                                              +
+        '        offset[8] = vec2( 1.0,  1.0);\n'                                              +
+        '        float tFrag = 1.0 / cvsHeight;\n'                                             +
+        '        float sFrag = 1.0 / cvsWidth;\n'                                              +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n'                                            +
+        '        vec2  fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n\n'             +
+
+        '        destColor  += texture2D(texture, (fc + offset[0]) * Frag).rgb * coef[0];\n'   +
+        '        destColor  += texture2D(texture, (fc + offset[1]) * Frag).rgb * coef[1];\n'   +
+        '        destColor  += texture2D(texture, (fc + offset[2]) * Frag).rgb * coef[2];\n'   +
+        '        destColor  += texture2D(texture, (fc + offset[3]) * Frag).rgb * coef[3];\n'   +
+        '        destColor  += texture2D(texture, (fc + offset[4]) * Frag).rgb * coef[4];\n'   +
+        '        destColor  += texture2D(texture, (fc + offset[5]) * Frag).rgb * coef[5];\n'   +
+        '        destColor  += texture2D(texture, (fc + offset[6]) * Frag).rgb * coef[6];\n'   +
+        '        destColor  += texture2D(texture, (fc + offset[7]) * Frag).rgb * coef[7];\n'   +
+        '        destColor  += texture2D(texture, (fc + offset[8]) * Frag).rgb * coef[8];\n\n' +
+
+        '        destColor =max(destColor, 0.0);\n'                                            +
+        '    }else{\n'                                                                         +
+        '        destColor = texture2D(texture, vTexCoord).rgb;\n'                             +
+        '    }\n\n'                                                                            +
+
+        '    gl_FragColor = vec4(destColor, 1.0);\n'                                           +
         '}\n',
 
     'laplacianFilter-vert':
@@ -285,22 +597,6 @@ var Shaders = {
         'void main(void){\n'                                +
         '	vTexCoord   = texCoord;\n'                        +
         '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
-        '}\n',
-
-
-        '}\n',
-
-    'point-vert':
-        'attribute vec3 position;\n'                             +
-        'attribute vec4 color;\n'                                +
-        'uniform   mat4 mvpMatrix;\n'                            +
-        'uniform   float pointSize;\n'                           +
-        'varying   vec4 vColor;\n\n'                             +
-
-        'void main(void){\n'                                     +
-        '    vColor        = color;\n'                           +
-        '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
-        '    gl_PointSize  = pointSize;\n'                       +
         '}\n',
 
     'phong-frag':
@@ -324,6 +620,91 @@ var Shaders = {
         '	gl_FragColor = destColor;\n'                                                     +
         '}\n',
 
+    'phong-vert':
+        'attribute vec3 position;\n'                              +
+        'attribute vec4 color;\n'                                 +
+        'attribute vec3 normal;\n\n'                              +
+
+        'uniform mat4 mvpMatrix;\n\n'                             +
+
+        'varying vec4 vColor;\n'                                  +
+        'varying vec3 vNormal;\n\n'                               +
+
+        'void main(void){\n'                                      +
+        '    vNormal = normal;\n'                                 +
+        '    vColor = color;\n'                                   +
+        '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
+    'point-frag':
+        'precision mediump float;\n'    +
+        'varying vec4      vColor;\n\n' +
+
+        'void main(void){\n'            +
+        '    gl_FragColor = vColor;\n'  +
+        '}\n',
+
+    'point-vert':
+        'attribute vec3 position;\n'                             +
+        'attribute vec4 color;\n'                                +
+        'uniform   mat4 mvpMatrix;\n'                            +
+        'uniform   float pointSize;\n'                           +
+        'varying   vec4 vColor;\n\n'                             +
+
+        'void main(void){\n'                                     +
+        '    vColor        = color;\n'                           +
+        '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
+        '    gl_PointSize  = pointSize;\n'                       +
+        '}\n',
+
+    'pointLighting-frag':
+        'precision mediump float;\n\n'                                                     +
+
+        'uniform mat4 invMatrix;\n'                                                        +
+        'uniform vec3 lightPosition;\n'                                                    +
+        'uniform vec3 eyeDirection;\n'                                                     +
+        'uniform vec4 ambientColor;\n\n'                                                   +
+
+        'varying vec4 vColor;\n'                                                           +
+        'varying vec3 vNormal;\n'                                                          +
+        'varying vec3 vPosition;\n\n'                                                      +
+
+        'void main(void){\n'                                                               +
+        '	vec3 lightVec = lightPosition -vPosition;\n'                                     +
+        '	vec3 invLight = normalize(invMatrix*vec4(lightVec,0.0)).xyz;\n'                  +
+        '	vec3 invEye = normalize(invMatrix*vec4(eyeDirection,0.0)).xyz;\n'                +
+        '	vec3 halfLE = normalize(invLight+invEye);\n'                                     +
+        '	float diffuse = clamp(dot(vNormal,invLight),0.0,1.0);\n'                         +
+        '	float specular = pow(clamp(dot(vNormal,halfLE),0.0,1.0),50.0);\n'                +
+        '	vec4 destColor = vColor * vec4(vec3(diffuse),1.0) + vec4(vec3(specular),1.0) + ' +
+                                                                       'ambientColor;\n'   +
+        '	gl_FragColor = destColor;\n'                                                     +
+        '}\n',
+
+    'pointLighting-vert':
+        'attribute vec3 position;\n'                              +
+        'attribute vec4 color;\n'                                 +
+        'attribute vec3 normal;\n\n'                              +
+
+        'uniform mat4 mvpMatrix;\n'                               +
+        'uniform mat4 mMatrix;\n\n'                               +
+
+        'varying vec3 vPosition;\n'                               +
+        'varying vec4 vColor;\n'                                  +
+        'varying vec3 vNormal;\n\n'                               +
+
+        'void main(void){\n'                                      +
+        '    vPosition = (mMatrix*vec4(position,1.0)).xyz;\n'     +
+        '    vNormal = normal;\n'                                 +
+        '    vColor = color;\n'                                   +
+        '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
+    'pointSprite-frag':
+        'precision mediump float;\n\n'                       +
+
+        'uniform sampler2D texture;\n'                       +
+        'varying vec4      vColor;\n\n'                      +
 
         'void main(void){\n'                                 +
         '    vec4 smpColor = vec4(1.0);\n'                   +
@@ -505,7 +886,6 @@ var Shaders = {
         'attribute vec3 position;\n'                         +
         'uniform mat4 mvpMatrix;\n\n'                        +
 
-
         'varying vec4 vPosition;\n\n'                        +
 
         'void main(void){\n'                                 +
@@ -513,6 +893,224 @@ var Shaders = {
         '    gl_Position = vPosition;\n'                     +
         '}\n',
 
+    'shadowScreen-frag':
+        'precision mediump float;\n\n'                                          +
+
+        'uniform mat4      invMatrix;\n'                                        +
+        'uniform vec3      lightPosition;\n'                                    +
+        'uniform sampler2D texture;\n'                                          +
+        'uniform bool      depthBuffer;\n'                                      +
+        'varying vec3      vPosition;\n'                                        +
+        'varying vec3      vNormal;\n'                                          +
+        'varying vec4      vColor;\n'                                           +
+        'varying vec4      vTexCoord;\n'                                        +
+        'varying vec4      vDepth;\n\n'                                         +
+
+        'float restDepth(vec4 RGBA){\n'                                         +
+        '    const float rMask = 1.0;\n'                                        +
+        '    const float gMask = 1.0 / 255.0;\n'                                +
+        '    const float bMask = 1.0 / (255.0 * 255.0);\n'                      +
+        '    const float aMask = 1.0 / (255.0 * 255.0 * 255.0);\n'              +
+        '    float depth = dot(RGBA, vec4(rMask, gMask, bMask, aMask));\n'      +
+        '    return depth;\n'                                                   +
+        '}\n\n'                                                                 +
+
+        'void main(void){\n'                                                    +
+        '    vec3  light     = lightPosition - vPosition;\n'                    +
+        '    vec3  invLight  = normalize(invMatrix * vec4(light, 0.0)).xyz;\n'  +
+        '    float diffuse   = clamp(dot(vNormal, invLight), 0.1, 1.0);\n'      +
+        '    float shadow    = restDepth(texture2DProj(texture, vTexCoord));\n' +
+        '    vec4 depthColor = vec4(1.0);\n'                                    +
+        '    if(vDepth.w > 0.0){\n'                                             +
+        '        if(depthBuffer){\n'                                            +
+        '            vec4 lightCoord = vDepth / vDepth.w;\n'                    +
+        '            if(lightCoord.z - 0.0001 > shadow){\n'                     +
+        '                depthColor  = vec4(0.5, 0.5, 0.5, 1.0);\n'             +
+        '            }\n'                                                       +
+        '        }else{\n'                                                      +
+        '            float near = 0.1;\n'                                       +
+        '            float far  = 150.0;\n'                                     +
+        '            float linerDepth = 1.0 / (far - near);\n'                  +
+        '            linerDepth *= length(vPosition.xyz - lightPosition);\n'    +
+        '            if(linerDepth - 0.0001 > shadow){\n'                       +
+        '                depthColor  = vec4(0.5, 0.5, 0.5, 1.0);\n'             +
+        '            }\n'                                                       +
+        '        }\n'                                                           +
+        '    }\n'                                                               +
+        '    gl_FragColor = vColor * (vec3(diffuse),1.0) * depthColor;\n'       +
+        '}\n',
+
+    'shadowScreen-vert':
+        'attribute vec3 position;\n'                               +
+        'attribute vec3 normal;\n'                                 +
+        'attribute vec4 color;\n'                                  +
+        'uniform   mat4 mMatrix;\n'                                +
+        'uniform   mat4 mvpMatrix;\n'                              +
+        'uniform   mat4 tMatrix;\n'                                +
+        'uniform   mat4 lgtMatrix;\n'                              +
+        'varying   vec3 vPosition;\n'                              +
+        'varying   vec3 vNormal;\n'                                +
+        'varying   vec4 vColor;\n'                                 +
+        'varying   vec4 vTexCoord;\n'                              +
+        'varying   vec4 vDepth;\n\n'                               +
+
+        'void main(void){\n'                                       +
+        '    vPosition   = (mMatrix * vec4(position, 1.0)).xyz;\n' +
+        '    vNormal     = normal;\n'                              +
+        '    vColor      = color;\n'                               +
+        '    vTexCoord   = tMatrix * vec4(vPosition, 1.0);\n'      +
+        '    vDepth      = lgtMatrix * vec4(position, 1.0);\n'     +
+        '    gl_Position = mvpMatrix * vec4(position, 1.0);\n'     +
+        '}\n',
+
+    'sobelFilter-frag':
+        'precision mediump float;\n\n'                                                     +
+
+        'uniform sampler2D texture;\n\n'                                                   +
+
+        'uniform bool b_sobel;\n'                                                          +
+        'uniform float cvsHeight;\n'                                                       +
+        'uniform float cvsWidth;\n'                                                        +
+        'uniform float hCoef[9];\n'                                                        +
+        'uniform float vCoef[9];\n'                                                        +
+        'varying vec2 vTexCoord;\n\n'                                                      +
+
+        'const float redScale   = 0.298912;\n'                                             +
+        'const float greenScale = 0.586611;\n'                                             +
+        'const float blueScale  = 0.114478;\n'                                             +
+        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n'         +
+
+        'void main(void){\n'                                                               +
+        '    vec3 destColor = vec3(0.0);\n'                                                +
+        '    if(b_sobel){\n'                                                               +
+        '        vec2 offset[9];\n'                                                        +
+        '        offset[0] = vec2(-1.0, -1.0);\n'                                          +
+        '        offset[1] = vec2( 0.0, -1.0);\n'                                          +
+        '        offset[2] = vec2( 1.0, -1.0);\n'                                          +
+        '        offset[3] = vec2(-1.0,  0.0);\n'                                          +
+        '        offset[4] = vec2( 0.0,  0.0);\n'                                          +
+        '        offset[5] = vec2( 1.0,  0.0);\n'                                          +
+        '        offset[6] = vec2(-1.0,  1.0);\n'                                          +
+        '        offset[7] = vec2( 0.0,  1.0);\n'                                          +
+        '        offset[8] = vec2( 1.0,  1.0);\n'                                          +
+        '        float tFrag = 1.0 / cvsHeight;\n'                                         +
+        '        float sFrag = 1.0 / cvsWidth;\n'                                          +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n'                                        +
+        '        vec2  fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n'           +
+        '        vec3  horizonColor = vec3(0.0);\n'                                        +
+        '        vec3  verticalColor = vec3(0.0);\n\n'                                     +
+
+        '        horizonColor  += texture2D(texture, (fc + offset[0]) * Frag).rgb * hCoef' +
+                                                                                '[0];\n'   +
+        '        horizonColor  += texture2D(texture, (fc + offset[1]) * Frag).rgb * hCoef' +
+                                                                                '[1];\n'   +
+        '        horizonColor  += texture2D(texture, (fc + offset[2]) * Frag).rgb * hCoef' +
+                                                                                '[2];\n'   +
+        '        horizonColor  += texture2D(texture, (fc + offset[3]) * Frag).rgb * hCoef' +
+                                                                                '[3];\n'   +
+        '        horizonColor  += texture2D(texture, (fc + offset[4]) * Frag).rgb * hCoef' +
+                                                                                '[4];\n'   +
+        '        horizonColor  += texture2D(texture, (fc + offset[5]) * Frag).rgb * hCoef' +
+                                                                                '[5];\n'   +
+        '        horizonColor  += texture2D(texture, (fc + offset[6]) * Frag).rgb * hCoef' +
+                                                                                '[6];\n'   +
+        '        horizonColor  += texture2D(texture, (fc + offset[7]) * Frag).rgb * hCoef' +
+                                                                                '[7];\n'   +
+        '        horizonColor  += texture2D(texture, (fc + offset[8]) * Frag).rgb * hCoef' +
+                                                                                '[8];\n\n' +
+
+        '        verticalColor += texture2D(texture, (fc + offset[0]) * Frag).rgb * vCoef' +
+                                                                                '[0];\n'   +
+        '        verticalColor += texture2D(texture, (fc + offset[1]) * Frag).rgb * vCoef' +
+                                                                                '[1];\n'   +
+        '        verticalColor += texture2D(texture, (fc + offset[2]) * Frag).rgb * vCoef' +
+                                                                                '[2];\n'   +
+        '        verticalColor += texture2D(texture, (fc + offset[3]) * Frag).rgb * vCoef' +
+                                                                                '[3];\n'   +
+        '        verticalColor += texture2D(texture, (fc + offset[4]) * Frag).rgb * vCoef' +
+                                                                                '[4];\n'   +
+        '        verticalColor += texture2D(texture, (fc + offset[5]) * Frag).rgb * vCoef' +
+                                                                                '[5];\n'   +
+        '        verticalColor += texture2D(texture, (fc + offset[6]) * Frag).rgb * vCoef' +
+                                                                                '[6];\n'   +
+        '        verticalColor += texture2D(texture, (fc + offset[7]) * Frag).rgb * vCoef' +
+                                                                                '[7];\n'   +
+        '        verticalColor += texture2D(texture, (fc + offset[8]) * Frag).rgb * vCoef' +
+                                                                                '[8];\n'   +
+        '        destColor = vec3(sqrt(horizonColor * horizonColor + verticalColor * vert' +
+                                                                        'icalColor));\n'   +
+        '    }else{\n'                                                                     +
+        '        destColor = texture2D(texture, vTexCoord).rgb;\n'                         +
+        '    }\n\n'                                                                        +
+
+        '    gl_FragColor = vec4(destColor, 1.0);\n'                                       +
+        '}\n',
+
+    'sobelFilter-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
+    'specCpt-frag':
+        'precision mediump float;\n\n' +
+
+        'varying vec4 vColor;\n\n'     +
+
+        'void main(void){\n'           +
+        '	gl_FragColor = vColor;\n'    +
+        '}\n',
+
+    'specCpt-vert':
+        'attribute vec3 position;\n'                                                +
+        'attribute vec3 normal;\n'                                                  +
+        'attribute vec4 color;\n'                                                   +
+        'uniform   mat4 mvpMatrix;\n'                                               +
+        'uniform   mat4 invMatrix;\n'                                               +
+        'uniform   vec3 lightDirection;\n'                                          +
+        'uniform   vec3 eyeDirection;\n'                                            +
+        'varying   vec4 vColor;\n\n'                                                +
+
+        'void main(void){\n'                                                        +
+        '	vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '	vec3  invEye   = normalize(invMatrix * vec4(eyeDirection, 0.0)).xyz;\n'   +
+        '	vec3  halfLE   = normalize(invLight + invEye);\n'                         +
+        '	float specular = pow(clamp(dot(normal, halfLE), 0.0, 1.0), 50.0);\n'      +
+        '	vColor         = color * vec4(vec3(specular), 1.0);\n'                    +
+        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n'                      +
+        '}\n',
+
+    'specular-frag':
+        'precision mediump float;\n\n' +
+
+        'varying vec4 vColor;\n\n'     +
+
+        'void main(void){\n'           +
+        '	gl_FragColor = vColor;\n'    +
+        '}\n',
+
+    'specular-vert':
+        'attribute vec3 position;\n'                                                 +
+        'attribute vec4 color;\n'                                                    +
+        'attribute vec3 normal;\n\n'                                                 +
+
+        'uniform mat4 mvpMatrix;\n'                                                  +
+        'uniform mat4 invMatrix;\n\n'                                                +
+
+        'uniform vec3 lightDirection;\n'                                             +
+        'uniform vec3 eyeDirection;\n'                                               +
+        'uniform vec4 ambientColor;\n'                                               +
+        'varying vec4 vColor;\n\n'                                                   +
+
+        'void main(void){\n'                                                         +
+        '    vec3 invLight = normalize(invMatrix*vec4(lightDirection,0.0)).xyz;\n'   +
+        '    vec3 invEye = normalize(invMatrix* vec4(eyeDirection,0.0)).xyz;\n'      +
+        '    vec3 halfLE = normalize(invLight+invEye);\n\n'                          +
 
         '    float diffuse = clamp(dot(invLight,normal),0.0,1.0);\n'                 +
         '    float specular = pow(clamp(dot(normal,halfLE),0.0,1.0),50.0);\n'        +
@@ -566,6 +1164,33 @@ var Shaders = {
         '	gl_Position = mvpMatrix * vec4(oPosition, 1.0);\n'                         +
         '}\n',
 
+    'synth-frag':
+        'precision mediump float;\n\n'                                                    +
+
+        'uniform sampler2D texture1;\n'                                                   +
+        'uniform sampler2D texture2;\n'                                                   +
+        'uniform bool      glare;\n'                                                      +
+        'varying vec2      vTexCoord;\n\n'                                                +
+
+        'void main(void){\n'                                                              +
+        '	vec4  destColor = texture2D(texture1, vTexCoord);\n'                            +
+        '	vec4  smpColor  = texture2D(texture2, vec2(vTexCoord.s, 1.0 - vTexCoord.t));\n' +
+        '	if(glare){\n'                                                                   +
+        '		destColor += smpColor * 2.0;\n'                                                +
+        '	}\n'                                                                            +
+        '	gl_FragColor = destColor;\n'                                                    +
+        '}\n',
+
+    'synth-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
 
     'texture-frag':
         'precision mediump float;\n\n'                             +

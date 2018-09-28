@@ -1248,6 +1248,115 @@ var Shaders = {
         '	vTextureCoord  = textureCoord;\n' +
         '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'gaussianFilter-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'uniform bool b_gaussian;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'uniform float weight[10];\n' +
+        'uniform bool horizontal;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '    vec3  destColor = vec3(0.0);\n' +
+        '	if(b_gaussian){\n' +
+        '		float tFrag = 1.0 / cvsHeight;\n' +
+        '		float sFrag = 1.0 / cvsWidth;\n' +
+        '		vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '		vec2 fc;\n' +
+        '		if(horizontal){\n' +
+        '			fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-9.0, 0.0)) * Frag).rgb * weight[9' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-8.0, 0.0)) * Frag).rgb * weight[8' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-7.0, 0.0)) * Frag).rgb * weight[7' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-6.0, 0.0)) * Frag).rgb * weight[6' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-5.0, 0.0)) * Frag).rgb * weight[5' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-4.0, 0.0)) * Frag).rgb * weight[4' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-3.0, 0.0)) * Frag).rgb * weight[3' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-2.0, 0.0)) * Frag).rgb * weight[2' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-1.0, 0.0)) * Frag).rgb * weight[1' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 0.0, 0.0)) * Frag).rgb * weight[0' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 1.0, 0.0)) * Frag).rgb * weight[1' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 2.0, 0.0)) * Frag).rgb * weight[2' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 3.0, 0.0)) * Frag).rgb * weight[3' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 4.0, 0.0)) * Frag).rgb * weight[4' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 5.0, 0.0)) * Frag).rgb * weight[5' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 6.0, 0.0)) * Frag).rgb * weight[6' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 7.0, 0.0)) * Frag).rgb * weight[7' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 8.0, 0.0)) * Frag).rgb * weight[8' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 9.0, 0.0)) * Frag).rgb * weight[9' +
+        '];\n' +
+        '		}else{\n' +
+        '			fc = gl_FragCoord.st;\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -9.0)) * Frag).rgb * weight[9' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -8.0)) * Frag).rgb * weight[8' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -7.0)) * Frag).rgb * weight[7' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -6.0)) * Frag).rgb * weight[6' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -5.0)) * Frag).rgb * weight[5' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -4.0)) * Frag).rgb * weight[4' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -3.0)) * Frag).rgb * weight[3' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -2.0)) * Frag).rgb * weight[2' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -1.0)) * Frag).rgb * weight[1' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  0.0)) * Frag).rgb * weight[0' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  1.0)) * Frag).rgb * weight[1' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  2.0)) * Frag).rgb * weight[2' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  3.0)) * Frag).rgb * weight[3' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  4.0)) * Frag).rgb * weight[4' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  5.0)) * Frag).rgb * weight[5' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  6.0)) * Frag).rgb * weight[6' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  7.0)) * Frag).rgb * weight[7' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  8.0)) * Frag).rgb * weight[8' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  9.0)) * Frag).rgb * weight[9' +
+        '];\n' +
+        '		}\n' +
+        '	}else{\n' +
+        ' 		destColor = texture2D(texture, vTexCoord).rgb;\n' +
+        '	}\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'gaussianFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'grayScaleFilter-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
         'uniform bool      grayScale;\n' +
@@ -1693,6 +1802,27 @@ var Shaders = {
         '	vTexCoord   = texCoord;\n' +
         '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'specCpt-frag': 'precision mediump float;\n\n' +
+        'varying vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	gl_FragColor = vColor;\n' +
+        '}\n',
+    'specCpt-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   mat4 invMatrix;\n' +
+        'uniform   vec3 lightDirection;\n' +
+        'uniform   vec3 eyeDirection;\n' +
+        'varying   vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '	vec3  invEye   = normalize(invMatrix * vec4(eyeDirection, 0.0)).xyz;\n' +
+        '	vec3  halfLE   = normalize(invLight + invEye);\n' +
+        '	float specular = pow(clamp(dot(normal, halfLE), 0.0, 1.0), 50.0);\n' +
+        '	vColor         = color * vec4(vec3(specular), 1.0);\n' +
+        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'specular-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +
         'void main(void){\n' +
@@ -1754,6 +1884,27 @@ var Shaders = {
         '		oPosition     += normal * 0.1;\n' +
         '	}\n' +
         '	gl_Position = mvpMatrix * vec4(oPosition, 1.0);\n' +
+        '}\n',
+    'synth-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture1;\n' +
+        'uniform sampler2D texture2;\n' +
+        'uniform bool      glare;\n' +
+        'varying vec2      vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vec4  destColor = texture2D(texture1, vTexCoord);\n' +
+        '	vec4  smpColor  = texture2D(texture2, vec2(vTexCoord.s, 1.0 - vTexCoord.t));\n' +
+        '	if(glare){\n' +
+        '		destColor += smpColor * 2.0;\n' +
+        '	}\n' +
+        '	gl_FragColor = destColor;\n' +
+        '}\n',
+    'synth-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'texture-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
@@ -2081,7 +2232,14 @@ var EcognitaWeb3DFunction;
     (function (Filter) {
         Filter[Filter["LAPLACIAN"] = 0] = "LAPLACIAN";
         Filter[Filter["SOBEL"] = 1] = "SOBEL";
+        Filter[Filter["GAUSSIAN"] = 2] = "GAUSSIAN";
     })(Filter = EcognitaWeb3DFunction.Filter || (EcognitaWeb3DFunction.Filter = {}));
+    var RenderPipeLine;
+    (function (RenderPipeLine) {
+        RenderPipeLine[RenderPipeLine["CONVOLUTION_FILTER"] = 0] = "CONVOLUTION_FILTER";
+        RenderPipeLine[RenderPipeLine["BLOOM_EFFECT"] = 1] = "BLOOM_EFFECT";
+        RenderPipeLine[RenderPipeLine["CONVOLUTION_TWICE"] = 2] = "CONVOLUTION_TWICE";
+    })(RenderPipeLine = EcognitaWeb3DFunction.RenderPipeLine || (EcognitaWeb3DFunction.RenderPipeLine = {}));
     var InitWeb3DEnv = /** @class */ (function () {
         function InitWeb3DEnv(cvs, shaderlist) {
             var _this = this;
@@ -2095,10 +2253,14 @@ var EcognitaWeb3DFunction;
             this.ui_data = {
                 name: 'Filter Viewer',
                 f_LaplacianFilter: false,
-                f_SobelFilter: true
+                f_GaussianFilter: false,
+                f_SobelFilter: true,
+                f_BloomEffect: false
             };
             this.uiUtil = new Utils.FilterViewerUI(this.ui_data);
             this.extHammer = new EcognitaMathLib.Hammer_Utils(this.canvas);
+            this.framebuffers = new Utils.HashSet();
+            //init shaders and uniLocations
             this.shaders = new Utils.HashSet();
             this.uniLocations = new Utils.HashSet();
             shaderlist.forEach(function (shaderName) {
@@ -2106,6 +2268,15 @@ var EcognitaWeb3DFunction;
                 _this.shaders.set(shaderName, shader);
                 _this.uniLocations.set(shaderName, new Array());
             });
+            //init matrix
+            this.matrix = new Utils.HashSet();
+            var m = this.matUtil;
+            this.matrix.set("mMatrix", m.identity(m.create()));
+            this.matrix.set("vMatrix", m.identity(m.create()));
+            this.matrix.set("pMatrix", m.identity(m.create()));
+            this.matrix.set("vpMatrix", m.identity(m.create()));
+            this.matrix.set("mvpMatrix", m.identity(m.create()));
+            this.matrix.set("invMatrix", m.identity(m.create()));
         }
         InitWeb3DEnv.prototype.loadTexture = function (file_name) {
             var _this = this;
@@ -2133,14 +2304,34 @@ var EcognitaWeb3DFunction;
         __extends(FilterViewer, _super);
         function FilterViewer(cvs) {
             var _this = this;
-            var shaderList = ["filterScene", "laplacianFilter", "sobelFilter"];
+            var shaderList = ["filterScene", "specCpt", "synth", "laplacianFilter", "sobelFilter", "gaussianFilter"];
             _this = _super.call(this, cvs, shaderList) || this;
             //init gobal variable
             _this.filterMvpMatrix = _this.matUtil.identity(_this.matUtil.create());
+            _this.usrPipeLine = RenderPipeLine.CONVOLUTION_FILTER;
             _this.usrFilter = Filter.SOBEL;
             _this.filterShader = _this.shaders.get("sobelFilter");
-            _this.b_laplacian = _this.ui_data.f_LaplacianFilter;
-            _this.b_sobel = _this.ui_data.f_SobelFilter;
+            _this.btnStatusList = new Utils.HashSet();
+            _this.btnStatusList.set("f_LaplacianFilter", _this.ui_data.f_LaplacianFilter);
+            _this.btnStatusList.set("f_SobelFilter", _this.ui_data.f_SobelFilter);
+            _this.btnStatusList.set("f_BloomEffect", _this.ui_data.f_BloomEffect);
+            _this.btnStatusList.set("f_GaussianFilter", _this.ui_data.f_GaussianFilter);
+            //gaussian weight
+            var weight = new Array(10);
+            var t = 0.0;
+            var d = 50 * 50 / 100;
+            for (var i = 0; i < weight.length; i++) {
+                var r = 1.0 + 2.0 * i;
+                var w = Math.exp(-0.5 * (r * r) / d);
+                weight[i] = w;
+                if (i > 0) {
+                    w *= 2.0;
+                }
+                t += w;
+            }
+            for (i = 0; i < weight.length; i++) {
+                weight[i] /= t;
+            }
             //user config param (load params from file is better TODO)
             _this.usrParams = {
                 laplacianCoef: [1.0, 1.0, 1.0,
@@ -2151,7 +2342,8 @@ var EcognitaWeb3DFunction;
                     1.0, 0.0, -1.0],
                 sobelVerCoef: [1.0, 2.0, 1.0,
                     0.0, 0.0, 0.0,
-                    -1.0, -2.0, -1.0]
+                    -1.0, -2.0, -1.0],
+                gaussianWeight: weight
             };
             var laplacianFilterArray = new Array();
             laplacianFilterArray.push("mvpMatrix");
@@ -2170,6 +2362,21 @@ var EcognitaWeb3DFunction;
             sobelFilterArray.push("cvsWidth");
             sobelFilterArray.push("b_sobel");
             _this.settingUniform("sobelFilter", sobelFilterArray);
+            var gaussianFilterArray = new Array();
+            gaussianFilterArray.push("mvpMatrix");
+            gaussianFilterArray.push("texture");
+            gaussianFilterArray.push("weight");
+            gaussianFilterArray.push("horizontal");
+            gaussianFilterArray.push("cvsHeight");
+            gaussianFilterArray.push("cvsWidth");
+            gaussianFilterArray.push("b_gaussian");
+            _this.settingUniform("gaussianFilter", gaussianFilterArray);
+            var synthSceneArray = new Array();
+            synthSceneArray.push("mvpMatrix");
+            synthSceneArray.push("texture1");
+            synthSceneArray.push("texture2");
+            synthSceneArray.push("glare");
+            _this.settingUniform("synth", synthSceneArray);
             //init System
             _this.initModel();
             var filterSceneArray = new Array();
@@ -2179,6 +2386,12 @@ var EcognitaWeb3DFunction;
             filterSceneArray.push("eyeDirection");
             filterSceneArray.push("ambientColor");
             _this.settingUniform("filterScene", filterSceneArray);
+            var specSceneArray = new Array();
+            specSceneArray.push("mvpMatrix");
+            specSceneArray.push("invMatrix");
+            specSceneArray.push("lightDirection");
+            specSceneArray.push("eyeDirection");
+            _this.settingUniform("specCpt", specSceneArray);
             _this.regisEvent();
             _this.regisUIEvent();
             _this.settingRenderPipeline();
@@ -2219,6 +2432,16 @@ var EcognitaWeb3DFunction;
             vbo_board.copy(boardData.data);
             ibo_board.init(boardData.index);
         };
+        FilterViewer.prototype.renderGaussianFilter = function (horizontal, b_gaussian) {
+            var GaussianFilterUniformLoc = this.uniLocations.get("gaussianFilter");
+            gl.uniformMatrix4fv(GaussianFilterUniformLoc[0], false, this.filterMvpMatrix);
+            gl.uniform1i(GaussianFilterUniformLoc[1], 0);
+            gl.uniform1fv(GaussianFilterUniformLoc[2], this.usrParams.gaussianWeight);
+            gl.uniform1i(GaussianFilterUniformLoc[3], horizontal);
+            gl.uniform1f(GaussianFilterUniformLoc[4], this.canvas.height);
+            gl.uniform1f(GaussianFilterUniformLoc[5], this.canvas.width);
+            gl.uniform1i(GaussianFilterUniformLoc[6], b_gaussian);
+        };
         //user config
         FilterViewer.prototype.renderFilter = function () {
             if (this.usrFilter == Filter.LAPLACIAN) {
@@ -2228,7 +2451,7 @@ var EcognitaWeb3DFunction;
                 gl.uniform1fv(LapFilterUniformLoc[2], this.usrParams.laplacianCoef);
                 gl.uniform1f(LapFilterUniformLoc[3], this.canvas.height);
                 gl.uniform1f(LapFilterUniformLoc[4], this.canvas.width);
-                gl.uniform1i(LapFilterUniformLoc[5], this.b_laplacian);
+                gl.uniform1i(LapFilterUniformLoc[5], this.btnStatusList.get("f_LaplacianFilter"));
             }
             else if (this.usrFilter == Filter.SOBEL) {
                 var SobelFilterUniformLoc = this.uniLocations.get("sobelFilter");
@@ -2238,8 +2461,19 @@ var EcognitaWeb3DFunction;
                 gl.uniform1fv(SobelFilterUniformLoc[3], this.usrParams.sobelVerCoef);
                 gl.uniform1f(SobelFilterUniformLoc[4], this.canvas.height);
                 gl.uniform1f(SobelFilterUniformLoc[5], this.canvas.width);
-                gl.uniform1i(SobelFilterUniformLoc[6], this.b_sobel);
+                gl.uniform1i(SobelFilterUniformLoc[6], this.btnStatusList.get("f_SobelFilter"));
             }
+        };
+        FilterViewer.prototype.settingFrameBuffer = function (frameBufferName) {
+            //frame buffer
+            var fBufferWidth = this.canvas.width;
+            var fBufferHeight = this.canvas.height;
+            var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
+            frameBuffer.bindFrameBuffer();
+            frameBuffer.bindDepthBuffer();
+            frameBuffer.renderToShadowTexure();
+            frameBuffer.release();
+            this.framebuffers.set(frameBufferName, frameBuffer);
         };
         FilterViewer.prototype.settingUniform = function (shaderName, uniformIndexArray) {
             var uniLocArray = this.uniLocations.get(shaderName);
@@ -2253,29 +2487,37 @@ var EcognitaWeb3DFunction;
             gl.depthFunc(gl.LEQUAL);
             gl.enable(gl.CULL_FACE);
         };
+        FilterViewer.prototype.usrSelectChange = function (btnName, val, pipeline, filter, filter_name) {
+            this.btnStatusList.set(btnName, val);
+            if (val) {
+                this.usrPipeLine = pipeline;
+                this.usrFilter = filter;
+                this.filterShader = this.shaders.get(filter_name);
+                for (var key in this.ui_data) {
+                    if (key.includes('_')) {
+                        var f_name = key.split("_");
+                        if (f_name[0] == "f" && key != btnName) {
+                            //un select other btn
+                            this.btnStatusList.set(key, !val);
+                            this.ui_data[key] = !val;
+                        }
+                    }
+                }
+            }
+        };
         FilterViewer.prototype.regisUIEvent = function () {
             var _this = this;
             this.uiUtil.uiController.get("f_LaplacianFilter").onChange(function (val) {
-                _this.b_laplacian = val;
-                if (val) {
-                    _this.usrFilter = Filter.LAPLACIAN;
-                    _this.filterShader = _this.shaders.get("laplacianFilter");
-                    if (_this.b_sobel) {
-                        _this.b_sobel = !val;
-                        _this.ui_data.f_SobelFilter = _this.b_sobel;
-                    }
-                }
+                _this.usrSelectChange("f_LaplacianFilter", val, RenderPipeLine.CONVOLUTION_FILTER, Filter.LAPLACIAN, "laplacianFilter");
             });
             this.uiUtil.uiController.get("f_SobelFilter").onChange(function (val) {
-                _this.b_sobel = val;
-                if (val) {
-                    _this.usrFilter = Filter.SOBEL;
-                    _this.filterShader = _this.shaders.get("sobelFilter");
-                    if (_this.b_laplacian) {
-                        _this.b_laplacian = !val;
-                        _this.ui_data.f_LaplacianFilter = _this.b_laplacian;
-                    }
-                }
+                _this.usrSelectChange("f_SobelFilter", val, RenderPipeLine.CONVOLUTION_FILTER, Filter.SOBEL, "sobelFilter");
+            });
+            this.uiUtil.uiController.get("f_BloomEffect").onChange(function (val) {
+                _this.usrSelectChange("f_BloomEffect", val, RenderPipeLine.BLOOM_EFFECT, Filter.GAUSSIAN, "gaussianFilter");
+            });
+            this.uiUtil.uiController.get("f_GaussianFilter").onChange(function (val) {
+                _this.usrSelectChange("f_GaussianFilter", val, RenderPipeLine.CONVOLUTION_TWICE, Filter.GAUSSIAN, "gaussianFilter");
             });
         };
         FilterViewer.prototype.regisEvent = function () {
@@ -2314,45 +2556,43 @@ var EcognitaWeb3DFunction;
         };
         FilterViewer.prototype.regisAnimeFunc = function () {
             var _this = this;
+            //fundmental setting and variables
             var cnt = 0;
             var cnt1 = 0;
             var lightDirection = [-0.577, 0.577, 0.577];
             var m = this.matUtil;
             var q = this.quatUtil;
-            var mMatrix = m.identity(m.create());
-            var vMatrix = m.identity(m.create());
-            var pMatrix = m.identity(m.create());
-            var tmpMatrix = m.identity(m.create());
-            var mvpMatrix = m.identity(m.create());
-            var invMatrix = m.identity(m.create());
             this.usrQuaternion = q.identity(q.create());
-            //frame buffer
-            var fBufferWidth = this.canvas.width;
-            var fBufferHeight = this.canvas.height;
-            var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
-            frameBuffer.bindFrameBuffer();
-            frameBuffer.bindDepthBuffer();
-            frameBuffer.renderToShadowTexure();
-            frameBuffer.release();
+            //init scene and model
             var sceneShader = this.shaders.get("filterScene");
             var sceneUniformLoc = this.uniLocations.get("filterScene");
             var vbo_torus = this.vbo[0];
             var ibo_torus = this.ibo[0];
             var vbo_board = this.vbo[1];
             var ibo_board = this.ibo[1];
+            var mMatrix = this.matrix.get("mMatrix");
+            var vMatrix = this.matrix.get("vMatrix");
+            var pMatrix = this.matrix.get("pMatrix");
+            var vpMatrix = this.matrix.get("vpMatrix");
+            var mvpMatrix = this.matrix.get("mvpMatrix");
+            var invMatrix = this.matrix.get("invMatrix");
+            //user config
+            var specCptShader = this.shaders.get("specCpt");
+            var uniLocation_spec = this.uniLocations.get("specCpt");
+            var synthShader = this.shaders.get("synth");
+            var uniLocation_synth = this.uniLocations.get("synth");
+            this.settingFrameBuffer("frameBuffer1");
+            var frameBuffer1 = this.framebuffers.get("frameBuffer1");
+            this.settingFrameBuffer("frameBuffer2");
+            var frameBuffer2 = this.framebuffers.get("frameBuffer2");
             var loop = function () {
+                //--------------------------------------animation global variables
                 _this.stats.begin();
                 cnt++;
                 if (cnt % 2 == 0) {
                     cnt1++;
                 }
                 var rad = (cnt % 360) * Math.PI / 180;
-                sceneShader.bind();
-                frameBuffer.bindFrameBuffer();
-                var hsv = EcognitaMathLib.HSV2RGB(cnt1 % 360, 1, 1, 1);
-                gl.clearColor(hsv[0], hsv[1], hsv[2], hsv[3]);
-                gl.clearDepth(1.0);
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 var eyePosition = new Array();
                 var camUpDirection = new Array();
                 eyePosition = q.ToV3([0.0, 20.0, 0.0], _this.usrQuaternion);
@@ -2360,44 +2600,164 @@ var EcognitaWeb3DFunction;
                 //camera setting
                 vMatrix = m.viewMatrix(eyePosition, [0, 0, 0], camUpDirection);
                 pMatrix = m.perspectiveMatrix(90, _this.canvas.width / _this.canvas.height, 0.1, 100);
-                tmpMatrix = m.multiply(pMatrix, vMatrix);
-                //draw torus
-                vbo_torus.bind(sceneShader);
-                ibo_torus.bind();
-                for (var i = 0; i < 9; i++) {
-                    var amb = EcognitaMathLib.HSV2RGB(i * 40, 1, 1, 1);
-                    mMatrix = m.identity(mMatrix);
-                    mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
-                    mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
-                    mMatrix = m.rotate(mMatrix, rad, [1, 1, 0]);
-                    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-                    invMatrix = m.inverse(mMatrix);
-                    gl.uniformMatrix4fv(sceneUniformLoc[0], false, mvpMatrix);
-                    gl.uniformMatrix4fv(sceneUniformLoc[1], false, invMatrix);
-                    gl.uniform3fv(sceneUniformLoc[2], lightDirection);
-                    gl.uniform3fv(sceneUniformLoc[3], eyePosition);
-                    gl.uniform4fv(sceneUniformLoc[4], amb);
-                    ibo_torus.draw(gl.TRIANGLES);
-                }
-                _this.filterShader.bind();
-                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-                gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                gl.clearDepth(1.0);
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                vpMatrix = m.multiply(pMatrix, vMatrix);
                 // orth matrix
                 vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
                 pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
                 _this.filterMvpMatrix = m.multiply(pMatrix, vMatrix);
-                gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, frameBuffer.targetTexture);
-                //draw filter image into board
-                vbo_board.bind(_this.filterShader);
-                ibo_board.bind();
-                _this.renderFilter();
-                ibo_board.draw(gl.TRIANGLES);
+                //--------------------------------------animation global variables
+                //rendering parts----------------------------------------------------------------------------------
+                if (_this.usrPipeLine == RenderPipeLine.CONVOLUTION_FILTER) {
+                    //---------------------using framebuffer1 to render scene and save result to texture0
+                    frameBuffer1.bindFrameBuffer();
+                    RenderSimpleScene();
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    //---------------------using framebuffer1 to render scene and save result to texture0
+                    //---------------------rendering texture0 to a board and show it in screen
+                    _this.filterShader.bind();
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    //draw filter image into board
+                    vbo_board.bind(_this.filterShader);
+                    ibo_board.bind();
+                    _this.renderFilter();
+                    ibo_board.draw(gl.TRIANGLES);
+                    //---------------------rendering texture0 to a board and show it in screen
+                }
+                else if (_this.usrPipeLine == RenderPipeLine.BLOOM_EFFECT) {
+                    //render torus specular component, save to frame1  
+                    specCptShader.bind();
+                    frameBuffer1.bindFrameBuffer();
+                    RenderSimpleSceneSpecularParts();
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    //horizontal blur, save to frame2
+                    _this.filterShader.bind();
+                    frameBuffer2.bindFrameBuffer();
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(_this.filterShader);
+                    ibo_board.bind();
+                    _this.renderGaussianFilter(true, _this.btnStatusList.get("f_BloomEffect"));
+                    ibo_board.draw(gl.TRIANGLES);
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+                    //vertical blur,save to frame1 and render to texture1
+                    frameBuffer1.bindFrameBuffer();
+                    _this.renderGaussianFilter(false, _this.btnStatusList.get("f_BloomEffect"));
+                    ibo_board.draw(gl.TRIANGLES);
+                    gl.activeTexture(gl.TEXTURE1);
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    //render scene, save to texture0
+                    frameBuffer2.bindFrameBuffer();
+                    RenderSimpleScene();
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+                    //synthsis texture0 and texture1
+                    synthShader.bind();
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    //render texture to board and show this board to user		
+                    vbo_board.bind(synthShader);
+                    ibo_board.bind();
+                    gl.uniformMatrix4fv(uniLocation_synth[0], false, _this.filterMvpMatrix);
+                    gl.uniform1i(uniLocation_synth[1], 0);
+                    gl.uniform1i(uniLocation_synth[2], 1);
+                    gl.uniform1i(uniLocation_synth[3], _this.btnStatusList.get("f_BloomEffect"));
+                    ibo_board.draw(gl.TRIANGLES);
+                }
+                else if (_this.usrPipeLine == RenderPipeLine.CONVOLUTION_TWICE) {
+                    //---------------------using framebuffer1 to render scene and save result to texture0
+                    frameBuffer1.bindFrameBuffer();
+                    RenderSimpleScene();
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    //horizontal blur, save to frame2
+                    _this.filterShader.bind();
+                    if (_this.btnStatusList.get("f_GaussianFilter")) {
+                        frameBuffer2.bindFrameBuffer();
+                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                        gl.clearDepth(1.0);
+                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                        vbo_board.bind(_this.filterShader);
+                        ibo_board.bind();
+                        _this.renderGaussianFilter(true, _this.btnStatusList.get("f_GaussianFilter"));
+                        ibo_board.draw(gl.TRIANGLES);
+                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+                        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                        gl.clearDepth(1.0);
+                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                        vbo_board.bind(_this.filterShader);
+                        ibo_board.bind();
+                        _this.renderGaussianFilter(false, _this.btnStatusList.get("f_GaussianFilter"));
+                    }
+                    else {
+                        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                        gl.clearDepth(1.0);
+                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                        vbo_board.bind(_this.filterShader);
+                        ibo_board.bind();
+                        _this.renderGaussianFilter(false, _this.btnStatusList.get("f_GaussianFilter"));
+                    }
+                    ibo_board.draw(gl.TRIANGLES);
+                }
+                //rendering parts----------------------------------------------------------------------------------
+                //--------------------------------------animation global variables
                 gl.flush();
                 _this.stats.end();
                 requestAnimationFrame(loop);
+                function RenderSimpleScene() {
+                    sceneShader.bind();
+                    var hsv = EcognitaMathLib.HSV2RGB(cnt1 % 360, 1, 1, 1);
+                    gl.clearColor(hsv[0], hsv[1], hsv[2], hsv[3]);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_torus.bind(sceneShader);
+                    ibo_torus.bind();
+                    for (var i = 0; i < 9; i++) {
+                        var amb = EcognitaMathLib.HSV2RGB(i * 40, 1, 1, 1);
+                        mMatrix = m.identity(mMatrix);
+                        mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
+                        mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
+                        mMatrix = m.rotate(mMatrix, rad, [1, 1, 0]);
+                        mvpMatrix = m.multiply(vpMatrix, mMatrix);
+                        invMatrix = m.inverse(mMatrix);
+                        gl.uniformMatrix4fv(sceneUniformLoc[0], false, mvpMatrix);
+                        gl.uniformMatrix4fv(sceneUniformLoc[1], false, invMatrix);
+                        gl.uniform3fv(sceneUniformLoc[2], lightDirection);
+                        gl.uniform3fv(sceneUniformLoc[3], eyePosition);
+                        gl.uniform4fv(sceneUniformLoc[4], amb);
+                        ibo_torus.draw(gl.TRIANGLES);
+                    }
+                }
+                function RenderSimpleSceneSpecularParts() {
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_torus.bind(specCptShader);
+                    ibo_torus.bind();
+                    for (var i = 0; i < 9; i++) {
+                        mMatrix = m.identity(mMatrix);
+                        mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
+                        mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
+                        mMatrix = m.rotate(mMatrix, rad, [1, 1, 0]);
+                        mvpMatrix = m.multiply(vpMatrix, mMatrix);
+                        invMatrix = m.inverse(mMatrix);
+                        gl.uniformMatrix4fv(uniLocation_spec[0], false, mvpMatrix);
+                        gl.uniformMatrix4fv(uniLocation_spec[1], false, invMatrix);
+                        gl.uniform3fv(uniLocation_spec[2], lightDirection);
+                        gl.uniform3fv(uniLocation_spec[3], eyePosition);
+                        ibo_torus.draw(gl.TRIANGLES);
+                    }
+                }
+                //--------------------------------------animation global variables
             };
             loop();
         };
