@@ -1,7 +1,7 @@
 /* =========================================================================
  *
- *  demo32.ts
- *  filter:laplacian
+ *  demo34.ts
+ *  filter:bloom effect
  *  
  * ========================================================================= */
 /// <reference path="../lib/cv_imread.ts" />
@@ -23,7 +23,9 @@ if (!gl)
     throw new Error("Could not initialise WebGL");
 
 var sceneShader = new EcognitaMathLib.WebGL_Shader(Shaders,"filterScene-vert", "filterScene-frag");
-var filterShader = new EcognitaMathLib.WebGL_Shader(Shaders,"laplacianFilter-vert", "laplacianFilter-frag");
+var specCptShader = new EcognitaMathLib.WebGL_Shader(Shaders,"specCpt-vert", "specCpt-frag");
+var filterShader = new EcognitaMathLib.WebGL_Shader(Shaders,"gaussianFilter-vert", "gaussianFilter-frag");
+var synthShader  = new EcognitaMathLib.WebGL_Shader(Shaders,"synth-vert", "synth-frag");
 
 //scene model : torus
 var torusData = new EcognitaMathLib.TorusModel(64, 64, 1.0, 2.0,[1.0, 1.0, 1.0, 1.0],true,false); 
@@ -69,10 +71,23 @@ uniLocation_f.push(sceneShader.uniformIndex('lightDirection'));
 uniLocation_f.push(sceneShader.uniformIndex('eyeDirection'));
 uniLocation_f.push(sceneShader.uniformIndex('ambientColor'));
 
+var uniLocation_spec = new Array<any>();
+uniLocation_spec.push(specCptShader.uniformIndex('mvpMatrix'));
+uniLocation_spec.push(specCptShader.uniformIndex('invMatrix'));
+uniLocation_spec.push(specCptShader.uniformIndex('lightDirection'));
+uniLocation_spec.push(specCptShader.uniformIndex('eyeDirection'));
+
 var uniLocation_s = new Array<any>();
 uniLocation_s.push(filterShader.uniformIndex('mvpMatrix'));
 uniLocation_s.push(filterShader.uniformIndex('texture'));
-uniLocation_s.push(filterShader.uniformIndex('coef'));
+uniLocation_s.push(filterShader.uniformIndex('weight'));
+uniLocation_s.push(filterShader.uniformIndex('horizontal'));
+
+var uniLocation_synth = new Array<any>();
+uniLocation_synth.push(synthShader.uniformIndex('mvpMatrix'));
+uniLocation_synth.push(synthShader.uniformIndex('texture1'));
+uniLocation_synth.push(synthShader.uniformIndex('texture2'));
+uniLocation_synth.push(synthShader.uniformIndex('glare'));
 
 var m = new EcognitaMathLib.WebGLMatrix();
 var q = new EcognitaMathLib.WebGLQuaternion();
@@ -83,6 +98,7 @@ var pMatrix   = m.identity(m.create());
 var tmpMatrix = m.identity(m.create());
 var mvpMatrix = m.identity(m.create());
 var invMatrix = m.identity(m.create());
+var b_tmpMatrix = m.identity(m.create());
 
 var xQuaternion = q.identity(q.create());
 
@@ -131,32 +147,40 @@ var lightDirection = [-0.577, 0.577, 0.577];
 //frame buffer
 var fBufferWidth  = 512;
 var fBufferHeight = 512;
-var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth,fBufferHeight);
-frameBuffer.bindFrameBuffer();
-frameBuffer.bindDepthBuffer();
-frameBuffer.renderToShadowTexure();
-frameBuffer.release();
+var frameBuffer1 = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth,fBufferHeight);
+frameBuffer1.bindFrameBuffer();
+frameBuffer1.bindDepthBuffer();
+frameBuffer1.renderToShadowTexure();
+frameBuffer1.release();
+
+var frameBuffer2 = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth,fBufferHeight);
+frameBuffer2.bindFrameBuffer();
+frameBuffer2.bindDepthBuffer();
+frameBuffer2.renderToShadowTexure();
+frameBuffer2.release();
 
 var cnt = 0;
 var cnt1 = 0;
 
-var coef =  [1.0,  1.0, 1.0,
-			 1.0, -8.0, 1.0,
-			 1.0,  1.0, 1.0];
+var weight = new Array(10);
+var t = 0.0;
+var d = 50 * 50 / 100;
+for(var i = 0; i < weight.length; i++){
+    var r = 1.0 + 2.0 * i;
+    var w = Math.exp(-0.5 * (r * r) / d);
+    weight[i] = w;
+    if(i > 0){w *= 2.0;}
+    t += w;
+}
+for(i = 0; i < weight.length; i++){
+    weight[i] /= t;
+}
 			
 (function(){
         cnt++;
 		if(cnt % 2 == 0){cnt1++;}
 
 		var rad = (cnt % 360) * Math.PI / 180;
-
-		sceneShader.bind();
-		frameBuffer.bindFrameBuffer();
-
-		var hsv = EcognitaMathLib.HSV2RGB(cnt1 % 360, 1, 1, 1); 
-		gl.clearColor(hsv[0], hsv[1], hsv[2], hsv[3]);
-		gl.clearDepth(1.0);
-		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
 		var eyePosition = new Array();
 		var camUpDirection = new Array();
@@ -167,8 +191,89 @@ var coef =  [1.0,  1.0, 1.0,
         //camera setting
         vMatrix = m.viewMatrix(eyePosition, [0, 0, 0], camUpDirection);
         pMatrix = m.perspectiveMatrix(90, canvas.width / canvas.height, 0.1, 100);
-        tmpMatrix =m.multiply(pMatrix, vMatrix);
+		tmpMatrix = m.multiply(pMatrix, vMatrix);
 
+		// orth matrix
+		vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+		pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
+		b_tmpMatrix = m.multiply(pMatrix, vMatrix);
+
+
+		//render torus specular component
+		specCptShader.bind();
+		frameBuffer1.bindFrameBuffer();
+		
+		gl.clearColor(0.0, 0.0, 0.0, 1.0);
+		gl.clearDepth(1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		
+		vbo_torus.bind(specCptShader);
+		ibo_torus.bind();
+		for(var i = 0; i < 9; i++){
+			mMatrix = m.identity(mMatrix);
+			mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
+			mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
+			mMatrix= m.rotate(mMatrix, rad, [1, 1, 0]);
+			mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+			invMatrix = m.inverse(mMatrix);
+			gl.uniformMatrix4fv(uniLocation_spec[0], false, mvpMatrix);
+			gl.uniformMatrix4fv(uniLocation_spec[1], false, invMatrix);
+			gl.uniform3fv(uniLocation_spec[2], lightDirection);
+			gl.uniform3fv(uniLocation_spec[3], eyePosition);
+			ibo_torus.draw(gl.TRIANGLES);
+		}
+
+		//make specular component blur
+		filterShader.bind();
+
+		//save to framebuffer2
+		frameBuffer2.bindFrameBuffer();
+
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+
+		//render horizontal direction
+
+
+		gl.clearColor(0.0, 0.0, 0.0, 1.0);
+		gl.clearDepth(1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+		vbo_board.bind(filterShader);
+		ibo_board.bind();
+		gl.uniformMatrix4fv(uniLocation_s[0], false, b_tmpMatrix);
+		gl.uniform1i(uniLocation_s[1], 0);
+		gl.uniform1fv(uniLocation_s[2], weight);
+		gl.uniform1i(uniLocation_s[3], true);
+		ibo_board.draw(gl.TRIANGLES);
+
+		//switch to framebuffer1
+		frameBuffer1.bindFrameBuffer();
+		
+		gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+
+		//render the vertical direction 
+		gl.clearColor(0.0, 0.0, 0.0, 1.0);
+		gl.clearDepth(1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+		vbo_board.bind(filterShader);
+		ibo_board.bind();
+		gl.uniformMatrix4fv(uniLocation_s[0], false, b_tmpMatrix);
+		gl.uniform1i(uniLocation_s[1], 0);
+		gl.uniform1fv(uniLocation_s[2], weight);
+		gl.uniform1i(uniLocation_s[3], false);
+		ibo_board.draw(gl.TRIANGLES);
+
+		//switch to framebuffer2
+		frameBuffer2.bindFrameBuffer();
+		
+		//render scene
+		sceneShader.bind();
+
+		gl.clearColor(0.0, 0.0, 0.0, 1.0);
+		gl.clearDepth(1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		//draw torus
 		vbo_torus.bind(sceneShader);
 		ibo_torus.bind();
@@ -187,27 +292,31 @@ var coef =  [1.0,  1.0, 1.0,
 			gl.uniform4fv(uniLocation_f[4], amb);
 			ibo_torus.draw(gl.TRIANGLES);
 		}
-		
-		filterShader.bind();
+
+		//using tex0 to save scene texture 
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+
+		//using tex1 to save torus specular component(blur)
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+
+		//release framebuffer
 		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
 		gl.clearColor(0.0, 0.0, 0.0, 1.0);
 		gl.clearDepth(1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-		// orth matrix
-		vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
-		pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
-		tmpMatrix = m.multiply(pMatrix, vMatrix);
+		synthShader.bind();
 		
-		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, frameBuffer.targetTexture);
-
-		//draw filter image into board
-		vbo_board.bind(filterShader);
+		//render texture to board and show this board to user		
+		vbo_board.bind(synthShader);
 		ibo_board.bind();
-		gl.uniformMatrix4fv(uniLocation_s[0], false, tmpMatrix);
-		gl.uniform1i(uniLocation_s[1], 0);
-		gl.uniform1fv(uniLocation_s[2], coef);
+		gl.uniformMatrix4fv(uniLocation_synth[0], false, b_tmpMatrix);
+		gl.uniform1i(uniLocation_synth[1], 0);
+		gl.uniform1i(uniLocation_synth[2], 1);
+		gl.uniform1i(uniLocation_synth[3], true);
 		ibo_board.draw(gl.TRIANGLES);
 		
         gl.flush();

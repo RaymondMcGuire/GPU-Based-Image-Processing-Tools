@@ -388,6 +388,115 @@ var Shaders = {
         '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n'                       +
         '}\n',
 
+    'gaussianFilter-frag':
+        'precision mediump float;\n\n'                                                     +
+
+        'uniform sampler2D texture;\n'                                                     +
+        'uniform float     weight[10];\n'                                                  +
+        'uniform bool      horizontal;\n'                                                  +
+        'varying vec2      vTexCoord;\n\n'                                                 +
+
+        'void main(void){\n'                                                               +
+        '    float tFrag = 1.0 / 512.0;\n'                                                 +
+        '    vec2  fc;\n'                                                                  +
+        '    vec3  destColor = vec3(0.0);\n\n'                                             +
+
+        '	if(horizontal){\n'                                                               +
+        '		fc = vec2(gl_FragCoord.s, 512.0 - gl_FragCoord.t);\n'                           +
+        '		destColor += texture2D(texture, (fc + vec2(-9.0, 0.0)) * tFrag).rgb * weight[9' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(-8.0, 0.0)) * tFrag).rgb * weight[8' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(-7.0, 0.0)) * tFrag).rgb * weight[7' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(-6.0, 0.0)) * tFrag).rgb * weight[6' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(-5.0, 0.0)) * tFrag).rgb * weight[5' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(-4.0, 0.0)) * tFrag).rgb * weight[4' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(-3.0, 0.0)) * tFrag).rgb * weight[3' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(-2.0, 0.0)) * tFrag).rgb * weight[2' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(-1.0, 0.0)) * tFrag).rgb * weight[1' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2( 0.0, 0.0)) * tFrag).rgb * weight[0' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2( 1.0, 0.0)) * tFrag).rgb * weight[1' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2( 2.0, 0.0)) * tFrag).rgb * weight[2' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2( 3.0, 0.0)) * tFrag).rgb * weight[3' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2( 4.0, 0.0)) * tFrag).rgb * weight[4' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2( 5.0, 0.0)) * tFrag).rgb * weight[5' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2( 6.0, 0.0)) * tFrag).rgb * weight[6' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2( 7.0, 0.0)) * tFrag).rgb * weight[7' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2( 8.0, 0.0)) * tFrag).rgb * weight[8' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2( 9.0, 0.0)) * tFrag).rgb * weight[9' +
+                                                                                  '];\n'   +
+        '	}else{\n'                                                                        +
+        '		fc = gl_FragCoord.st;\n'                                                        +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -9.0)) * tFrag).rgb * weight[9' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -8.0)) * tFrag).rgb * weight[8' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -7.0)) * tFrag).rgb * weight[7' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -6.0)) * tFrag).rgb * weight[6' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -5.0)) * tFrag).rgb * weight[5' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -4.0)) * tFrag).rgb * weight[4' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -3.0)) * tFrag).rgb * weight[3' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -2.0)) * tFrag).rgb * weight[2' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -1.0)) * tFrag).rgb * weight[1' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  0.0)) * tFrag).rgb * weight[0' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  1.0)) * tFrag).rgb * weight[1' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  2.0)) * tFrag).rgb * weight[2' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  3.0)) * tFrag).rgb * weight[3' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  4.0)) * tFrag).rgb * weight[4' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  5.0)) * tFrag).rgb * weight[5' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  6.0)) * tFrag).rgb * weight[6' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  7.0)) * tFrag).rgb * weight[7' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  8.0)) * tFrag).rgb * weight[8' +
+                                                                                  '];\n'   +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  9.0)) * tFrag).rgb * weight[9' +
+                                                                                  '];\n'   +
+        '	}\n\n'                                                                           +
+
+        '    gl_FragColor = vec4(destColor, 1.0);\n'                                       +
+        '}\n',
+
+    'gaussianFilter-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
     'grayScaleFilter-frag':
         'precision mediump float;\n\n'                                             +
 
@@ -460,6 +569,17 @@ var Shaders = {
 
         '    destColor =max(destColor, 0.0);\n'                                             +
         '    gl_FragColor = vec4(destColor, 1.0);\n'                                        +
+        '}\n',
+
+    'laplacianFilter-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
 
     'phong-frag':
@@ -900,6 +1020,34 @@ var Shaders = {
         '    gl_FragColor = destColor;\n'                                                  +
         '}\n',
 
+    'specCpt-frag':
+        'precision mediump float;\n\n' +
+
+        'varying vec4 vColor;\n\n'     +
+
+        'void main(void){\n'           +
+        '	gl_FragColor = vColor;\n'    +
+        '}\n',
+
+    'specCpt-vert':
+        'attribute vec3 position;\n'                                                +
+        'attribute vec3 normal;\n'                                                  +
+        'attribute vec4 color;\n'                                                   +
+        'uniform   mat4 mvpMatrix;\n'                                               +
+        'uniform   mat4 invMatrix;\n'                                               +
+        'uniform   vec3 lightDirection;\n'                                          +
+        'uniform   vec3 eyeDirection;\n'                                            +
+        'varying   vec4 vColor;\n\n'                                                +
+
+        'void main(void){\n'                                                        +
+        '	vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '	vec3  invEye   = normalize(invMatrix * vec4(eyeDirection, 0.0)).xyz;\n'   +
+        '	vec3  halfLE   = normalize(invLight + invEye);\n'                         +
+        '	float specular = pow(clamp(dot(normal, halfLE), 0.0, 1.0), 50.0);\n'      +
+        '	vColor         = color * vec4(vec3(specular), 1.0);\n'                    +
+        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n'                      +
+        '}\n',
+
     'specular-frag':
         'precision mediump float;\n\n' +
 
@@ -977,6 +1125,34 @@ var Shaders = {
         '		oPosition     += normal * 0.1;\n'                                         +
         '	}\n'                                                                       +
         '	gl_Position = mvpMatrix * vec4(oPosition, 1.0);\n'                         +
+        '}\n',
+
+    'synth-frag':
+        'precision mediump float;\n\n'                                                    +
+
+        'uniform sampler2D texture1;\n'                                                   +
+        'uniform sampler2D texture2;\n'                                                   +
+        'uniform bool      glare;\n'                                                      +
+        'varying vec2      vTexCoord;\n\n'                                                +
+
+        'void main(void){\n'                                                              +
+        '	vec4  destColor = texture2D(texture1, vTexCoord);\n'                            +
+        '	vec4  smpColor  = texture2D(texture2, vec2(vTexCoord.s, 1.0 - vTexCoord.t));\n' +
+        '	if(glare){\n'                                                                   +
+        '		destColor += smpColor * 2.0;\n'                                                +
+        '	}\n'                                                                            +
+        '	gl_FragColor = destColor;\n'                                                    +
+        '}\n',
+
+    'synth-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
 
     'texture-frag':

@@ -1128,6 +1128,106 @@ var Shaders = {
         '	vTextureCoord  = textureCoord;\n' +
         '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'gaussianFilter-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'uniform float     weight[10];\n' +
+        'uniform bool      horizontal;\n' +
+        'varying vec2      vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '    float tFrag = 1.0 / 512.0;\n' +
+        '    vec2  fc;\n' +
+        '    vec3  destColor = vec3(0.0);\n\n' +
+        '	if(horizontal){\n' +
+        '		fc = vec2(gl_FragCoord.s, 512.0 - gl_FragCoord.t);\n' +
+        '		destColor += texture2D(texture, (fc + vec2(-9.0, 0.0)) * tFrag).rgb * weight[9' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(-8.0, 0.0)) * tFrag).rgb * weight[8' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(-7.0, 0.0)) * tFrag).rgb * weight[7' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(-6.0, 0.0)) * tFrag).rgb * weight[6' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(-5.0, 0.0)) * tFrag).rgb * weight[5' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(-4.0, 0.0)) * tFrag).rgb * weight[4' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(-3.0, 0.0)) * tFrag).rgb * weight[3' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(-2.0, 0.0)) * tFrag).rgb * weight[2' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(-1.0, 0.0)) * tFrag).rgb * weight[1' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2( 0.0, 0.0)) * tFrag).rgb * weight[0' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2( 1.0, 0.0)) * tFrag).rgb * weight[1' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2( 2.0, 0.0)) * tFrag).rgb * weight[2' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2( 3.0, 0.0)) * tFrag).rgb * weight[3' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2( 4.0, 0.0)) * tFrag).rgb * weight[4' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2( 5.0, 0.0)) * tFrag).rgb * weight[5' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2( 6.0, 0.0)) * tFrag).rgb * weight[6' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2( 7.0, 0.0)) * tFrag).rgb * weight[7' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2( 8.0, 0.0)) * tFrag).rgb * weight[8' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2( 9.0, 0.0)) * tFrag).rgb * weight[9' +
+        '];\n' +
+        '	}else{\n' +
+        '		fc = gl_FragCoord.st;\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -9.0)) * tFrag).rgb * weight[9' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -8.0)) * tFrag).rgb * weight[8' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -7.0)) * tFrag).rgb * weight[7' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -6.0)) * tFrag).rgb * weight[6' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -5.0)) * tFrag).rgb * weight[5' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -4.0)) * tFrag).rgb * weight[4' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -3.0)) * tFrag).rgb * weight[3' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -2.0)) * tFrag).rgb * weight[2' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0, -1.0)) * tFrag).rgb * weight[1' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  0.0)) * tFrag).rgb * weight[0' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  1.0)) * tFrag).rgb * weight[1' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  2.0)) * tFrag).rgb * weight[2' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  3.0)) * tFrag).rgb * weight[3' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  4.0)) * tFrag).rgb * weight[4' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  5.0)) * tFrag).rgb * weight[5' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  6.0)) * tFrag).rgb * weight[6' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  7.0)) * tFrag).rgb * weight[7' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  8.0)) * tFrag).rgb * weight[8' +
+        '];\n' +
+        '		destColor += texture2D(texture, (fc + vec2(0.0,  9.0)) * tFrag).rgb * weight[9' +
+        '];\n' +
+        '	}\n\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'gaussianFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'grayScaleFilter-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
         'uniform bool      grayScale;\n' +
@@ -1185,6 +1285,14 @@ var Shaders = {
         '    destColor  += texture2D(texture, (fc + offset[8]) * tFrag).rgb * coef[8];\n\n' +
         '    destColor =max(destColor, 0.0);\n' +
         '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'laplacianFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'phong-frag': 'precision mediump float;\n\n' +
         'uniform mat4 invMatrix;\n' +
@@ -1539,6 +1647,27 @@ var Shaders = {
         'ticalColor)), 1.0);\n' +
         '    gl_FragColor = destColor;\n' +
         '}\n',
+    'specCpt-frag': 'precision mediump float;\n\n' +
+        'varying vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	gl_FragColor = vColor;\n' +
+        '}\n',
+    'specCpt-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   mat4 invMatrix;\n' +
+        'uniform   vec3 lightDirection;\n' +
+        'uniform   vec3 eyeDirection;\n' +
+        'varying   vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '	vec3  invEye   = normalize(invMatrix * vec4(eyeDirection, 0.0)).xyz;\n' +
+        '	vec3  halfLE   = normalize(invLight + invEye);\n' +
+        '	float specular = pow(clamp(dot(normal, halfLE), 0.0, 1.0), 50.0);\n' +
+        '	vColor         = color * vec4(vec3(specular), 1.0);\n' +
+        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'specular-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +
         'void main(void){\n' +
@@ -1600,6 +1729,27 @@ var Shaders = {
         '		oPosition     += normal * 0.1;\n' +
         '	}\n' +
         '	gl_Position = mvpMatrix * vec4(oPosition, 1.0);\n' +
+        '}\n',
+    'synth-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture1;\n' +
+        'uniform sampler2D texture2;\n' +
+        'uniform bool      glare;\n' +
+        'varying vec2      vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vec4  destColor = texture2D(texture1, vTexCoord);\n' +
+        '	vec4  smpColor  = texture2D(texture2, vec2(vTexCoord.s, 1.0 - vTexCoord.t));\n' +
+        '	if(glare){\n' +
+        '		destColor += smpColor * 2.0;\n' +
+        '	}\n' +
+        '	gl_FragColor = destColor;\n' +
+        '}\n',
+    'synth-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'texture-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
@@ -1940,8 +2090,8 @@ var EcognitaMathLib;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
- *  demo32.ts
- *  filter:laplacian
+ *  demo34.ts
+ *  filter:bloom effect
  *
  * ========================================================================= */
 /// <reference path="../lib/cv_imread.ts" />
@@ -1962,7 +2112,9 @@ catch (e) { }
 if (!gl)
     throw new Error("Could not initialise WebGL");
 var sceneShader = new EcognitaMathLib.WebGL_Shader(Shaders, "filterScene-vert", "filterScene-frag");
-var filterShader = new EcognitaMathLib.WebGL_Shader(Shaders, "sepiaFilter-vert", "laplacianFilter-frag");
+var specCptShader = new EcognitaMathLib.WebGL_Shader(Shaders, "specCpt-vert", "specCpt-frag");
+var filterShader = new EcognitaMathLib.WebGL_Shader(Shaders, "gaussianFilter-vert", "gaussianFilter-frag");
+var synthShader = new EcognitaMathLib.WebGL_Shader(Shaders, "synth-vert", "synth-frag");
 //scene model : torus
 var torusData = new EcognitaMathLib.TorusModel(64, 64, 1.0, 2.0, [1.0, 1.0, 1.0, 1.0], true, false);
 var vbo_torus = new EcognitaMathLib.WebGL_VertexBuffer();
@@ -1997,10 +2149,21 @@ uniLocation_f.push(sceneShader.uniformIndex('invMatrix'));
 uniLocation_f.push(sceneShader.uniformIndex('lightDirection'));
 uniLocation_f.push(sceneShader.uniformIndex('eyeDirection'));
 uniLocation_f.push(sceneShader.uniformIndex('ambientColor'));
+var uniLocation_spec = new Array();
+uniLocation_spec.push(specCptShader.uniformIndex('mvpMatrix'));
+uniLocation_spec.push(specCptShader.uniformIndex('invMatrix'));
+uniLocation_spec.push(specCptShader.uniformIndex('lightDirection'));
+uniLocation_spec.push(specCptShader.uniformIndex('eyeDirection'));
 var uniLocation_s = new Array();
 uniLocation_s.push(filterShader.uniformIndex('mvpMatrix'));
 uniLocation_s.push(filterShader.uniformIndex('texture'));
-uniLocation_s.push(filterShader.uniformIndex('coef'));
+uniLocation_s.push(filterShader.uniformIndex('weight'));
+uniLocation_s.push(filterShader.uniformIndex('horizontal'));
+var uniLocation_synth = new Array();
+uniLocation_synth.push(synthShader.uniformIndex('mvpMatrix'));
+uniLocation_synth.push(synthShader.uniformIndex('texture1'));
+uniLocation_synth.push(synthShader.uniformIndex('texture2'));
+uniLocation_synth.push(synthShader.uniformIndex('glare'));
 var m = new EcognitaMathLib.WebGLMatrix();
 var q = new EcognitaMathLib.WebGLQuaternion();
 var mMatrix = m.identity(m.create());
@@ -2009,6 +2172,7 @@ var pMatrix = m.identity(m.create());
 var tmpMatrix = m.identity(m.create());
 var mvpMatrix = m.identity(m.create());
 var invMatrix = m.identity(m.create());
+var b_tmpMatrix = m.identity(m.create());
 var xQuaternion = q.identity(q.create());
 var lastPosX = 0;
 var lastPosY = 0;
@@ -2049,28 +2213,39 @@ var lightDirection = [-0.577, 0.577, 0.577];
 //frame buffer
 var fBufferWidth = 512;
 var fBufferHeight = 512;
-var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
-frameBuffer.bindFrameBuffer();
-frameBuffer.bindDepthBuffer();
-frameBuffer.renderToShadowTexure();
-frameBuffer.release();
+var frameBuffer1 = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
+frameBuffer1.bindFrameBuffer();
+frameBuffer1.bindDepthBuffer();
+frameBuffer1.renderToShadowTexure();
+frameBuffer1.release();
+var frameBuffer2 = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
+frameBuffer2.bindFrameBuffer();
+frameBuffer2.bindDepthBuffer();
+frameBuffer2.renderToShadowTexure();
+frameBuffer2.release();
 var cnt = 0;
 var cnt1 = 0;
-var coef = [1.0, 1.0, 1.0,
-    1.0, -8.0, 1.0,
-    1.0, 1.0, 1.0];
+var weight = new Array(10);
+var t = 0.0;
+var d = 50 * 50 / 100;
+for (var i = 0; i < weight.length; i++) {
+    var r = 1.0 + 2.0 * i;
+    var w = Math.exp(-0.5 * (r * r) / d);
+    weight[i] = w;
+    if (i > 0) {
+        w *= 2.0;
+    }
+    t += w;
+}
+for (i = 0; i < weight.length; i++) {
+    weight[i] /= t;
+}
 (function () {
     cnt++;
     if (cnt % 2 == 0) {
         cnt1++;
     }
     var rad = (cnt % 360) * Math.PI / 180;
-    sceneShader.bind();
-    frameBuffer.bindFrameBuffer();
-    var hsv = EcognitaMathLib.HSV2RGB(cnt1 % 360, 1, 1, 1);
-    gl.clearColor(hsv[0], hsv[1], hsv[2], hsv[3]);
-    gl.clearDepth(1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     var eyePosition = new Array();
     var camUpDirection = new Array();
     eyePosition = q.ToV3([0.0, 20.0, 0.0], xQuaternion);
@@ -2079,6 +2254,69 @@ var coef = [1.0, 1.0, 1.0,
     vMatrix = m.viewMatrix(eyePosition, [0, 0, 0], camUpDirection);
     pMatrix = m.perspectiveMatrix(90, canvas.width / canvas.height, 0.1, 100);
     tmpMatrix = m.multiply(pMatrix, vMatrix);
+    // orth matrix
+    vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+    pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
+    b_tmpMatrix = m.multiply(pMatrix, vMatrix);
+    //render torus specular component
+    specCptShader.bind();
+    frameBuffer1.bindFrameBuffer();
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    vbo_torus.bind(specCptShader);
+    ibo_torus.bind();
+    for (var i = 0; i < 9; i++) {
+        mMatrix = m.identity(mMatrix);
+        mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
+        mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
+        mMatrix = m.rotate(mMatrix, rad, [1, 1, 0]);
+        mvpMatrix = m.multiply(tmpMatrix, mMatrix);
+        invMatrix = m.inverse(mMatrix);
+        gl.uniformMatrix4fv(uniLocation_spec[0], false, mvpMatrix);
+        gl.uniformMatrix4fv(uniLocation_spec[1], false, invMatrix);
+        gl.uniform3fv(uniLocation_spec[2], lightDirection);
+        gl.uniform3fv(uniLocation_spec[3], eyePosition);
+        ibo_torus.draw(gl.TRIANGLES);
+    }
+    //make specular component blur
+    filterShader.bind();
+    //save to framebuffer2
+    frameBuffer2.bindFrameBuffer();
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+    //render horizontal direction
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    vbo_board.bind(filterShader);
+    ibo_board.bind();
+    gl.uniformMatrix4fv(uniLocation_s[0], false, b_tmpMatrix);
+    gl.uniform1i(uniLocation_s[1], 0);
+    gl.uniform1fv(uniLocation_s[2], weight);
+    gl.uniform1i(uniLocation_s[3], true);
+    ibo_board.draw(gl.TRIANGLES);
+    //switch to framebuffer1
+    frameBuffer1.bindFrameBuffer();
+    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+    //render the vertical direction 
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    vbo_board.bind(filterShader);
+    ibo_board.bind();
+    gl.uniformMatrix4fv(uniLocation_s[0], false, b_tmpMatrix);
+    gl.uniform1i(uniLocation_s[1], 0);
+    gl.uniform1fv(uniLocation_s[2], weight);
+    gl.uniform1i(uniLocation_s[3], false);
+    ibo_board.draw(gl.TRIANGLES);
+    //switch to framebuffer2
+    frameBuffer2.bindFrameBuffer();
+    //render scene
+    sceneShader.bind();
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearDepth(1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     //draw torus
     vbo_torus.bind(sceneShader);
     ibo_torus.bind();
@@ -2097,23 +2335,25 @@ var coef = [1.0, 1.0, 1.0,
         gl.uniform4fv(uniLocation_f[4], amb);
         ibo_torus.draw(gl.TRIANGLES);
     }
-    filterShader.bind();
+    //using tex0 to save scene texture 
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+    //using tex1 to save torus specular component(blur)
+    gl.activeTexture(gl.TEXTURE1);
+    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+    //release framebuffer
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-    // orth matrix
-    vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
-    pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
-    tmpMatrix = m.multiply(pMatrix, vMatrix);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, frameBuffer.targetTexture);
-    //draw filter image into board
-    vbo_board.bind(filterShader);
+    synthShader.bind();
+    //render texture to board and show this board to user		
+    vbo_board.bind(synthShader);
     ibo_board.bind();
-    gl.uniformMatrix4fv(uniLocation_s[0], false, tmpMatrix);
-    gl.uniform1i(uniLocation_s[1], 0);
-    gl.uniform1fv(uniLocation_s[2], coef);
+    gl.uniformMatrix4fv(uniLocation_synth[0], false, b_tmpMatrix);
+    gl.uniform1i(uniLocation_synth[1], 0);
+    gl.uniform1i(uniLocation_synth[2], 1);
+    gl.uniform1i(uniLocation_synth[3], true);
     ibo_board.draw(gl.TRIANGLES);
     gl.flush();
     setTimeout(arguments.callee, 1000 / 30);
