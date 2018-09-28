@@ -23,7 +23,8 @@ module EcognitaWeb3DFunction {
     export enum Filter{
         LAPLACIAN,
         SOBEL,
-        GAUSSIAN
+        GAUSSIAN,
+        KUWAHARA
     }
 
     export enum RenderPipeLine{
@@ -68,7 +69,6 @@ module EcognitaWeb3DFunction {
             } catch (e) {}
             if (!gl)
                 throw new Error("Could not initialise WebGL");
-            
         }
 
         constructor(cvs:any,shaderlist:Array<string>){
@@ -80,11 +80,16 @@ module EcognitaWeb3DFunction {
             this.matUtil = new EcognitaMathLib.WebGLMatrix();
             this.quatUtil = new EcognitaMathLib.WebGLQuaternion();
 
+            //load demo texture
+            this.loadTexture("./image/demo.jpg");
+
             this.ui_data = {
                 name: 'Filter Viewer',
+                useTexture:false,
                 f_LaplacianFilter:false,
                 f_GaussianFilter:false,
                 f_SobelFilter:true,
+                f_KuwaharaFilter:false,
                 f_BloomEffect:false
             };
         
@@ -127,7 +132,7 @@ module EcognitaWeb3DFunction {
 
         btnStatusList:Utils.HashSet<any>;
         constructor(cvs:any){
-            var shaderList = ["filterScene","specCpt","synth","laplacianFilter","sobelFilter","gaussianFilter"];
+            var shaderList = ["filterScene","specCpt","synth","laplacianFilter","sobelFilter","gaussianFilter","kuwaharaFilter"];
             super(cvs,shaderList);
 
             //init gobal variable
@@ -141,6 +146,7 @@ module EcognitaWeb3DFunction {
             this.btnStatusList.set("f_SobelFilter",this.ui_data.f_SobelFilter);
             this.btnStatusList.set("f_BloomEffect",this.ui_data.f_BloomEffect);
             this.btnStatusList.set("f_GaussianFilter",this.ui_data.f_GaussianFilter);
+            this.btnStatusList.set("f_KuwaharaFilter",this.ui_data.f_KuwaharaFilter);
             
             //gaussian weight
             var weight = new Array(10);
@@ -200,6 +206,14 @@ module EcognitaWeb3DFunction {
             gaussianFilterArray.push("cvsWidth");
             gaussianFilterArray.push("b_gaussian");
             this.settingUniform("gaussianFilter",gaussianFilterArray);
+
+            var kuwaharaFilterArray = new Array<string>();
+            kuwaharaFilterArray.push("mvpMatrix");
+            kuwaharaFilterArray.push("texture");
+            kuwaharaFilterArray.push("cvsHeight");
+            kuwaharaFilterArray.push("cvsWidth");
+            kuwaharaFilterArray.push("b_kuwahara");
+            this.settingUniform("kuwaharaFilter",kuwaharaFilterArray);
 
             var synthSceneArray = new Array<string>();
             synthSceneArray.push("mvpMatrix");
@@ -304,6 +318,13 @@ module EcognitaWeb3DFunction {
                 gl.uniform1f(SobelFilterUniformLoc[4], this.canvas.height);
                 gl.uniform1f(SobelFilterUniformLoc[5], this.canvas.width);
                 gl.uniform1i(SobelFilterUniformLoc[6], this.btnStatusList.get("f_SobelFilter"));
+            }else if(this.usrFilter == Filter.KUWAHARA){
+                var KuwaharaFilterUniformLoc = this.uniLocations.get("kuwaharaFilter");
+                gl.uniformMatrix4fv(KuwaharaFilterUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(KuwaharaFilterUniformLoc[1], 0);
+                gl.uniform1f(KuwaharaFilterUniformLoc[2], this.canvas.height);
+                gl.uniform1f(KuwaharaFilterUniformLoc[3], this.canvas.width);
+                gl.uniform1i(KuwaharaFilterUniformLoc[4], this.btnStatusList.get("f_KuwaharaFilter"));
             }
 
         }
@@ -363,6 +384,10 @@ module EcognitaWeb3DFunction {
 
             this.uiUtil.uiController.get("f_SobelFilter").onChange((val)=> {
                 this.usrSelectChange("f_SobelFilter",val,RenderPipeLine.CONVOLUTION_FILTER,Filter.SOBEL,"sobelFilter");
+            });
+
+            this.uiUtil.uiController.get("f_KuwaharaFilter").onChange((val)=> {
+                this.usrSelectChange("f_KuwaharaFilter",val,RenderPipeLine.CONVOLUTION_FILTER,Filter.KUWAHARA,"kuwaharaFilter");
             });
 
             this.uiUtil.uiController.get("f_BloomEffect").onChange((val)=> {
@@ -488,7 +513,12 @@ module EcognitaWeb3DFunction {
                         frameBuffer1.bindFrameBuffer();  
                         RenderSimpleScene();
                         gl.activeTexture(gl.TEXTURE0);
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        if(this.Texture.length!=0  && this.ui_data.useTexture){
+                            this.Texture[0].bind(this.Texture[0].texture);
+                        }else{
+                            gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        }
+        
                         //---------------------using framebuffer1 to render scene and save result to texture0
 
 
@@ -561,7 +591,12 @@ module EcognitaWeb3DFunction {
                         frameBuffer1.bindFrameBuffer();  
                         RenderSimpleScene();
                         gl.activeTexture(gl.TEXTURE0);
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+
+                        if(this.Texture.length!=0  && this.ui_data.useTexture){
+                            this.Texture[0].bind(this.Texture[0].texture);
+                        }else{
+                            gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        }
                         
                         //horizontal blur, save to frame2
                         this.filterShader.bind();
