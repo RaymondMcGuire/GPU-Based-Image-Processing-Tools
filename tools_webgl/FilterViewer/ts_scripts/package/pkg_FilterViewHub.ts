@@ -24,7 +24,8 @@ module EcognitaWeb3DFunction {
         LAPLACIAN,
         SOBEL,
         GAUSSIAN,
-        KUWAHARA
+        KUWAHARA,
+        GKUWAHARA
     }
 
     export enum RenderPipeLine{
@@ -81,7 +82,7 @@ module EcognitaWeb3DFunction {
             this.quatUtil = new EcognitaMathLib.WebGLQuaternion();
 
             //load demo texture
-            this.loadTexture("./image/demo.jpg");
+            this.loadTexture("./image/demo.png");
 
             this.ui_data = {
                 name: 'Filter Viewer',
@@ -90,6 +91,7 @@ module EcognitaWeb3DFunction {
                 f_GaussianFilter:false,
                 f_SobelFilter:true,
                 f_KuwaharaFilter:false,
+                f_GeneralizedKuwaharaFilter:false,
                 f_BloomEffect:false
             };
         
@@ -132,7 +134,7 @@ module EcognitaWeb3DFunction {
 
         btnStatusList:Utils.HashSet<any>;
         constructor(cvs:any){
-            var shaderList = ["filterScene","specCpt","synth","laplacianFilter","sobelFilter","gaussianFilter","kuwaharaFilter"];
+            var shaderList = ["filterScene","specCpt","synth","laplacianFilter","sobelFilter","gaussianFilter","kuwaharaFilter","gkuwaharaFilter"];
             super(cvs,shaderList);
 
             //init gobal variable
@@ -147,6 +149,7 @@ module EcognitaWeb3DFunction {
             this.btnStatusList.set("f_BloomEffect",this.ui_data.f_BloomEffect);
             this.btnStatusList.set("f_GaussianFilter",this.ui_data.f_GaussianFilter);
             this.btnStatusList.set("f_KuwaharaFilter",this.ui_data.f_KuwaharaFilter);
+            this.btnStatusList.set("f_GeneralizedKuwaharaFilter",this.ui_data.f_GeneralizedKuwaharaFilter);
             
             //gaussian weight
             var weight = new Array(10);
@@ -175,7 +178,9 @@ module EcognitaWeb3DFunction {
                 sobelVerCoef :  [ 1.0,  2.0,  1.0,
                                   0.0,  0.0,  0.0,
                                  -1.0, -2.0, -1.0],
-                gaussianWeight : weight
+                gaussianWeight : weight,
+
+                gkweight :[0.8322 ,0.8758 ,0.903 ,0.9123 ,0.903 ,0.8758 ,0.8322 ,0.8758 ,0.9216 ,0.9503 ,0.96 ,0.9503 ,0.9216 ,0.8758 ,0.903 ,0.9503 ,0.9798 ,0.9898 ,0.9798 ,0.9503 ,0.903 ,0.9123 ,0.96 ,0.9898 ,1.0 ,0.9898 ,0.96 ,0.9123 ,0.903 ,0.9503 ,0.9798 ,0.9898 ,0.9798 ,0.9503 ,0.903 ,0.8758 ,0.9216 ,0.9503 ,0.96 ,0.9503 ,0.9216 ,0.8758 ,0.8322 ,0.8758 ,0.903 ,0.9123 ,0.903 ,0.8758 ,0.8322 ]
             };
 
             var laplacianFilterArray = new Array<string>();
@@ -214,6 +219,15 @@ module EcognitaWeb3DFunction {
             kuwaharaFilterArray.push("cvsWidth");
             kuwaharaFilterArray.push("b_kuwahara");
             this.settingUniform("kuwaharaFilter",kuwaharaFilterArray);
+
+            var gkuwaharaFilterArray = new Array<string>();
+            gkuwaharaFilterArray.push("mvpMatrix");
+            gkuwaharaFilterArray.push("texture");
+            gkuwaharaFilterArray.push("weight");
+            gkuwaharaFilterArray.push("cvsHeight");
+            gkuwaharaFilterArray.push("cvsWidth");
+            gkuwaharaFilterArray.push("b_gkuwahara");
+            this.settingUniform("gkuwaharaFilter",gkuwaharaFilterArray);
 
             var synthSceneArray = new Array<string>();
             synthSceneArray.push("mvpMatrix");
@@ -325,6 +339,14 @@ module EcognitaWeb3DFunction {
                 gl.uniform1f(KuwaharaFilterUniformLoc[2], this.canvas.height);
                 gl.uniform1f(KuwaharaFilterUniformLoc[3], this.canvas.width);
                 gl.uniform1i(KuwaharaFilterUniformLoc[4], this.btnStatusList.get("f_KuwaharaFilter"));
+            }else if(this.usrFilter == Filter.GKUWAHARA){
+                var GKuwaharaFilterUniformLoc = this.uniLocations.get("gkuwaharaFilter");
+                gl.uniformMatrix4fv(GKuwaharaFilterUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(GKuwaharaFilterUniformLoc[1], 0);
+                gl.uniform1fv(GKuwaharaFilterUniformLoc[2], this.usrParams.gkweight);
+                gl.uniform1f(GKuwaharaFilterUniformLoc[3], this.canvas.height);
+                gl.uniform1f(GKuwaharaFilterUniformLoc[4], this.canvas.width);
+                gl.uniform1i(GKuwaharaFilterUniformLoc[5], this.btnStatusList.get("f_GeneralizedKuwaharaFilter"));
             }
 
         }
@@ -388,6 +410,10 @@ module EcognitaWeb3DFunction {
 
             this.uiUtil.uiController.get("f_KuwaharaFilter").onChange((val)=> {
                 this.usrSelectChange("f_KuwaharaFilter",val,RenderPipeLine.CONVOLUTION_FILTER,Filter.KUWAHARA,"kuwaharaFilter");
+            });
+
+            this.uiUtil.uiController.get("f_GeneralizedKuwaharaFilter").onChange((val)=> {
+                this.usrSelectChange("f_GeneralizedKuwaharaFilter",val,RenderPipeLine.CONVOLUTION_FILTER,Filter.GKUWAHARA,"gkuwaharaFilter");
             });
 
             this.uiUtil.uiController.get("f_BloomEffect").onChange((val)=> {
