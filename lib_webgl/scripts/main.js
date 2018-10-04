@@ -1130,97 +1130,552 @@ var Shaders = {
         '}\n',
     'gaussianFilter-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
-        'uniform float     weight[10];\n' +
-        'uniform bool      horizontal;\n' +
-        'varying vec2      vTexCoord;\n\n' +
+        'uniform bool b_gaussian;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'uniform float weight[10];\n' +
+        'uniform bool horizontal;\n' +
+        'varying vec2 vTexCoord;\n\n' +
         'void main(void){\n' +
-        '    float tFrag = 1.0 / 512.0;\n' +
-        '    vec2  fc;\n' +
-        '    vec3  destColor = vec3(0.0);\n\n' +
-        '	if(horizontal){\n' +
-        '		fc = vec2(gl_FragCoord.s, 512.0 - gl_FragCoord.t);\n' +
-        '		destColor += texture2D(texture, (fc + vec2(-9.0, 0.0)) * tFrag).rgb * weight[9' +
+        '    vec3  destColor = vec3(0.0);\n' +
+        '	if(b_gaussian){\n' +
+        '		float tFrag = 1.0 / cvsHeight;\n' +
+        '		float sFrag = 1.0 / cvsWidth;\n' +
+        '		vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '		vec2 fc;\n' +
+        '		if(horizontal){\n' +
+        '			fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-9.0, 0.0)) * Frag).rgb * weight[9' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(-8.0, 0.0)) * tFrag).rgb * weight[8' +
+        '			destColor += texture2D(texture, (fc + vec2(-8.0, 0.0)) * Frag).rgb * weight[8' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(-7.0, 0.0)) * tFrag).rgb * weight[7' +
+        '			destColor += texture2D(texture, (fc + vec2(-7.0, 0.0)) * Frag).rgb * weight[7' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(-6.0, 0.0)) * tFrag).rgb * weight[6' +
+        '			destColor += texture2D(texture, (fc + vec2(-6.0, 0.0)) * Frag).rgb * weight[6' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(-5.0, 0.0)) * tFrag).rgb * weight[5' +
+        '			destColor += texture2D(texture, (fc + vec2(-5.0, 0.0)) * Frag).rgb * weight[5' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(-4.0, 0.0)) * tFrag).rgb * weight[4' +
+        '			destColor += texture2D(texture, (fc + vec2(-4.0, 0.0)) * Frag).rgb * weight[4' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(-3.0, 0.0)) * tFrag).rgb * weight[3' +
+        '			destColor += texture2D(texture, (fc + vec2(-3.0, 0.0)) * Frag).rgb * weight[3' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(-2.0, 0.0)) * tFrag).rgb * weight[2' +
+        '			destColor += texture2D(texture, (fc + vec2(-2.0, 0.0)) * Frag).rgb * weight[2' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(-1.0, 0.0)) * tFrag).rgb * weight[1' +
+        '			destColor += texture2D(texture, (fc + vec2(-1.0, 0.0)) * Frag).rgb * weight[1' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2( 0.0, 0.0)) * tFrag).rgb * weight[0' +
+        '			destColor += texture2D(texture, (fc + vec2( 0.0, 0.0)) * Frag).rgb * weight[0' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2( 1.0, 0.0)) * tFrag).rgb * weight[1' +
+        '			destColor += texture2D(texture, (fc + vec2( 1.0, 0.0)) * Frag).rgb * weight[1' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2( 2.0, 0.0)) * tFrag).rgb * weight[2' +
+        '			destColor += texture2D(texture, (fc + vec2( 2.0, 0.0)) * Frag).rgb * weight[2' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2( 3.0, 0.0)) * tFrag).rgb * weight[3' +
+        '			destColor += texture2D(texture, (fc + vec2( 3.0, 0.0)) * Frag).rgb * weight[3' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2( 4.0, 0.0)) * tFrag).rgb * weight[4' +
+        '			destColor += texture2D(texture, (fc + vec2( 4.0, 0.0)) * Frag).rgb * weight[4' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2( 5.0, 0.0)) * tFrag).rgb * weight[5' +
+        '			destColor += texture2D(texture, (fc + vec2( 5.0, 0.0)) * Frag).rgb * weight[5' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2( 6.0, 0.0)) * tFrag).rgb * weight[6' +
+        '			destColor += texture2D(texture, (fc + vec2( 6.0, 0.0)) * Frag).rgb * weight[6' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2( 7.0, 0.0)) * tFrag).rgb * weight[7' +
+        '			destColor += texture2D(texture, (fc + vec2( 7.0, 0.0)) * Frag).rgb * weight[7' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2( 8.0, 0.0)) * tFrag).rgb * weight[8' +
+        '			destColor += texture2D(texture, (fc + vec2( 8.0, 0.0)) * Frag).rgb * weight[8' +
         '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2( 9.0, 0.0)) * tFrag).rgb * weight[9' +
+        '			destColor += texture2D(texture, (fc + vec2( 9.0, 0.0)) * Frag).rgb * weight[9' +
         '];\n' +
+        '		}else{\n' +
+        '			fc = gl_FragCoord.st;\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -9.0)) * Frag).rgb * weight[9' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -8.0)) * Frag).rgb * weight[8' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -7.0)) * Frag).rgb * weight[7' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -6.0)) * Frag).rgb * weight[6' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -5.0)) * Frag).rgb * weight[5' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -4.0)) * Frag).rgb * weight[4' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -3.0)) * Frag).rgb * weight[3' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -2.0)) * Frag).rgb * weight[2' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -1.0)) * Frag).rgb * weight[1' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  0.0)) * Frag).rgb * weight[0' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  1.0)) * Frag).rgb * weight[1' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  2.0)) * Frag).rgb * weight[2' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  3.0)) * Frag).rgb * weight[3' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  4.0)) * Frag).rgb * weight[4' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  5.0)) * Frag).rgb * weight[5' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  6.0)) * Frag).rgb * weight[6' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  7.0)) * Frag).rgb * weight[7' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  8.0)) * Frag).rgb * weight[8' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  9.0)) * Frag).rgb * weight[9' +
+        '];\n' +
+        '		}\n' +
         '	}else{\n' +
-        '		fc = gl_FragCoord.st;\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0, -9.0)) * tFrag).rgb * weight[9' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0, -8.0)) * tFrag).rgb * weight[8' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0, -7.0)) * tFrag).rgb * weight[7' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0, -6.0)) * tFrag).rgb * weight[6' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0, -5.0)) * tFrag).rgb * weight[5' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0, -4.0)) * tFrag).rgb * weight[4' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0, -3.0)) * tFrag).rgb * weight[3' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0, -2.0)) * tFrag).rgb * weight[2' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0, -1.0)) * tFrag).rgb * weight[1' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0,  0.0)) * tFrag).rgb * weight[0' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0,  1.0)) * tFrag).rgb * weight[1' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0,  2.0)) * tFrag).rgb * weight[2' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0,  3.0)) * tFrag).rgb * weight[3' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0,  4.0)) * tFrag).rgb * weight[4' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0,  5.0)) * tFrag).rgb * weight[5' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0,  6.0)) * tFrag).rgb * weight[6' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0,  7.0)) * tFrag).rgb * weight[7' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0,  8.0)) * tFrag).rgb * weight[8' +
-        '];\n' +
-        '		destColor += texture2D(texture, (fc + vec2(0.0,  9.0)) * tFrag).rgb * weight[9' +
-        '];\n' +
-        '	}\n\n' +
+        ' 		destColor = texture2D(texture, vTexCoord).rgb;\n' +
+        '	}\n' +
         '    gl_FragColor = vec4(destColor, 1.0);\n' +
         '}\n',
     'gaussianFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'gkuwaharaFilter-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n\n' +
+        'uniform float weight[49];\n' +
+        'uniform bool b_gkuwahara;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '    vec3  destColor = vec3(0.0);\n' +
+        '    if(b_gkuwahara){\n' +
+        '        float q = 3.0;\n' +
+        '        vec3 mean[8];\n' +
+        '        vec3 sigma[8];\n' +
+        '        vec2 offset[49];\n' +
+        '        offset[0] = vec2(-3.0, -3.0);\n' +
+        '        offset[1] = vec2(-2.0, -3.0);\n' +
+        '        offset[2] = vec2(-1.0, -3.0);\n' +
+        '        offset[3] = vec2( 0.0, -3.0);\n' +
+        '        offset[4] = vec2( 1.0, -3.0);\n' +
+        '        offset[5] = vec2( 2.0, -3.0);\n' +
+        '        offset[6] = vec2( 3.0, -3.0);\n\n' +
+        '        offset[7]  = vec2(-3.0, -2.0);\n' +
+        '        offset[8]  = vec2(-2.0, -2.0);\n' +
+        '        offset[9]  = vec2(-1.0, -2.0);\n' +
+        '        offset[10] = vec2( 0.0, -2.0);\n' +
+        '        offset[11] = vec2( 1.0, -2.0);\n' +
+        '        offset[12] = vec2( 2.0, -2.0);\n' +
+        '        offset[13] = vec2( 3.0, -2.0);\n\n' +
+        '        offset[14] = vec2(-3.0, -1.0);\n' +
+        '        offset[15] = vec2(-2.0, -1.0);\n' +
+        '        offset[16] = vec2(-1.0, -1.0);\n' +
+        '        offset[17] = vec2( 0.0, -1.0);\n' +
+        '        offset[18] = vec2( 1.0, -1.0);\n' +
+        '        offset[19] = vec2( 2.0, -1.0);\n' +
+        '        offset[20] = vec2( 3.0, -1.0);\n\n' +
+        '        offset[21] = vec2(-3.0,  0.0);\n' +
+        '        offset[22] = vec2(-2.0,  0.0);\n' +
+        '        offset[23] = vec2(-1.0,  0.0);\n' +
+        '        offset[24] = vec2( 0.0,  0.0);\n' +
+        '        offset[25] = vec2( 1.0,  0.0);\n' +
+        '        offset[26] = vec2( 2.0,  0.0);\n' +
+        '        offset[27] = vec2( 3.0,  0.0);\n\n' +
+        '        offset[28] = vec2(-3.0,  1.0);\n' +
+        '        offset[29] = vec2(-2.0,  1.0);\n' +
+        '        offset[30] = vec2(-1.0,  1.0);\n' +
+        '        offset[31] = vec2( 0.0,  1.0);\n' +
+        '        offset[32] = vec2( 1.0,  1.0);\n' +
+        '        offset[33] = vec2( 2.0,  1.0);\n' +
+        '        offset[34] = vec2( 3.0,  1.0);\n\n' +
+        '        offset[35] = vec2(-3.0,  2.0);\n' +
+        '        offset[36] = vec2(-2.0,  2.0);\n' +
+        '        offset[37] = vec2(-1.0,  2.0);\n' +
+        '        offset[38] = vec2( 0.0,  2.0);\n' +
+        '        offset[39] = vec2( 1.0,  2.0);\n' +
+        '        offset[40] = vec2( 2.0,  2.0);\n' +
+        '        offset[41] = vec2( 3.0,  2.0);\n\n' +
+        '        offset[42] = vec2(-3.0,  3.0);\n' +
+        '        offset[43] = vec2(-2.0,  3.0);\n' +
+        '        offset[44] = vec2(-1.0,  3.0);\n' +
+        '        offset[45] = vec2( 0.0,  3.0);\n' +
+        '        offset[46] = vec2( 1.0,  3.0);\n' +
+        '        offset[47] = vec2( 2.0,  3.0);\n' +
+        '        offset[48] = vec2( 3.0,  3.0);\n\n' +
+        '        float tFrag = 1.0 / cvsHeight;\n' +
+        '        float sFrag = 1.0 / cvsWidth;\n' +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '        vec2  fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n' +
+        '        vec3 cur_std = vec3(0.0);\n' +
+        '        float cur_weight = 0.0;\n' +
+        '        vec3 total_ms = vec3(0.0);\n' +
+        '        vec3 total_s = vec3(0.0);\n\n' +
+        '        mean[0]=vec3(0.0);\n' +
+        '        sigma[0]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[24]) * Frag).rgb * weight[24' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[24]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[24]) * Frag).rgb * weight[24];\n' +
+        '        cur_weight+= weight[24];\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[31]) * Frag).rgb * weight[31' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[31]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[31]) * Frag).rgb * weight[31];\n' +
+        '        cur_weight+= weight[31];\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[38]) * Frag).rgb * weight[38' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[38]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[38]) * Frag).rgb * weight[38];\n' +
+        '        cur_weight+= weight[38];\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[45]) * Frag).rgb * weight[45' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[45]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[45]) * Frag).rgb * weight[45];\n' +
+        '        cur_weight+= weight[45];\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[39]) * Frag).rgb * weight[39' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[39]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[39]) * Frag).rgb * weight[39];\n' +
+        '        cur_weight+= weight[39];\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[46]) * Frag).rgb * weight[46' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[46]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[46]) * Frag).rgb * weight[46];\n' +
+        '        cur_weight+= weight[46];\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[47]) * Frag).rgb * weight[47' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[47]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[47]) * Frag).rgb * weight[47];\n' +
+        '        cur_weight+= weight[47];\n\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[0] /= cur_weight;\n' +
+        '            sigma[0] /= cur_weight;\n' +
+        '        }\n\n' +
+        '        cur_std = sigma[0] - mean[0] * mean[0];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[0] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[1]=vec3(0.0);\n' +
+        '        sigma[1]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[32]) * Frag).rgb * weight[32' +
+        '];\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[32]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[32]) * Frag).rgb * weight[32];\n' +
+        '        cur_weight+= weight[32];\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[33]) * Frag).rgb * weight[33' +
+        '];\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[33]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[33]) * Frag).rgb * weight[33];\n' +
+        '        cur_weight+= weight[33];\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[40]) * Frag).rgb * weight[40' +
+        '];\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[40]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[40]) * Frag).rgb * weight[40];\n' +
+        '        cur_weight+= weight[40];\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[34]) * Frag).rgb * weight[34' +
+        '];\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[34]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[34]) * Frag).rgb * weight[34];\n' +
+        '        cur_weight+= weight[34];\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[41]) * Frag).rgb * weight[41' +
+        '];\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[41]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[41]) * Frag).rgb * weight[41];\n' +
+        '        cur_weight+= weight[41];\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[48]) * Frag).rgb * weight[48' +
+        '];\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[48]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[48]) * Frag).rgb * weight[48];\n' +
+        '        cur_weight+= weight[48];\n\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[1] /= cur_weight;\n' +
+        '            sigma[1] /= cur_weight;\n' +
+        '        }\n\n' +
+        '        cur_std = sigma[1] - mean[1] * mean[1];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[1] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[2]=vec3(0.0);\n' +
+        '        sigma[2]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[25]) * Frag).rgb * weight[25' +
+        '];\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[25]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[25]) * Frag).rgb * weight[25];\n' +
+        '        cur_weight+= weight[25];\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[19]) * Frag).rgb * weight[19' +
+        '];\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[19]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[19]) * Frag).rgb * weight[19];\n' +
+        '        cur_weight+= weight[19];\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[26]) * Frag).rgb * weight[26' +
+        '];\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[26]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[26]) * Frag).rgb * weight[26];\n' +
+        '        cur_weight+= weight[26];\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[13]) * Frag).rgb * weight[13' +
+        '];\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[13]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[13]) * Frag).rgb * weight[13];\n' +
+        '        cur_weight+= weight[13];\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[20]) * Frag).rgb * weight[20' +
+        '];\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[20]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[20]) * Frag).rgb * weight[20];\n' +
+        '        cur_weight+= weight[20];\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[27]) * Frag).rgb * weight[27' +
+        '];\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[27]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[27]) * Frag).rgb * weight[27];\n' +
+        '        cur_weight+= weight[27];\n\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[2] /= cur_weight;\n' +
+        '            sigma[2] /= cur_weight;\n' +
+        '        }\n\n' +
+        '        cur_std = sigma[2] - mean[2] * mean[2];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[2] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[3]=vec3(0.0);\n' +
+        '        sigma[3]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[4]) * Frag).rgb * weight[4];\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[4]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[4]) * Frag).rgb * weight[4];\n' +
+        '        cur_weight+= weight[4];\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[11]) * Frag).rgb * weight[11' +
+        '];\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[11]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[11]) * Frag).rgb * weight[11];\n' +
+        '        cur_weight+= weight[11];\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[18]) * Frag).rgb * weight[18' +
+        '];\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[18]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[18]) * Frag).rgb * weight[18];\n' +
+        '        cur_weight+= weight[18];\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[5]) * Frag).rgb * weight[5];\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[5]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[5]) * Frag).rgb * weight[5];\n' +
+        '        cur_weight+= weight[5];\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[12]) * Frag).rgb * weight[12' +
+        '];\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[12]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[12]) * Frag).rgb * weight[12];\n' +
+        '        cur_weight+= weight[12];\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[6]) * Frag).rgb * weight[6];\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[6]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[6]) * Frag).rgb * weight[6];\n' +
+        '        cur_weight+= weight[6];\n\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[3] /= cur_weight;\n' +
+        '            sigma[3] /= cur_weight;\n' +
+        '        }\n\n' +
+        '        cur_std = sigma[3] - mean[3] * mean[3];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[3] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[4]=vec3(0.0);\n' +
+        '        sigma[4]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[4]  += texture2D(texture, (fc + offset[1]) * Frag).rgb * weight[1];\n' +
+        '        sigma[4]  += texture2D(texture, (fc + offset[1]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[1]) * Frag).rgb * weight[1];\n' +
+        '        cur_weight+= weight[1];\n' +
+        '        mean[4]  += texture2D(texture, (fc + offset[2]) * Frag).rgb * weight[2];\n' +
+        '        sigma[4]  += texture2D(texture, (fc + offset[2]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[2]) * Frag).rgb * weight[2];\n' +
+        '        cur_weight+= weight[2];\n' +
+        '        mean[4]  += texture2D(texture, (fc + offset[9]) * Frag).rgb * weight[9];\n' +
+        '        sigma[4]  += texture2D(texture, (fc + offset[9]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[9]) * Frag).rgb * weight[9];\n' +
+        '        cur_weight+= weight[9];\n' +
+        '        mean[4]  += texture2D(texture, (fc + offset[3]) * Frag).rgb * weight[3];\n' +
+        '        sigma[4]  += texture2D(texture, (fc + offset[3]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[3]) * Frag).rgb * weight[3];\n' +
+        '        cur_weight+= weight[3];\n' +
+        '        mean[4]  += texture2D(texture, (fc + offset[10]) * Frag).rgb * weight[10' +
+        '];\n' +
+        '        sigma[4]  += texture2D(texture, (fc + offset[10]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[10]) * Frag).rgb * weight[10];\n' +
+        '        cur_weight+= weight[10];\n' +
+        '        mean[4]  += texture2D(texture, (fc + offset[17]) * Frag).rgb * weight[17' +
+        '];\n' +
+        '        sigma[4]  += texture2D(texture, (fc + offset[17]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[17]) * Frag).rgb * weight[17];\n' +
+        '        cur_weight+= weight[17];\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[4] /= cur_weight;\n' +
+        '            sigma[4] /= cur_weight;\n' +
+        '        }\n' +
+        '        cur_std = sigma[4] - mean[4] * mean[4];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[4] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[5]=vec3(0.0);\n' +
+        '        sigma[5]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[5]  += texture2D(texture, (fc + offset[0]) * Frag).rgb * weight[0];\n' +
+        '        sigma[5]  += texture2D(texture, (fc + offset[0]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[0]) * Frag).rgb * weight[0];\n' +
+        '        cur_weight+= weight[0];\n' +
+        '        mean[5]  += texture2D(texture, (fc + offset[7]) * Frag).rgb * weight[7];\n' +
+        '        sigma[5]  += texture2D(texture, (fc + offset[7]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[7]) * Frag).rgb * weight[7];\n' +
+        '        cur_weight+= weight[7];\n' +
+        '        mean[5]  += texture2D(texture, (fc + offset[14]) * Frag).rgb * weight[14' +
+        '];\n' +
+        '        sigma[5]  += texture2D(texture, (fc + offset[14]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[14]) * Frag).rgb * weight[14];\n' +
+        '        cur_weight+= weight[14];\n' +
+        '        mean[5]  += texture2D(texture, (fc + offset[8]) * Frag).rgb * weight[8];\n' +
+        '        sigma[5]  += texture2D(texture, (fc + offset[8]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[8]) * Frag).rgb * weight[8];\n' +
+        '        cur_weight+= weight[8];\n' +
+        '        mean[5]  += texture2D(texture, (fc + offset[15]) * Frag).rgb * weight[15' +
+        '];\n' +
+        '        sigma[5]  += texture2D(texture, (fc + offset[15]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[15]) * Frag).rgb * weight[15];\n' +
+        '        cur_weight+= weight[15];\n' +
+        '        mean[5]  += texture2D(texture, (fc + offset[16]) * Frag).rgb * weight[16' +
+        '];\n' +
+        '        sigma[5]  += texture2D(texture, (fc + offset[16]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[16]) * Frag).rgb * weight[16];\n' +
+        '        cur_weight+= weight[16];\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[5] /= cur_weight;\n' +
+        '            sigma[5] /= cur_weight;\n' +
+        '        }\n' +
+        '        cur_std = sigma[5] - mean[5] * mean[5];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[5] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[6]=vec3(0.0);\n' +
+        '        sigma[6]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[6]  += texture2D(texture, (fc + offset[21]) * Frag).rgb * weight[21' +
+        '];\n' +
+        '        sigma[6]  += texture2D(texture, (fc + offset[21]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[21]) * Frag).rgb * weight[21];\n' +
+        '        cur_weight+= weight[21];\n' +
+        '        mean[6]  += texture2D(texture, (fc + offset[28]) * Frag).rgb * weight[28' +
+        '];\n' +
+        '        sigma[6]  += texture2D(texture, (fc + offset[28]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[28]) * Frag).rgb * weight[28];\n' +
+        '        cur_weight+= weight[28];\n' +
+        '        mean[6]  += texture2D(texture, (fc + offset[35]) * Frag).rgb * weight[35' +
+        '];\n' +
+        '        sigma[6]  += texture2D(texture, (fc + offset[35]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[35]) * Frag).rgb * weight[35];\n' +
+        '        cur_weight+= weight[35];\n' +
+        '        mean[6]  += texture2D(texture, (fc + offset[22]) * Frag).rgb * weight[22' +
+        '];\n' +
+        '        sigma[6]  += texture2D(texture, (fc + offset[22]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[22]) * Frag).rgb * weight[22];\n' +
+        '        cur_weight+= weight[22];\n' +
+        '        mean[6]  += texture2D(texture, (fc + offset[29]) * Frag).rgb * weight[29' +
+        '];\n' +
+        '        sigma[6]  += texture2D(texture, (fc + offset[29]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[29]) * Frag).rgb * weight[29];\n' +
+        '        cur_weight+= weight[29];\n' +
+        '        mean[6]  += texture2D(texture, (fc + offset[23]) * Frag).rgb * weight[23' +
+        '];\n' +
+        '        sigma[6]  += texture2D(texture, (fc + offset[23]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[23]) * Frag).rgb * weight[23];\n' +
+        '        cur_weight+= weight[23];\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[6] /= cur_weight;\n' +
+        '            sigma[6] /= cur_weight;\n' +
+        '        }\n' +
+        '        cur_std = sigma[6] - mean[6] * mean[6];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[6] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[7]=vec3(0.0);\n' +
+        '        sigma[7]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[7]  += texture2D(texture, (fc + offset[42]) * Frag).rgb * weight[42' +
+        '];\n' +
+        '        sigma[7]  += texture2D(texture, (fc + offset[42]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[42]) * Frag).rgb * weight[42];\n' +
+        '        cur_weight+= weight[42];\n' +
+        '        mean[7]  += texture2D(texture, (fc + offset[36]) * Frag).rgb * weight[36' +
+        '];\n' +
+        '        sigma[7]  += texture2D(texture, (fc + offset[36]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[36]) * Frag).rgb * weight[36];\n' +
+        '        cur_weight+= weight[36];\n' +
+        '        mean[7]  += texture2D(texture, (fc + offset[43]) * Frag).rgb * weight[43' +
+        '];\n' +
+        '        sigma[7]  += texture2D(texture, (fc + offset[43]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[43]) * Frag).rgb * weight[43];\n' +
+        '        cur_weight+= weight[43];\n' +
+        '        mean[7]  += texture2D(texture, (fc + offset[30]) * Frag).rgb * weight[30' +
+        '];\n' +
+        '        sigma[7]  += texture2D(texture, (fc + offset[30]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[30]) * Frag).rgb * weight[30];\n' +
+        '        cur_weight+= weight[30];\n' +
+        '        mean[7]  += texture2D(texture, (fc + offset[37]) * Frag).rgb * weight[37' +
+        '];\n' +
+        '        sigma[7]  += texture2D(texture, (fc + offset[37]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[37]) * Frag).rgb * weight[37];\n' +
+        '        cur_weight+= weight[37];\n' +
+        '        mean[7]  += texture2D(texture, (fc + offset[44]) * Frag).rgb * weight[44' +
+        '];\n' +
+        '        sigma[7]  += texture2D(texture, (fc + offset[44]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[44]) * Frag).rgb * weight[44];\n' +
+        '        cur_weight+= weight[44];\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[7] /= cur_weight;\n' +
+        '            sigma[7] /= cur_weight;\n' +
+        '        }\n' +
+        '        cur_std = sigma[7] - mean[7] * mean[7];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n\n' +
+        '        total_ms += mean[7] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n\n' +
+        '        if(total_s.r> 1e-10 && total_s.g> 1e-10 && total_s.b> 1e-10){\n' +
+        '            destColor = (total_ms/total_s).rgb;\n' +
+        '            destColor = max(destColor, 0.0);\n' +
+        '            destColor = min(destColor, 1.0);\n' +
+        '        }else{\n' +
+        '            destColor = texture2D(texture, vTexCoord).rgb;\n' +
+        '        }\n\n' +
+        '    }else{\n' +
+        '        destColor = texture2D(texture, vTexCoord).rgb;\n' +
+        '    }\n\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'gkuwaharaFilter-vert': 'attribute vec3 position;\n' +
         'attribute vec2 texCoord;\n' +
         'uniform   mat4 mvpMatrix;\n' +
         'varying   vec2 vTexCoord;\n\n' +
@@ -1252,8 +1707,317 @@ var Shaders = {
         '	vTexCoord   = texCoord;\n' +
         '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'kuwaharaFilter-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n\n' +
+        'uniform bool b_kuwahara;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '    vec3  destColor = vec3(0.0);\n' +
+        '    if(b_kuwahara){\n' +
+        '        float minVal =0.0;\n' +
+        '        vec3 mean[4];\n' +
+        '        vec3 sigma[4];\n' +
+        '        vec2 offset[49];\n' +
+        '        offset[0] = vec2(-3.0, -3.0);\n' +
+        '        offset[1] = vec2(-2.0, -3.0);\n' +
+        '        offset[2] = vec2(-1.0, -3.0);\n' +
+        '        offset[3] = vec2( 0.0, -3.0);\n' +
+        '        offset[4] = vec2( 1.0, -3.0);\n' +
+        '        offset[5] = vec2( 2.0, -3.0);\n' +
+        '        offset[6] = vec2( 3.0, -3.0);\n\n' +
+        '        offset[7]  = vec2(-3.0, -2.0);\n' +
+        '        offset[8]  = vec2(-2.0, -2.0);\n' +
+        '        offset[9]  = vec2(-1.0, -2.0);\n' +
+        '        offset[10] = vec2( 0.0, -2.0);\n' +
+        '        offset[11] = vec2( 1.0, -2.0);\n' +
+        '        offset[12] = vec2( 2.0, -2.0);\n' +
+        '        offset[13] = vec2( 3.0, -2.0);\n\n' +
+        '        offset[14] = vec2(-3.0, -1.0);\n' +
+        '        offset[15] = vec2(-2.0, -1.0);\n' +
+        '        offset[16] = vec2(-1.0, -1.0);\n' +
+        '        offset[17] = vec2( 0.0, -1.0);\n' +
+        '        offset[18] = vec2( 1.0, -1.0);\n' +
+        '        offset[19] = vec2( 2.0, -1.0);\n' +
+        '        offset[20] = vec2( 3.0, -1.0);\n\n' +
+        '        offset[21] = vec2(-3.0,  0.0);\n' +
+        '        offset[22] = vec2(-2.0,  0.0);\n' +
+        '        offset[23] = vec2(-1.0,  0.0);\n' +
+        '        offset[24] = vec2( 0.0,  0.0);\n' +
+        '        offset[25] = vec2( 1.0,  0.0);\n' +
+        '        offset[26] = vec2( 2.0,  0.0);\n' +
+        '        offset[27] = vec2( 3.0,  0.0);\n\n' +
+        '        offset[28] = vec2(-3.0,  1.0);\n' +
+        '        offset[29] = vec2(-2.0,  1.0);\n' +
+        '        offset[30] = vec2(-1.0,  1.0);\n' +
+        '        offset[31] = vec2( 0.0,  1.0);\n' +
+        '        offset[32] = vec2( 1.0,  1.0);\n' +
+        '        offset[33] = vec2( 2.0,  1.0);\n' +
+        '        offset[34] = vec2( 3.0,  1.0);\n\n' +
+        '        offset[35] = vec2(-3.0,  2.0);\n' +
+        '        offset[36] = vec2(-2.0,  2.0);\n' +
+        '        offset[37] = vec2(-1.0,  2.0);\n' +
+        '        offset[38] = vec2( 0.0,  2.0);\n' +
+        '        offset[39] = vec2( 1.0,  2.0);\n' +
+        '        offset[40] = vec2( 2.0,  2.0);\n' +
+        '        offset[41] = vec2( 3.0,  2.0);\n\n' +
+        '        offset[42] = vec2(-3.0,  3.0);\n' +
+        '        offset[43] = vec2(-2.0,  3.0);\n' +
+        '        offset[44] = vec2(-1.0,  3.0);\n' +
+        '        offset[45] = vec2( 0.0,  3.0);\n' +
+        '        offset[46] = vec2( 1.0,  3.0);\n' +
+        '        offset[47] = vec2( 2.0,  3.0);\n' +
+        '        offset[48] = vec2( 3.0,  3.0);\n\n' +
+        '        float tFrag = 1.0 / cvsHeight;\n' +
+        '        float sFrag = 1.0 / cvsWidth;\n' +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '        vec2  fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n\n' +
+        '        //calculate mean\n' +
+        '        mean[0] = vec3(0.0);\n' +
+        '        sigma[0] = vec3(0.0);\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[3]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[4]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[5]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[6]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[10]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[11]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[12]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[13]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[17]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[18]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[19]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[20]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[24]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[25]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[26]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[27]) * Frag).rgb;\n\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[3]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[3]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[4]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[4]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[5]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[5]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[6]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[6]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[10]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[10]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[11]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[11]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[12]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[12]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[13]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[13]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[17]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[17]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[18]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[18]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[19]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[19]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[20]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[20]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[24]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[24]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[25]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[25]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[26]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[26]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[27]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[27]) * Frag).rgb;\n\n' +
+        '        mean[0] /= 16.0;\n' +
+        '        sigma[0] = abs(sigma[0]/16.0 -  mean[0]* mean[0]);\n' +
+        '        minVal = sigma[0].r + sigma[0].g + sigma[0].b;\n\n' +
+        '        mean[1] = vec3(0.0);\n' +
+        '        sigma[1] = vec3(0.0);\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[0]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[1]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[2]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[3]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[7]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[8]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[9]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[10]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[14]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[15]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[16]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[17]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[21]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[22]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[23]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[24]) * Frag).rgb;\n\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[0]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[0]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[1]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[1]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[2]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[2]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[3]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[3]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[7]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[7]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[8]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[8]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[9]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[9]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[10]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[10]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[14]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[14]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[15]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[15]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[16]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[16]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[17]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[17]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[21]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[21]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[22]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[22]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[23]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[23]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[24]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[24]) * Frag).rgb;\n\n' +
+        '        mean[1] /= 16.0;\n' +
+        '        sigma[1] = abs(sigma[1]/16.0 -  mean[1]* mean[1]);\n' +
+        '        float sigmaVal = sigma[1].r + sigma[1].g + sigma[1].b;\n' +
+        '        if(sigmaVal<minVal){\n' +
+        '            destColor = mean[1].rgb;\n' +
+        '            minVal = sigmaVal;\n' +
+        '        }else{\n' +
+        '            destColor = mean[0].rgb;\n' +
+        '        }\n\n' +
+        '        mean[2] = vec3(0.0);\n' +
+        '        sigma[2] = vec3(0.0);\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[21]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[22]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[23]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[24]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[28]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[29]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[30]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[31]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[35]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[36]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[37]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[38]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[42]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[43]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[44]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[45]) * Frag).rgb;\n\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[21]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[21]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[22]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[22]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[23]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[23]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[24]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[24]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[28]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[28]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[29]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[29]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[30]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[30]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[31]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[31]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[35]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[35]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[36]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[36]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[37]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[37]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[38]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[38]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[42]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[42]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[43]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[43]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[44]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[44]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[45]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[45]) * Frag).rgb;\n\n' +
+        '        mean[2] /= 16.0;\n' +
+        '        sigma[2] = abs(sigma[2]/16.0 -  mean[2]* mean[2]);\n' +
+        '        sigmaVal = sigma[2].r + sigma[2].g + sigma[2].b;\n' +
+        '        if(sigmaVal<minVal){\n' +
+        '            destColor = mean[2].rgb;\n' +
+        '            minVal = sigmaVal;\n' +
+        '        }\n\n' +
+        '        mean[3] = vec3(0.0);\n' +
+        '        sigma[3] = vec3(0.0);\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[24]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[25]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[26]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[27]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[31]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[32]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[33]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[34]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[38]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[39]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[40]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[41]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[45]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[46]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[47]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[48]) * Frag).rgb;\n\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[24]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[24]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[25]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[25]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[26]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[26]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[27]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[27]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[31]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[31]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[32]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[32]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[33]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[33]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[34]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[34]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[38]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[38]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[39]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[39]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[40]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[40]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[41]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[41]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[45]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[45]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[46]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[46]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[47]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[47]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[48]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[48]) * Frag).rgb;\n\n' +
+        '        mean[3] /= 16.0;\n' +
+        '        sigma[3] = abs(sigma[3]/16.0 -  mean[3]* mean[3]);\n' +
+        '        sigmaVal = sigma[3].r + sigma[3].g + sigma[3].b;\n' +
+        '        if(sigmaVal<minVal){\n' +
+        '            destColor = mean[3].rgb;\n' +
+        '            minVal = sigmaVal;\n' +
+        '        }  \n\n' +
+        '    }else{\n' +
+        '        destColor = texture2D(texture, vTexCoord).rgb;\n' +
+        '    }\n\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'kuwaharaFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'laplacianFilter-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n\n' +
+        'uniform bool b_laplacian;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
         'uniform float coef[9];\n' +
         'varying vec2 vTexCoord;\n\n' +
         'const float redScale   = 0.298912;\n' +
@@ -1261,29 +2025,35 @@ var Shaders = {
         'const float blueScale  = 0.114478;\n' +
         'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
         'void main(void){\n' +
-        '    vec2 offset[9];\n' +
-        '    offset[0] = vec2(-1.0, -1.0);\n' +
-        '    offset[1] = vec2( 0.0, -1.0);\n' +
-        '    offset[2] = vec2( 1.0, -1.0);\n' +
-        '    offset[3] = vec2(-1.0,  0.0);\n' +
-        '    offset[4] = vec2( 0.0,  0.0);\n' +
-        '    offset[5] = vec2( 1.0,  0.0);\n' +
-        '    offset[6] = vec2(-1.0,  1.0);\n' +
-        '    offset[7] = vec2( 0.0,  1.0);\n' +
-        '    offset[8] = vec2( 1.0,  1.0);\n' +
-        '    float tFrag = 1.0 / 512.0;\n' +
-        '    vec2  fc = vec2(gl_FragCoord.s, 512.0 - gl_FragCoord.t);\n' +
-        '    vec3  destColor = vec3(0.0);\n\n' +
-        '    destColor  += texture2D(texture, (fc + offset[0]) * tFrag).rgb * coef[0];\n' +
-        '    destColor  += texture2D(texture, (fc + offset[1]) * tFrag).rgb * coef[1];\n' +
-        '    destColor  += texture2D(texture, (fc + offset[2]) * tFrag).rgb * coef[2];\n' +
-        '    destColor  += texture2D(texture, (fc + offset[3]) * tFrag).rgb * coef[3];\n' +
-        '    destColor  += texture2D(texture, (fc + offset[4]) * tFrag).rgb * coef[4];\n' +
-        '    destColor  += texture2D(texture, (fc + offset[5]) * tFrag).rgb * coef[5];\n' +
-        '    destColor  += texture2D(texture, (fc + offset[6]) * tFrag).rgb * coef[6];\n' +
-        '    destColor  += texture2D(texture, (fc + offset[7]) * tFrag).rgb * coef[7];\n' +
-        '    destColor  += texture2D(texture, (fc + offset[8]) * tFrag).rgb * coef[8];\n\n' +
-        '    destColor =max(destColor, 0.0);\n' +
+        '    vec3  destColor = vec3(0.0);\n' +
+        '    if(b_laplacian){\n' +
+        '        vec2 offset[9];\n' +
+        '        offset[0] = vec2(-1.0, -1.0);\n' +
+        '        offset[1] = vec2( 0.0, -1.0);\n' +
+        '        offset[2] = vec2( 1.0, -1.0);\n' +
+        '        offset[3] = vec2(-1.0,  0.0);\n' +
+        '        offset[4] = vec2( 0.0,  0.0);\n' +
+        '        offset[5] = vec2( 1.0,  0.0);\n' +
+        '        offset[6] = vec2(-1.0,  1.0);\n' +
+        '        offset[7] = vec2( 0.0,  1.0);\n' +
+        '        offset[8] = vec2( 1.0,  1.0);\n' +
+        '        float tFrag = 1.0 / cvsHeight;\n' +
+        '        float sFrag = 1.0 / cvsWidth;\n' +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '        vec2  fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n\n' +
+        '        destColor  += texture2D(texture, (fc + offset[0]) * Frag).rgb * coef[0];\n' +
+        '        destColor  += texture2D(texture, (fc + offset[1]) * Frag).rgb * coef[1];\n' +
+        '        destColor  += texture2D(texture, (fc + offset[2]) * Frag).rgb * coef[2];\n' +
+        '        destColor  += texture2D(texture, (fc + offset[3]) * Frag).rgb * coef[3];\n' +
+        '        destColor  += texture2D(texture, (fc + offset[4]) * Frag).rgb * coef[4];\n' +
+        '        destColor  += texture2D(texture, (fc + offset[5]) * Frag).rgb * coef[5];\n' +
+        '        destColor  += texture2D(texture, (fc + offset[6]) * Frag).rgb * coef[6];\n' +
+        '        destColor  += texture2D(texture, (fc + offset[7]) * Frag).rgb * coef[7];\n' +
+        '        destColor  += texture2D(texture, (fc + offset[8]) * Frag).rgb * coef[8];\n\n' +
+        '        destColor =max(destColor, 0.0);\n' +
+        '    }else{\n' +
+        '        destColor = texture2D(texture, vTexCoord).rgb;\n' +
+        '    }\n\n' +
         '    gl_FragColor = vec4(destColor, 1.0);\n' +
         '}\n',
     'laplacianFilter-vert': 'attribute vec3 position;\n' +
@@ -1584,6 +2354,9 @@ var Shaders = {
         '}\n',
     'sobelFilter-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n\n' +
+        'uniform bool b_sobel;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
         'uniform float hCoef[9];\n' +
         'uniform float vCoef[9];\n' +
         'varying vec2 vTexCoord;\n\n' +
@@ -1592,60 +2365,74 @@ var Shaders = {
         'const float blueScale  = 0.114478;\n' +
         'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
         'void main(void){\n' +
-        '    vec2 offset[9];\n' +
-        '    offset[0] = vec2(-1.0, -1.0);\n' +
-        '    offset[1] = vec2( 0.0, -1.0);\n' +
-        '    offset[2] = vec2( 1.0, -1.0);\n' +
-        '    offset[3] = vec2(-1.0,  0.0);\n' +
-        '    offset[4] = vec2( 0.0,  0.0);\n' +
-        '    offset[5] = vec2( 1.0,  0.0);\n' +
-        '    offset[6] = vec2(-1.0,  1.0);\n' +
-        '    offset[7] = vec2( 0.0,  1.0);\n' +
-        '    offset[8] = vec2( 1.0,  1.0);\n' +
-        '    float tFrag = 1.0 / 512.0;\n' +
-        '    vec2  fc = vec2(gl_FragCoord.s, 512.0 - gl_FragCoord.t);\n' +
-        '    vec3  horizonColor = vec3(0.0);\n' +
-        '    vec3  verticalColor = vec3(0.0);\n' +
-        '    vec4  destColor = vec4(0.0);\n\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[0]) * tFrag).rgb * hCoef[0]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[1]) * tFrag).rgb * hCoef[1]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[2]) * tFrag).rgb * hCoef[2]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[3]) * tFrag).rgb * hCoef[3]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[4]) * tFrag).rgb * hCoef[4]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[5]) * tFrag).rgb * hCoef[5]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[6]) * tFrag).rgb * hCoef[6]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[7]) * tFrag).rgb * hCoef[7]' +
-        ';\n' +
-        '    horizonColor  += texture2D(texture, (fc + offset[8]) * tFrag).rgb * hCoef[8]' +
-        ';\n\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[0]) * tFrag).rgb * vCoef[0]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[1]) * tFrag).rgb * vCoef[1]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[2]) * tFrag).rgb * vCoef[2]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[3]) * tFrag).rgb * vCoef[3]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[4]) * tFrag).rgb * vCoef[4]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[5]) * tFrag).rgb * vCoef[5]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[6]) * tFrag).rgb * vCoef[6]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[7]) * tFrag).rgb * vCoef[7]' +
-        ';\n' +
-        '    verticalColor += texture2D(texture, (fc + offset[8]) * tFrag).rgb * vCoef[8]' +
-        ';\n\n' +
-        '    destColor = vec4(vec3(sqrt(horizonColor * horizonColor + verticalColor * ver' +
-        'ticalColor)), 1.0);\n' +
-        '    gl_FragColor = destColor;\n' +
+        '    vec3 destColor = vec3(0.0);\n' +
+        '    if(b_sobel){\n' +
+        '        vec2 offset[9];\n' +
+        '        offset[0] = vec2(-1.0, -1.0);\n' +
+        '        offset[1] = vec2( 0.0, -1.0);\n' +
+        '        offset[2] = vec2( 1.0, -1.0);\n' +
+        '        offset[3] = vec2(-1.0,  0.0);\n' +
+        '        offset[4] = vec2( 0.0,  0.0);\n' +
+        '        offset[5] = vec2( 1.0,  0.0);\n' +
+        '        offset[6] = vec2(-1.0,  1.0);\n' +
+        '        offset[7] = vec2( 0.0,  1.0);\n' +
+        '        offset[8] = vec2( 1.0,  1.0);\n' +
+        '        float tFrag = 1.0 / cvsHeight;\n' +
+        '        float sFrag = 1.0 / cvsWidth;\n' +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '        vec2  fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n' +
+        '        vec3  horizonColor = vec3(0.0);\n' +
+        '        vec3  verticalColor = vec3(0.0);\n\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[0]) * Frag).rgb * hCoef' +
+        '[0];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[1]) * Frag).rgb * hCoef' +
+        '[1];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[2]) * Frag).rgb * hCoef' +
+        '[2];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[3]) * Frag).rgb * hCoef' +
+        '[3];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[4]) * Frag).rgb * hCoef' +
+        '[4];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[5]) * Frag).rgb * hCoef' +
+        '[5];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[6]) * Frag).rgb * hCoef' +
+        '[6];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[7]) * Frag).rgb * hCoef' +
+        '[7];\n' +
+        '        horizonColor  += texture2D(texture, (fc + offset[8]) * Frag).rgb * hCoef' +
+        '[8];\n\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[0]) * Frag).rgb * vCoef' +
+        '[0];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[1]) * Frag).rgb * vCoef' +
+        '[1];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[2]) * Frag).rgb * vCoef' +
+        '[2];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[3]) * Frag).rgb * vCoef' +
+        '[3];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[4]) * Frag).rgb * vCoef' +
+        '[4];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[5]) * Frag).rgb * vCoef' +
+        '[5];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[6]) * Frag).rgb * vCoef' +
+        '[6];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[7]) * Frag).rgb * vCoef' +
+        '[7];\n' +
+        '        verticalColor += texture2D(texture, (fc + offset[8]) * Frag).rgb * vCoef' +
+        '[8];\n' +
+        '        destColor = vec3(sqrt(horizonColor * horizonColor + verticalColor * vert' +
+        'icalColor));\n' +
+        '    }else{\n' +
+        '        destColor = texture2D(texture, vTexCoord).rgb;\n' +
+        '    }\n\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'sobelFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'specCpt-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +
