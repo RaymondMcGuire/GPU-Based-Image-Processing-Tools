@@ -13,11 +13,19 @@ import VectorField
 import Vector
 
 class LIC:
-    def __init__(self,image,vfield):
+    def __init__(self,image,vfield,L=20,M=10,h=0.5,offset=0):
         self.image = image
         self.vfield = vfield
+        self.L = L
+        self.M = M
+        self.h = h
+        self.offset = offset
+        self.height = image.shape[0]
+        self.width = image.shape[1]
+        self.channel = image.shape[2]
+        self.minNumHits = 5
    
-    def RK(self, p, h):
+    def RK4(self, p, h):
       v = self.vfield.GetVectorFieldValByCoord(p)
 
       k1 = v.vscale(h)
@@ -34,27 +42,27 @@ class LIC:
       
       x = p.data[0]
       y = p.data[1]
-      if y>= self.image.shape[0]:
-        y -= self.image.shape[0]
-      if x>=self.image.shape[1]:
-          x -=self.image.shape[1]
+      if y>= self.height:
+        y -= self.height
+      if x>=self.width:
+          x -=self.width
     
       return Vector.Vector2(x,y)
 
 
 
-    def computeStreamLine(self,x,y,L=20,M=10,h=0.5):
+    def computeStreamLine(self,x,y):
     
       fwd = []
       bwd = []
       f = Vector.Vector2(x, y)
       b = Vector.Vector2(x, y)
     
-      for i in range(L + M -1): 
-        f = self.RK(f,  h)
+      for i in range(self.L + self.M -1): 
+        f = self.RK4(f,  self.h)
         fwd.append(f)
         
-        b = self.RK(b, -h)
+        b = self.RK4(b, -self.h)
         bwd.append(b)
       
       bwd.reverse()
@@ -66,21 +74,20 @@ class LIC:
     
       return bwd
 
-    def chkBoundary(self,v2,width=512,height=512):
-        return v2.data[0]>=0 and v2.data[1]>=0 and v2.data[0]<width and v2.data[1]<height
+    def chkBoundary(self,v2):
+        return v2.data[0]>=0 and v2.data[1]>=0 and v2.data[0]<self.width and v2.data[1]<self.height
     
 
-    def computeStreamLines(self,stream_line,out_image,num_hits,offset=0,L=20,M=10):
-        height,width,channel = self.image.shape
+    def computeStreamLines(self,stream_line,out_image,num_hits):
         #compute integral for center of streamline
         Ix0 = [0,0,0]
         k = 0
         l = len(stream_line)
-        mid = (l // 2) + offset
+        mid = (l // 2) + self.offset
         x0 = stream_line[mid]
-        for i in range(-L,L):
+        for i in range(-self.L,self.L):
             xi = stream_line[mid + i]
-            if self.chkBoundary(xi,width,height):
+            if self.chkBoundary(xi):
                 Ix0[0] += self.image[xi.data[1],xi.data[0],0]
                 Ix0[1] += self.image[xi.data[1],xi.data[0],1]
                 Ix0[2] += self.image[xi.data[1],xi.data[0],2]
@@ -98,20 +105,20 @@ class LIC:
         IxFwd = Ix0
         IxBwd = Ix0
         #compute integral for left and right points along the streamline
-        for i in range(1,M):
+        for i in range(1,self.M):
             #compute fwd integral
             iFwd = i + mid
-            iFwdRight = iFwd + L + 1
-            iFwdLeft  = iFwd - L
+            iFwdRight = iFwd + self.L + 1
+            iFwdLeft  = iFwd - self.L
             xFwd = stream_line[iFwd]
             if iFwdLeft >= 0 and iFwdRight < l:
                 xFwdLeft = stream_line[iFwdLeft]
                 xFwdRight = stream_line[iFwdRight]
                 
-                if self.chkBoundary(xFwdLeft,width,height) and self.chkBoundary(xFwdRight,width,height):
-                    IxFwd[0] += (self.image[xFwdRight.data[1],xFwdRight.data[0],0] - self.image[xFwdLeft.data[1],xFwdLeft.data[0],0]) / k
-                    IxFwd[1] += (self.image[xFwdRight.data[1],xFwdRight.data[0],1] - self.image[xFwdLeft.data[1],xFwdLeft.data[0],1]) / k
-                    IxFwd[2] += (self.image[xFwdRight.data[1],xFwdRight.data[0],2] - self.image[xFwdLeft.data[1],xFwdLeft.data[0],2]) / k
+                if self.chkBoundary(xFwdLeft) and self.chkBoundary(xFwdRight):
+                    IxFwd[0] += float(self.image[xFwdRight.data[1],xFwdRight.data[0],0] - self.image[xFwdLeft.data[1],xFwdLeft.data[0],0]) / k
+                    IxFwd[1] += float(self.image[xFwdRight.data[1],xFwdRight.data[0],1] - self.image[xFwdLeft.data[1],xFwdLeft.data[0],1]) / k
+                    IxFwd[2] += float(self.image[xFwdRight.data[1],xFwdRight.data[0],2] - self.image[xFwdLeft.data[1],xFwdLeft.data[0],2]) / k
                     out_image[xFwd.data[1],xFwd.data[0],0] += IxFwd[0]
                     out_image[xFwd.data[1],xFwd.data[0],1] += IxFwd[1]
                     out_image[xFwd.data[1],xFwd.data[0],2] += IxFwd[2]
@@ -120,18 +127,18 @@ class LIC:
                     num_hits[xFwd.data[1],xFwd.data[0],2]+=1
             #compute bwd integral
             iBwd = -i + mid
-            iBwdRight = iBwd - L - 1
-            iBwdLeft  = iBwd + L
+            iBwdRight = iBwd - self.L - 1
+            iBwdLeft  = iBwd + self.L
             xBwd = stream_line[iBwd]
     
             if iBwdRight >= 0 and iBwdLeft < l:
                 xBwdLeft = stream_line[iBwdLeft]
                 xBwdRight = stream_line[iBwdRight]
         
-                if self.chkBoundary(xBwdLeft,width,height) and self.chkBoundary(xBwdRight,width,height):
-                    IxBwd[0] += (self.image[xBwdRight.data[1],xBwdRight.data[0],0] - self.image[xBwdLeft.data[1],xBwdLeft.data[0],0]) / k
-                    IxBwd[1] += (self.image[xBwdRight.data[1],xBwdRight.data[0],1] - self.image[xBwdLeft.data[1],xBwdLeft.data[0],1]) / k
-                    IxBwd[2] += (self.image[xBwdRight.data[1],xBwdRight.data[0],2] - self.image[xBwdLeft.data[1],xBwdLeft.data[0],2]) / k
+                if self.chkBoundary(xBwdLeft) and self.chkBoundary(xBwdRight):
+                    IxBwd[0] += float(self.image[xBwdRight.data[1],xBwdRight.data[0],0] - self.image[xBwdLeft.data[1],xBwdLeft.data[0],0]) / k
+                    IxBwd[1] += float(self.image[xBwdRight.data[1],xBwdRight.data[0],1] - self.image[xBwdLeft.data[1],xBwdLeft.data[0],1]) / k
+                    IxBwd[2] += float(self.image[xBwdRight.data[1],xBwdRight.data[0],2] - self.image[xBwdLeft.data[1],xBwdLeft.data[0],2]) / k
                     out_image[xBwd.data[1],xBwd.data[0],0] += IxBwd[0]
                     out_image[xBwd.data[1],xBwd.data[0],1] += IxBwd[1]
                     out_image[xBwd.data[1],xBwd.data[0],2] += IxBwd[2]
@@ -142,10 +149,12 @@ class LIC:
 
 
     def computeLIC(self):
-        height,width,channel = self.image.shape
+        height = self.height
+        width = self.width
+        channel = self.channel
         out_image = np.zeros((height,width,channel))
         num_hits = np.zeros((height,width,channel))
-        minNumHits = 5
+        minNumHits = self.minNumHits
         w2 = int(width / 2)
         h2 = int(height / 2)
         for i in range(w2*h2):
@@ -182,7 +191,7 @@ class LIC:
         
         return out_image
 
-img = cv.imread('./img/input.jpg')
+img = cv.imread('./img/building.png')
 sst_func = SST.SST(img,SST.SST_TYPE.CLASSIC)
 sst_image = sst_func.cal()
 
