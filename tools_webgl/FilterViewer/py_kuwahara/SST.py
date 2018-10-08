@@ -18,10 +18,20 @@ class SST:
     def __init__(self,image,type):
         self.type = type
         self.image = image
-    def sst_classic(self,kernel_size=5,tau=0.002,box_filter = [[1,0],[-1,0],[0,1],[0,-1]],iter=5):
+    def sst_classic(self,kernel_size=5,sigma=2,tau=0.002,box_filter = [[1,0],[-1,0],[0,1],[0,-1]],iter=5):
         img = self.image
-        gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-        height,width,_ = img.shape
+        self.sigma = sigma
+        height,width,channel = img.shape
+        dimage = np.float32(img)
+        #convert to 1/255
+        for j in range(height):
+            for i in range(width):
+                for c in range(channel):
+                    dimage[j,i,c] = dimage[j,i,c]/255.0
+                
+        
+        gray = cv.cvtColor(dimage, cv.COLOR_BGR2GRAY)
+        
 
         sobelx = cv.Sobel(gray, cv.CV_32F, 1, 0, ksize=kernel_size)
         sobely = cv.Sobel(gray, cv.CV_32F, 0, 1, ksize=kernel_size)
@@ -37,6 +47,7 @@ class SST:
                 tensor_image[j,i] = (fx*fx,fx*fy,fy*fy)
         cv.imwrite("./img/tensor_image.png",tensor_image)
         
+        """
         structure_tensor_image = np.zeros((height,width,3))
         for t in range(iter):
             for j in range(height):
@@ -65,14 +76,14 @@ class SST:
                         structure_tensor_image[j,i] = tensor_image[j,i]
             tensor_image =  structure_tensor_image
         cv.imwrite("./img/structure_tensor_image.png",structure_tensor_image)
-
-        sigma = 2 * kernel_size * kernel_size 
-        smooth_structure_tensor = cv.GaussianBlur(structure_tensor_image,(kernel_size,kernel_size),sigma)
+        """     
+        sigma = 2 * self.sigma * self.sigma     
+        smooth_structure_tensor = cv.GaussianBlur(tensor_image,(kernel_size,kernel_size),sigma)
         cv.imwrite("./img/smooth_structure_tensor.png",smooth_structure_tensor)
         print("generated smooth structure tensor!")
         self.smooth_structure_tensor = smooth_structure_tensor
         return smooth_structure_tensor
     
-    def cal(self):
+    def cal(self,kernel_size=5):
         if self.type == SST_TYPE.CLASSIC:
-            return self.sst_classic()
+            return self.sst_classic(kernel_size)
