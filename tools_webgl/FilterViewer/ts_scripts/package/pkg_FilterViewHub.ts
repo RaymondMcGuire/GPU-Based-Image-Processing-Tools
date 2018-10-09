@@ -6,7 +6,7 @@
  *  
  * ========================================================================= */
 /// <reference path="../lib/HashSet.ts" />
-/// <reference path="../lib/FilterViewerUi.ts" />
+/// <reference path="../lib/FilterViewerUI.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/cv_imread.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/cv_colorSpace.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/extra_utils.ts" />

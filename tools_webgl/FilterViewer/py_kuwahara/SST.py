@@ -10,6 +10,8 @@ import cv2 as cv
 import numpy as np
 from enum import Enum
 
+import Gaussian
+
 class SST_TYPE(Enum):
     CLASSIC = 1
 
@@ -33,19 +35,15 @@ class SST:
         gray = cv.cvtColor(dimage, cv.COLOR_BGR2GRAY)
         
 
-        sobelx = cv.Sobel(gray, cv.CV_32F, 1, 0, ksize=kernel_size)
-        sobely = cv.Sobel(gray, cv.CV_32F, 0, 1, ksize=kernel_size)
-
-        cv.imwrite("./img/sobelx.png",sobelx)
-        cv.imwrite("./img/sobely.png",sobely)
+        sobelx = cv.Sobel(gray, cv.CV_32F, 1, 0, ksize=3)
+        sobely = cv.Sobel(gray, cv.CV_32F, 0, 1, ksize=3)
 
         tensor_image = np.zeros((height,width,3))
         for j in range(height):
             for i in range(width):
                 fx = sobelx[j,i]
                 fy = sobely[j,i]
-                tensor_image[j,i] = (fx*fx,fx*fy,fy*fy)
-        cv.imwrite("./img/tensor_image.png",tensor_image)
+                tensor_image[j,i] = (fx*fx,fy*fy,fx*fy)
         
         """
         structure_tensor_image = np.zeros((height,width,3))
@@ -77,9 +75,11 @@ class SST:
             tensor_image =  structure_tensor_image
         cv.imwrite("./img/structure_tensor_image.png",structure_tensor_image)
         """     
-        sigma = 2 * self.sigma * self.sigma     
-        smooth_structure_tensor = cv.GaussianBlur(tensor_image,(kernel_size,kernel_size),sigma)
-        cv.imwrite("./img/smooth_structure_tensor.png",smooth_structure_tensor)
+        #sigma = 2 * self.sigma * self.sigma     
+        #smooth_structure_tensor = cv.GaussianBlur(tensor_image,(kernel_size,kernel_size),sigma)
+
+        gaussian_func = Gaussian.Gaussian()
+        smooth_structure_tensor = gaussian_func.calc(tensor_image,2,height,width,channel)
         print("generated smooth structure tensor!")
         self.smooth_structure_tensor = smooth_structure_tensor
         return smooth_structure_tensor

@@ -24,33 +24,40 @@ class AnisotropicKuwahara:
         self.param_anisotropy()
     
     def param_anisotropy(self):
+        visual_image = cv.imread("./img/visual_rgb.png") 
+        anisotropic_image = np.zeros((self.height,self.width,self.channel))
         A = np.zeros((self.height,self.width))
         PHI = np.zeros((self.height,self.width))
         for j in range(self.height):
             for i in range(self.width):
                 E = self.sst[j,i,0]
-                F = self.sst[j,i,1]
-                G = self.sst[j,i,2]
+                G = self.sst[j,i,1]
+                F = self.sst[j,i,2]
                 D = np.sqrt((E-G)*(E-G)+4.0*F*F)
                 
                 lambda1 = (E + G + D)/2.0
                 lambda2 = (E + G - D)/2.0
                 
-                if lambda1 + lambda2 == 0:
+                if lambda1 + lambda2 <= 0:
                     A[j,i] = 0
                 else:
                     A[j,i] = (lambda1 - lambda2)/(lambda1 + lambda2)
                 
-                if A[j,i] < 0:
-                    A[j,i] = 0
-                elif A[j,i] > 1:
-                    A[j,i] = 1
+                
+                #visualization Anisotropic
+                anisotropic_image[j,i,0] = visual_image[0,int(255*A[j,i]),0]
+                anisotropic_image[j,i,1] = visual_image[0,int(255*A[j,i]),1]
+                anisotropic_image[j,i,2] = visual_image[0,int(255*A[j,i]),2]
+                
                 
                 lengthV = np.sqrt(F*F+( lambda1 - E)**2)
-                    
-                PHI[j,i] = np.arctan2(-F/lengthV, (lambda1 - E)/lengthV)
+                if lengthV > 0:
+                    PHI[j,i] = np.arctan2(-F/lengthV, (lambda1 - E)/lengthV)
+                else:
+                    PHI[j,i] = np.arctan2(1,0)
         self.A = A
         self.PHI = PHI
+        cv.imwrite("./img/anisotropic_image.png",anisotropic_image)    
         
     
     def calc(self,gfilter):
@@ -159,8 +166,9 @@ sst_func = SST.SST(img,SST.SST_TYPE.CLASSIC)
 sst_image = sst_func.cal(9)
 
 gaussian_func = ga.Gaussian()
-gfilter = gaussian_func.sector_calc(13)
+gfilter = gaussian_func.sector_calc(32)
 
 aniso_kuwahara_func = AnisotropicKuwahara(img,sst_image)
 aniso_kuwahara_image = aniso_kuwahara_func.calc(gfilter)
-cv.imwrite("./img/aniso_kuwahara_image.png",aniso_kuwahara_image)                
+cv.imwrite("./img/aniso_kuwahara_image.png",aniso_kuwahara_image)         
+
