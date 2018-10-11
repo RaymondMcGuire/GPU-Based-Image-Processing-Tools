@@ -38,137 +38,155 @@ class AnisotropicKuwahara:
                 lambda1 = (E + G + D)/2.0
                 lambda2 = (E + G - D)/2.0
                 
-                if lambda1 + lambda2 <= 0:
+                if (lambda1 + lambda2) <=0:
                     A[j,i] = 0
                 else:
                     A[j,i] = (lambda1 - lambda2)/(lambda1 + lambda2)
-                
                 
                 #visualization Anisotropic
                 anisotropic_image[j,i,0] = visual_image[0,int(255*A[j,i]),0]
                 anisotropic_image[j,i,1] = visual_image[0,int(255*A[j,i]),1]
                 anisotropic_image[j,i,2] = visual_image[0,int(255*A[j,i]),2]
                 
-                
-                lengthV = np.sqrt(F*F+( lambda1 - E)**2)
-                if lengthV > 0:
-                    PHI[j,i] = np.arctan2(-F/lengthV, (lambda1 - E)/lengthV)
-                else:
-                    PHI[j,i] = np.arctan2(1,0)
+            
+                PHI[j,i] = np.arctan2(-F, lambda1 - E)
+
         self.A = A
         self.PHI = PHI
         cv.imwrite("./img/anisotropic_image.png",anisotropic_image)    
         
     
-    def calc(self,gfilter):
+    def calc(self):
         anisotropic_kuwahara_image = np.zeros((self.height,self.width,self.channel))
         cnt = 0
         cnt_list = []
-        for c in range(self.channel):
-            for j in range(self.height):
-                for i in range(self.width):
-                    cnt += 1
-                
-                    num_count = round(100*cnt/(self.channel*self.height*self.width),0)
-                    
-                    if num_count not in cnt_list:
-                        cnt_list.append(num_count)
-                        print("current progress:"+str(num_count)+"%")
-                    
-                    v_sum = np.zeros(self.div_num)
-                    v_var = np.zeros(self.div_num)
-                    v_weight = np.zeros(self.div_num)
-                    
-                    aniso = self.A[j,i]
-                    a =  self.kernel_size * np.clip((aniso+self.alpha)/self.alpha,0.1,2.0)
-                    b =  self.kernel_size * np.clip(self.alpha/(aniso+self.alpha),0.1,2.0)
-                    
-                    theta = self.PHI[j,i]
-                    cos_phi = np.cos(theta)
-                    sin_phi = np.sin(theta)
-                    #theta = -self.PHI[j,i]
-                    rotMat = np.array([[np.cos(self.angle),-np.sin(self.angle)],[np.sin(self.angle),np.cos(self.angle)]])
-                    S = np.array([[0.5/a, 0.0],[0.0, 0.5/b]])
-                    R =np.array([[cos_phi, sin_phi], [-sin_phi, cos_phi]])
-                    SR = np.dot(S,R)
-                    
-                    max_x = int(np.sqrt(a*a * cos_phi*cos_phi + b*b * sin_phi*sin_phi))
-                    max_y = int(np.sqrt(a*a * sin_phi*sin_phi + b*b * cos_phi*cos_phi))
-                    for dy in range(-max_y,max_y+1):
-                        for dx in range(-max_x,max_x+1):
-                            v = np.dot(SR,np.array([dx,dy]))
-                            if np.dot(v,v) <=0.25:
-                                xx = i+dx
-                                yy = j+dy
-                                if xx>=0 and yy>=0 and xx<self.width and yy<self.height:
-                                    o = self.image[yy,xx,c]
-                                    for k in range(self.div_num):
-                                        gidx = int((np.array([[0.5],[0.5]]) + v)[0,0] * 13)
-                                        gidy = int((np.array([[0.5],[0.5]]) + v)[1,0] * 13)
-                                        g = gfilter[gidy,gidx]
-                                        v_sum[k] += g * o
-                                        v_var[k] += g * o * o
-                                        v_weight[k] += g
-                                        
-                                        v = np.dot(v,rotMat)
-                    """
-                    for dy in range(-self.kernel_size,self.kernel_size+1):
-                        for dx in range(-self.kernel_size,self.kernel_size+1):
-                            
-                            
-                            if dx == 0 and dy == 0:
-                                continue
-                            dx2 = int(sx*(np.cos(theta) * dx - np.sin(theta) * dy))
-                            dy2 = int(sy*(np.sin(theta) * dx + np.cos(theta) * dy))
-                            xx = i + dx2
-                            yy = j + dy2
-                            if xx>=0 and yy>=0 and xx<self.width and yy<self.height:
-                                theta = np.arctan2(dy2,dx2) + np.pi
-                                t = int(np.floor(theta/self.angle)) % self.div_num
-                                d2 = dx2 * dx2 + dy2 * dy2
-                                #g = np.exp(-d2 / (2.0*self.kernel_size))
-                                g = gfilter[dy+self.kernel_size,dx+self.kernel_size]
-                                v = self.image[yy,xx,c]
-                                v_sum[t] += g * v
-                                v_var[t] += g * v * v
-                                v_weight[t] += g
-                    """
-                    
-                    de = 0.0
-                    nu = 0.0
-                    for d in range(self.div_num):
-                        if v_weight[d]!=0:
-                            v_sum[d] = v_sum[d]/v_weight[d]
-                            v_var[d] = v_var[d]/v_weight[d]
-                        else:
-                            v_sum[d] = 0
-                            v_var[d] = 0                
+        EPS = 1e-6
 
-                        v_var[d] = np.abs(v_var[d] - v_sum[d] * v_sum[d])                     
-                        if v_var[d] > 1e-10:
-                            v_var[d] = np.sqrt(v_var[d])
-                        else:
-                            v_var[d] = 1e-10
-                        w = 1.0 / (1.0 + np.power(v_var[d],self.q))
-                        de += w * v_sum[d]
-                        nu += w
-                    if nu > 1e-10:
-                        val = de/nu
+        for j in range(self.height):
+            for i in range(self.width):
+                cnt += 1
+            
+                num_count = round(100*cnt/(self.height*self.width),0)
+                
+                if num_count not in cnt_list:
+                    cnt_list.append(num_count)
+                    print("current progress:"+str(num_count)+"%")
+                
+                v_sum = np.zeros((self.div_num,3))
+                v_var = np.zeros((self.div_num,3))
+                v_weight = np.zeros(self.div_num)
+                
+                aniso = self.A[j,i]
+                theta = -self.PHI[j,i]
+                sx = self.alpha / (aniso + self.alpha)
+                sy = (self.alpha + aniso) / self.alpha
+                
+                for dy in range(-self.kernel_size,self.kernel_size+1):
+                    for dx in range(-self.kernel_size,self.kernel_size+1):
+                        if dx==0 and dy == 0:
+                            continue
+                        dx2 = int(sx * (np.cos(theta) * dx - np.sin(theta) * dy))
+                        dy2 = int(sy * (np.sin(theta) * dx + np.cos(theta) * dy))
+                        xx = i+dx2
+                        yy = j+dy2
+                        if xx>=0 and yy>=0 and xx<self.width and yy<self.height:
+                            theta = np.arctan2(dy2, dx2) + np.pi
+                            k = int(np.floor(theta / self.angle)) % self.div_num
+                            d2 = dx2 * dx2 + dy2 * dy2
+                            g = np.exp(-d2 / (2.0 * self.kernel_size))
+                            oB = self.image[yy,xx,0]
+                            oG = self.image[yy,xx,1]
+                            oR = self.image[yy,xx,2]
+                            v_sum[k,0] += g * oB
+                            v_sum[k,1] += g * oG
+                            v_sum[k,2] += g * oR
+                            v_var[k,0] += g * oB * oB
+                            v_var[k,1] += g * oG * oG
+                            v_var[k,2] += g * oR * oR
+                            v_weight[k] += g
+                                    
+                                    
+                de = np.zeros(3)
+                nu = np.zeros(3)
+                for d in range(self.div_num):
+                    if v_weight[d]!=0:
+                        v_sum[d,0] = v_sum[d,0]/v_weight[d]
+                        v_sum[d,1] = v_sum[d,1]/v_weight[d]
+                        v_sum[d,2] = v_sum[d,2]/v_weight[d]
+                        
+                        v_var[d,0] = v_var[d,0]/v_weight[d]
+                        v_var[d,1] = v_var[d,1]/v_weight[d]
+                        v_var[d,2] = v_var[d,2]/v_weight[d]
                     else:
-                        val = self.image[j,i,c]
+                        v_sum[d,0] = 0
+                        v_var[d,0] = 0       
+                        
+                        v_sum[d,1] = 0
+                        v_var[d,1] = 0    
+                        
+                        v_sum[d,2] = 0
+                        v_var[d,2] = 0    
+
+                    v_var[d,0] = np.abs(v_var[d,0] - v_sum[d,0] * v_sum[d,0]) 
+                    v_var[d,1] = np.abs(v_var[d,1] - v_sum[d,1] * v_sum[d,1]) 
+                    v_var[d,2] = np.abs(v_var[d,2] - v_sum[d,2] * v_sum[d,2])                     
                     
-                    anisotropic_kuwahara_image[j,i,c] = int(val)
+                    if v_var[d,0] > EPS:
+                        v_var[d,0] = np.sqrt(v_var[d,0])
+                    else:
+                        v_var[d,0] = EPS
+                        
+                    if v_var[d,1] > EPS:
+                        v_var[d,1] = np.sqrt(v_var[d,1])
+                    else:
+                        v_var[d,1] = EPS
+                    
+                    if v_var[d,2] > EPS:
+                        v_var[d,2] = np.sqrt(v_var[d,2])
+                    else:
+                        v_var[d,2] = EPS
+                        
+                    w0 = np.power(v_var[d,0],-self.q)
+                    w1 = np.power(v_var[d,1],-self.q)
+                    w2 = np.power(v_var[d,2],-self.q)
+                    
+                    de[0] += w0 * v_sum[d,0]
+                    de[1] += w1 * v_sum[d,1]
+                    de[2] += w2 * v_sum[d,2]
+                    
+                    nu[0] += w0
+                    nu[1] += w1
+                    nu[2] += w2
+                    
+                if nu[0] > EPS:
+                    valB = de[0]/nu[0]
+                else:
+                    valB = 0
+                
+                if nu[1] > EPS:
+                    valG = de[1]/nu[1]
+                else:
+                    valG = 0
+                if nu[2] > EPS:
+                    valR = de[2]/nu[2]
+                else:
+                    valR = 0
+                
+                anisotropic_kuwahara_image[j,i,0] = int(valB)
+                anisotropic_kuwahara_image[j,i,1] = int(valG)
+                anisotropic_kuwahara_image[j,i,2] = int(valR)
         self.res_image = anisotropic_kuwahara_image
         return anisotropic_kuwahara_image
 
-img = cv.imread('./img/anim.png')
-sst_func = SST.SST(img,SST.SST_TYPE.CLASSIC)
-sst_image = sst_func.cal(9)
 
-gaussian_func = ga.Gaussian()
-gfilter = gaussian_func.sector_calc(32)
+#img = cv.imread('./img/anim.png')
+#sst_func = SST.SST(img,SST.SST_TYPE.CLASSIC)
+#sst_image = sst_func.cal(9)
+
+#gaussian_func = ga.Gaussian()
+#gfilter = gaussian_func.sector_calc(32)
 
 aniso_kuwahara_func = AnisotropicKuwahara(img,sst_image)
-aniso_kuwahara_image = aniso_kuwahara_func.calc(gfilter)
+aniso_kuwahara_image = aniso_kuwahara_func.calc()
 cv.imwrite("./img/aniso_kuwahara_image.png",aniso_kuwahara_image)         
 
