@@ -1,7 +1,10 @@
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -84,6 +87,30 @@ var Utils;
     }());
     Utils.FilterViewerUI = FilterViewerUI;
 })(Utils || (Utils = {}));
+/* =========================================================================
+ *
+ *  EgnType.ts
+ *  static type
+ *  v0.1
+ *
+ * ========================================================================= */
+var EcognitaWeb3D;
+(function (EcognitaWeb3D) {
+    var Filter;
+    (function (Filter) {
+        Filter[Filter["LAPLACIAN"] = 0] = "LAPLACIAN";
+        Filter[Filter["SOBEL"] = 1] = "SOBEL";
+        Filter[Filter["GAUSSIAN"] = 2] = "GAUSSIAN";
+        Filter[Filter["KUWAHARA"] = 3] = "KUWAHARA";
+        Filter[Filter["GKUWAHARA"] = 4] = "GKUWAHARA";
+    })(Filter = EcognitaWeb3D.Filter || (EcognitaWeb3D.Filter = {}));
+    var RenderPipeLine;
+    (function (RenderPipeLine) {
+        RenderPipeLine[RenderPipeLine["CONVOLUTION_FILTER"] = 0] = "CONVOLUTION_FILTER";
+        RenderPipeLine[RenderPipeLine["BLOOM_EFFECT"] = 1] = "BLOOM_EFFECT";
+        RenderPipeLine[RenderPipeLine["CONVOLUTION_TWICE"] = 2] = "CONVOLUTION_TWICE";
+    })(RenderPipeLine = EcognitaWeb3D.RenderPipeLine || (EcognitaWeb3D.RenderPipeLine = {}));
+})(EcognitaWeb3D || (EcognitaWeb3D = {}));
 /* =========================================================================
  *
  *  cv_imread.ts
@@ -2963,13 +2990,11 @@ var EcognitaMathLib;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 /* =========================================================================
  *
- *  FilterViewHub.ts
- *  pkg for filter viewer
+ *  EgnWebGL.ts
+ *  construct a webgl environment
  *  v0.1
  *
  * ========================================================================= */
-/// <reference path="../lib/HashSet.ts" />
-/// <reference path="../lib/FilterViewerUi.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/cv_imread.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/cv_colorSpace.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/extra_utils.ts" />
@@ -2978,34 +3003,60 @@ var EcognitaMathLib;
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_utils.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_shaders.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_model.ts" />
-var EcognitaWeb3DFunction;
-(function (EcognitaWeb3DFunction) {
-    var Filter;
-    (function (Filter) {
-        Filter[Filter["LAPLACIAN"] = 0] = "LAPLACIAN";
-        Filter[Filter["SOBEL"] = 1] = "SOBEL";
-        Filter[Filter["GAUSSIAN"] = 2] = "GAUSSIAN";
-        Filter[Filter["KUWAHARA"] = 3] = "KUWAHARA";
-        Filter[Filter["GKUWAHARA"] = 4] = "GKUWAHARA";
-    })(Filter = EcognitaWeb3DFunction.Filter || (EcognitaWeb3DFunction.Filter = {}));
-    var RenderPipeLine;
-    (function (RenderPipeLine) {
-        RenderPipeLine[RenderPipeLine["CONVOLUTION_FILTER"] = 0] = "CONVOLUTION_FILTER";
-        RenderPipeLine[RenderPipeLine["BLOOM_EFFECT"] = 1] = "BLOOM_EFFECT";
-        RenderPipeLine[RenderPipeLine["CONVOLUTION_TWICE"] = 2] = "CONVOLUTION_TWICE";
-    })(RenderPipeLine = EcognitaWeb3DFunction.RenderPipeLine || (EcognitaWeb3DFunction.RenderPipeLine = {}));
-    var InitWeb3DEnv = /** @class */ (function () {
-        function InitWeb3DEnv(cvs, shaderlist) {
+/// <reference path="../lib/HashSet.ts" />
+var EcognitaWeb3D;
+(function (EcognitaWeb3D) {
+    var WebGLEnv = /** @class */ (function () {
+        function WebGLEnv(cvs, shaderlist) {
+            this.chkWebGLEnv(cvs);
+            this.initGlobalVariables();
+            this.loadAssets();
+            this.loadExtraLibrary();
+            this.loadInternalLibrary(shaderlist);
+            this.initGlobalMatrix();
+        }
+        WebGLEnv.prototype.loadTexture = function (file_name) {
             var _this = this;
+            var tex = null;
+            var image = EcognitaMathLib.imread(file_name);
+            image.onload = (function () {
+                tex = new EcognitaMathLib.WebGL_Texture(4, false, image);
+                _this.Texture.push(tex);
+            });
+        };
+        WebGLEnv.prototype.chkWebGLEnv = function (cvs) {
             this.canvas = cvs;
-            this.chkWebGLEnvi();
+            try {
+                gl = this.canvas.getContext("webgl") || this.canvas.getContext("experimental-webgl");
+                this.stats = new Stats();
+                document.body.appendChild(this.stats.dom);
+            }
+            catch (e) { }
+            if (!gl)
+                throw new Error("Could not initialise WebGL");
+        };
+        WebGLEnv.prototype.initGlobalVariables = function () {
             this.vbo = new Array();
             this.ibo = new Array();
             this.Texture = new Array();
             this.matUtil = new EcognitaMathLib.WebGLMatrix();
             this.quatUtil = new EcognitaMathLib.WebGLQuaternion();
+        };
+        WebGLEnv.prototype.initGlobalMatrix = function () {
+            this.MATRIX = new Utils.HashSet();
+            var m = this.matUtil;
+            this.MATRIX.set("mMatrix", m.identity(m.create()));
+            this.MATRIX.set("vMatrix", m.identity(m.create()));
+            this.MATRIX.set("pMatrix", m.identity(m.create()));
+            this.MATRIX.set("vpMatrix", m.identity(m.create()));
+            this.MATRIX.set("mvpMatrix", m.identity(m.create()));
+            this.MATRIX.set("invMatrix", m.identity(m.create()));
+        };
+        WebGLEnv.prototype.loadAssets = function () {
             //load demo texture
             this.loadTexture("./image/demo.png");
+        };
+        WebGLEnv.prototype.loadExtraLibrary = function () {
             this.ui_data = {
                 name: 'Filter Viewer',
                 useTexture: false,
@@ -3016,8 +3067,13 @@ var EcognitaWeb3DFunction;
                 f_GeneralizedKuwaharaFilter: false,
                 f_BloomEffect: false
             };
+            //load extral library
             this.uiUtil = new Utils.FilterViewerUI(this.ui_data);
             this.extHammer = new EcognitaMathLib.Hammer_Utils(this.canvas);
+        };
+        WebGLEnv.prototype.loadInternalLibrary = function (shaderlist) {
+            var _this = this;
+            //load internal library
             this.framebuffers = new Utils.HashSet();
             //init shaders and uniLocations
             this.shaders = new Utils.HashSet();
@@ -3027,38 +3083,23 @@ var EcognitaWeb3DFunction;
                 _this.shaders.set(shaderName, shader);
                 _this.uniLocations.set(shaderName, new Array());
             });
-            //init matrix
-            this.matrix = new Utils.HashSet();
-            var m = this.matUtil;
-            this.matrix.set("mMatrix", m.identity(m.create()));
-            this.matrix.set("vMatrix", m.identity(m.create()));
-            this.matrix.set("pMatrix", m.identity(m.create()));
-            this.matrix.set("vpMatrix", m.identity(m.create()));
-            this.matrix.set("mvpMatrix", m.identity(m.create()));
-            this.matrix.set("invMatrix", m.identity(m.create()));
-        }
-        InitWeb3DEnv.prototype.loadTexture = function (file_name) {
-            var _this = this;
-            var tex = null;
-            var image = EcognitaMathLib.imread(file_name);
-            image.onload = (function () {
-                tex = new EcognitaMathLib.WebGL_Texture(4, false, image);
-                _this.Texture.push(tex);
-            });
         };
-        InitWeb3DEnv.prototype.chkWebGLEnvi = function () {
-            try {
-                gl = this.canvas.getContext("webgl") || this.canvas.getContext("experimental-webgl");
-                this.stats = new Stats();
-                document.body.appendChild(this.stats.dom);
-            }
-            catch (e) { }
-            if (!gl)
-                throw new Error("Could not initialise WebGL");
-        };
-        return InitWeb3DEnv;
+        return WebGLEnv;
     }());
-    EcognitaWeb3DFunction.InitWeb3DEnv = InitWeb3DEnv;
+    EcognitaWeb3D.WebGLEnv = WebGLEnv;
+})(EcognitaWeb3D || (EcognitaWeb3D = {}));
+/* =========================================================================
+ *
+ *  FilterViewHub.ts
+ *  pkg for filter viewer
+ *  v0.1
+ *
+ * ========================================================================= */
+/// <reference path="../lib/FilterViewerUI.ts" />
+/// <reference path="../lib/EgnType.ts" />
+/// <reference path="../lib/EgnWebGL.ts" />
+var EcognitaWeb3D;
+(function (EcognitaWeb3D) {
     var FilterViewer = /** @class */ (function (_super) {
         __extends(FilterViewer, _super);
         function FilterViewer(cvs) {
@@ -3067,8 +3108,8 @@ var EcognitaWeb3DFunction;
             _this = _super.call(this, cvs, shaderList) || this;
             //init gobal variable
             _this.filterMvpMatrix = _this.matUtil.identity(_this.matUtil.create());
-            _this.usrPipeLine = RenderPipeLine.CONVOLUTION_FILTER;
-            _this.usrFilter = Filter.SOBEL;
+            _this.usrPipeLine = EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER;
+            _this.usrFilter = EcognitaWeb3D.Filter.SOBEL;
             _this.filterShader = _this.shaders.get("sobelFilter");
             _this.btnStatusList = new Utils.HashSet();
             _this.btnStatusList.set("f_LaplacianFilter", _this.ui_data.f_LaplacianFilter);
@@ -3221,7 +3262,7 @@ var EcognitaWeb3DFunction;
         };
         //user config
         FilterViewer.prototype.renderFilter = function () {
-            if (this.usrFilter == Filter.LAPLACIAN) {
+            if (this.usrFilter == EcognitaWeb3D.Filter.LAPLACIAN) {
                 var LapFilterUniformLoc = this.uniLocations.get("laplacianFilter");
                 gl.uniformMatrix4fv(LapFilterUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(LapFilterUniformLoc[1], 0);
@@ -3230,7 +3271,7 @@ var EcognitaWeb3DFunction;
                 gl.uniform1f(LapFilterUniformLoc[4], this.canvas.width);
                 gl.uniform1i(LapFilterUniformLoc[5], this.btnStatusList.get("f_LaplacianFilter"));
             }
-            else if (this.usrFilter == Filter.SOBEL) {
+            else if (this.usrFilter == EcognitaWeb3D.Filter.SOBEL) {
                 var SobelFilterUniformLoc = this.uniLocations.get("sobelFilter");
                 gl.uniformMatrix4fv(SobelFilterUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(SobelFilterUniformLoc[1], 0);
@@ -3240,7 +3281,7 @@ var EcognitaWeb3DFunction;
                 gl.uniform1f(SobelFilterUniformLoc[5], this.canvas.width);
                 gl.uniform1i(SobelFilterUniformLoc[6], this.btnStatusList.get("f_SobelFilter"));
             }
-            else if (this.usrFilter == Filter.KUWAHARA) {
+            else if (this.usrFilter == EcognitaWeb3D.Filter.KUWAHARA) {
                 var KuwaharaFilterUniformLoc = this.uniLocations.get("kuwaharaFilter");
                 gl.uniformMatrix4fv(KuwaharaFilterUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(KuwaharaFilterUniformLoc[1], 0);
@@ -3248,7 +3289,7 @@ var EcognitaWeb3DFunction;
                 gl.uniform1f(KuwaharaFilterUniformLoc[3], this.canvas.width);
                 gl.uniform1i(KuwaharaFilterUniformLoc[4], this.btnStatusList.get("f_KuwaharaFilter"));
             }
-            else if (this.usrFilter == Filter.GKUWAHARA) {
+            else if (this.usrFilter == EcognitaWeb3D.Filter.GKUWAHARA) {
                 var GKuwaharaFilterUniformLoc = this.uniLocations.get("gkuwaharaFilter");
                 gl.uniformMatrix4fv(GKuwaharaFilterUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(GKuwaharaFilterUniformLoc[1], 0);
@@ -3302,22 +3343,22 @@ var EcognitaWeb3DFunction;
         FilterViewer.prototype.regisUIEvent = function () {
             var _this = this;
             this.uiUtil.uiController.get("f_LaplacianFilter").onChange(function (val) {
-                _this.usrSelectChange("f_LaplacianFilter", val, RenderPipeLine.CONVOLUTION_FILTER, Filter.LAPLACIAN, "laplacianFilter");
+                _this.usrSelectChange("f_LaplacianFilter", val, EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER, EcognitaWeb3D.Filter.LAPLACIAN, "laplacianFilter");
             });
             this.uiUtil.uiController.get("f_SobelFilter").onChange(function (val) {
-                _this.usrSelectChange("f_SobelFilter", val, RenderPipeLine.CONVOLUTION_FILTER, Filter.SOBEL, "sobelFilter");
+                _this.usrSelectChange("f_SobelFilter", val, EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER, EcognitaWeb3D.Filter.SOBEL, "sobelFilter");
             });
             this.uiUtil.uiController.get("f_KuwaharaFilter").onChange(function (val) {
-                _this.usrSelectChange("f_KuwaharaFilter", val, RenderPipeLine.CONVOLUTION_FILTER, Filter.KUWAHARA, "kuwaharaFilter");
+                _this.usrSelectChange("f_KuwaharaFilter", val, EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER, EcognitaWeb3D.Filter.KUWAHARA, "kuwaharaFilter");
             });
             this.uiUtil.uiController.get("f_GeneralizedKuwaharaFilter").onChange(function (val) {
-                _this.usrSelectChange("f_GeneralizedKuwaharaFilter", val, RenderPipeLine.CONVOLUTION_FILTER, Filter.GKUWAHARA, "gkuwaharaFilter");
+                _this.usrSelectChange("f_GeneralizedKuwaharaFilter", val, EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER, EcognitaWeb3D.Filter.GKUWAHARA, "gkuwaharaFilter");
             });
             this.uiUtil.uiController.get("f_BloomEffect").onChange(function (val) {
-                _this.usrSelectChange("f_BloomEffect", val, RenderPipeLine.BLOOM_EFFECT, Filter.GAUSSIAN, "gaussianFilter");
+                _this.usrSelectChange("f_BloomEffect", val, EcognitaWeb3D.RenderPipeLine.BLOOM_EFFECT, EcognitaWeb3D.Filter.GAUSSIAN, "gaussianFilter");
             });
             this.uiUtil.uiController.get("f_GaussianFilter").onChange(function (val) {
-                _this.usrSelectChange("f_GaussianFilter", val, RenderPipeLine.CONVOLUTION_TWICE, Filter.GAUSSIAN, "gaussianFilter");
+                _this.usrSelectChange("f_GaussianFilter", val, EcognitaWeb3D.RenderPipeLine.CONVOLUTION_TWICE, EcognitaWeb3D.Filter.GAUSSIAN, "gaussianFilter");
             });
         };
         FilterViewer.prototype.regisEvent = function () {
@@ -3370,12 +3411,12 @@ var EcognitaWeb3DFunction;
             var ibo_torus = this.ibo[0];
             var vbo_board = this.vbo[1];
             var ibo_board = this.ibo[1];
-            var mMatrix = this.matrix.get("mMatrix");
-            var vMatrix = this.matrix.get("vMatrix");
-            var pMatrix = this.matrix.get("pMatrix");
-            var vpMatrix = this.matrix.get("vpMatrix");
-            var mvpMatrix = this.matrix.get("mvpMatrix");
-            var invMatrix = this.matrix.get("invMatrix");
+            var mMatrix = this.MATRIX.get("mMatrix");
+            var vMatrix = this.MATRIX.get("vMatrix");
+            var pMatrix = this.MATRIX.get("pMatrix");
+            var vpMatrix = this.MATRIX.get("vpMatrix");
+            var mvpMatrix = this.MATRIX.get("mvpMatrix");
+            var invMatrix = this.MATRIX.get("invMatrix");
             //user config
             var specCptShader = this.shaders.get("specCpt");
             var uniLocation_spec = this.uniLocations.get("specCpt");
@@ -3407,7 +3448,7 @@ var EcognitaWeb3DFunction;
                 _this.filterMvpMatrix = m.multiply(pMatrix, vMatrix);
                 //--------------------------------------animation global variables
                 //rendering parts----------------------------------------------------------------------------------
-                if (_this.usrPipeLine == RenderPipeLine.CONVOLUTION_FILTER) {
+                if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER) {
                     //---------------------using framebuffer1 to render scene and save result to texture0
                     frameBuffer1.bindFrameBuffer();
                     RenderSimpleScene();
@@ -3432,7 +3473,7 @@ var EcognitaWeb3DFunction;
                     ibo_board.draw(gl.TRIANGLES);
                     //---------------------rendering texture0 to a board and show it in screen
                 }
-                else if (_this.usrPipeLine == RenderPipeLine.BLOOM_EFFECT) {
+                else if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.BLOOM_EFFECT) {
                     //render torus specular component, save to frame1  
                     specCptShader.bind();
                     frameBuffer1.bindFrameBuffer();
@@ -3476,7 +3517,7 @@ var EcognitaWeb3DFunction;
                     gl.uniform1i(uniLocation_synth[3], _this.btnStatusList.get("f_BloomEffect"));
                     ibo_board.draw(gl.TRIANGLES);
                 }
-                else if (_this.usrPipeLine == RenderPipeLine.CONVOLUTION_TWICE) {
+                else if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.CONVOLUTION_TWICE) {
                     //---------------------using framebuffer1 to render scene and save result to texture0
                     frameBuffer1.bindFrameBuffer();
                     RenderSimpleScene();
@@ -3572,9 +3613,9 @@ var EcognitaWeb3DFunction;
             loop();
         };
         return FilterViewer;
-    }(InitWeb3DEnv));
-    EcognitaWeb3DFunction.FilterViewer = FilterViewer;
-})(EcognitaWeb3DFunction || (EcognitaWeb3DFunction = {}));
+    }(EcognitaWeb3D.WebGLEnv));
+    EcognitaWeb3D.FilterViewer = FilterViewer;
+})(EcognitaWeb3D || (EcognitaWeb3D = {}));
 /* =========================================================================
  *
  *  FilterViewer.ts
@@ -3588,4 +3629,4 @@ document.body.appendChild(viewer);
 viewer.id = "canvas_viewer";
 viewer.width = window.innerWidth;
 viewer.height = window.innerHeight;
-var filterViewer = new EcognitaWeb3DFunction.FilterViewer(viewer);
+var filterViewer = new EcognitaWeb3D.FilterViewer(viewer);

@@ -5,124 +5,14 @@
  *  v0.1
  *  
  * ========================================================================= */
-/// <reference path="../lib/HashSet.ts" />
-/// <reference path="../lib/FilterViewerUi.ts" />
-/// <reference path="../../../../lib_webgl/ts_scripts/lib/cv_imread.ts" />
-/// <reference path="../../../../lib_webgl/ts_scripts/lib/cv_colorSpace.ts" />
-/// <reference path="../../../../lib_webgl/ts_scripts/lib/extra_utils.ts" />
-/// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_matrix.ts" />
-/// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_quaternion.ts" />
-/// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_utils.ts" />
-/// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_shaders.ts" />
-/// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_model.ts" />
+/// <reference path="../lib/FilterViewerUI.ts" />
+/// <reference path="../lib/EgnType.ts" />
+/// <reference path="../lib/EgnWebGL.ts" />
 
-module EcognitaWeb3DFunction {
+module EcognitaWeb3D {
     declare var gl: any;
-    declare var Stats:any;
 
-    export enum Filter{
-        LAPLACIAN,
-        SOBEL,
-        GAUSSIAN,
-        KUWAHARA,
-        GKUWAHARA
-    }
-
-    export enum RenderPipeLine{
-        CONVOLUTION_FILTER,
-        BLOOM_EFFECT,
-        CONVOLUTION_TWICE
-    }
-
-    export class InitWeb3DEnv{
-        canvas:any;
-        stats:any;
-
-        shaders:any;
-        uniLocations:any;
-        framebuffers:any;
-
-        matUtil:any;
-        quatUtil:any;
-        uiUtil:any;
-        ui_data:any;
-        extHammer:any;
-
-        Texture:Array<any>;
-        vbo:Array<any>;
-        ibo:Array<any>;
-        matrix:Utils.HashSet<any>;
-
-        loadTexture(file_name:string){
-            var tex =null;
-            var image = EcognitaMathLib.imread(file_name);
-            image.onload  =  (() => { 
-                tex = new EcognitaMathLib.WebGL_Texture(4,false,image);
-                this.Texture.push(tex);
-            });
-        }
-
-        chkWebGLEnvi(){
-            try {
-                  gl = this.canvas.getContext("webgl") || this.canvas.getContext("experimental-webgl");
-                  this.stats = new Stats();
-                  document.body.appendChild( this.stats.dom );
-            } catch (e) {}
-            if (!gl)
-                throw new Error("Could not initialise WebGL");
-        }
-
-        constructor(cvs:any,shaderlist:Array<string>){
-            this.canvas = cvs;
-            this.chkWebGLEnvi();
-            this.vbo = new Array<any>();
-            this.ibo = new Array<any>();
-            this.Texture = new Array();
-            this.matUtil = new EcognitaMathLib.WebGLMatrix();
-            this.quatUtil = new EcognitaMathLib.WebGLQuaternion();
-
-            //load demo texture
-            this.loadTexture("./image/demo.png");
-
-            this.ui_data = {
-                name: 'Filter Viewer',
-                useTexture:false,
-                f_LaplacianFilter:false,
-                f_GaussianFilter:false,
-                f_SobelFilter:true,
-                f_KuwaharaFilter:false,
-                f_GeneralizedKuwaharaFilter:false,
-                f_BloomEffect:false
-            };
-        
-            this.uiUtil = new Utils.FilterViewerUI(this.ui_data);
-            this.extHammer = new EcognitaMathLib.Hammer_Utils(this.canvas);
-
-            this.framebuffers = new Utils.HashSet<EcognitaMathLib.WebGL_FrameBuffer>();
-
-            //init shaders and uniLocations
-            this.shaders = new Utils.HashSet<EcognitaMathLib.WebGL_Shader>();
-            this.uniLocations = new Utils.HashSet<Array<any>>();
-            shaderlist.forEach(shaderName => {
-                var shader = new EcognitaMathLib.WebGL_Shader(Shaders,shaderName+"-vert", shaderName+"-frag");  
-                this.shaders.set(shaderName,shader);
-                this.uniLocations.set(shaderName,new Array<any>());
-            });
-
-            //init matrix
-            this.matrix = new Utils.HashSet<any>();
-            var m = this.matUtil;
-            this.matrix.set("mMatrix",m.identity(m.create()));
-            this.matrix.set("vMatrix",m.identity(m.create()));
-            this.matrix.set("pMatrix",m.identity(m.create()));
-            this.matrix.set("vpMatrix",m.identity(m.create()));
-            this.matrix.set("mvpMatrix",m.identity(m.create()));
-            this.matrix.set("invMatrix",m.identity(m.create()));
-
-        }
-    }
-
-    export class FilterViewer extends InitWeb3DEnv {
+    export class FilterViewer extends WebGLEnv {
         usrFilter:Filter;
         usrPipeLine:RenderPipeLine;
 
@@ -487,12 +377,12 @@ module EcognitaWeb3DFunction {
                 var vbo_board = this.vbo[1];
                 var ibo_board = this.ibo[1];
 
-                var mMatrix = this.matrix.get("mMatrix");
-                var vMatrix = this.matrix.get("vMatrix");
-                var pMatrix = this.matrix.get("pMatrix");
-                var vpMatrix = this.matrix.get("vpMatrix");
-                var mvpMatrix = this.matrix.get("mvpMatrix");
-                var invMatrix = this.matrix.get("invMatrix");
+                var mMatrix = this.MATRIX.get("mMatrix");
+                var vMatrix = this.MATRIX.get("vMatrix");
+                var pMatrix = this.MATRIX.get("pMatrix");
+                var vpMatrix = this.MATRIX.get("vpMatrix");
+                var mvpMatrix = this.MATRIX.get("mvpMatrix");
+                var invMatrix = this.MATRIX.get("invMatrix");
 
 
                 //user config

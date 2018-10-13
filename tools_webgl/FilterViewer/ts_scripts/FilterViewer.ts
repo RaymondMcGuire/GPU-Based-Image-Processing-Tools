@@ -13,4 +13,4 @@ viewer.id = "canvas_viewer";
 viewer.width = window.innerWidth;
 viewer.height = window.innerHeight;
 
-var filterViewer = new EcognitaWeb3DFunction.FilterViewer(viewer);
+var filterViewer = new EcognitaWeb3D.FilterViewer(viewer);

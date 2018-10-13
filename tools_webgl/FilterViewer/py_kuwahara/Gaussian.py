@@ -19,28 +19,32 @@ class Gaussian:
             gaussian_image = np.zeros((height,width))
         else:
             gaussian_image = np.zeros((height,width,channel))
-        for c in range(channel):
-            for j in range(height):
-                for i in range(width):
-                    sum = 0
-                    w = 0
-                    for k in range(-halfKernelSize,halfKernelSize+1):
-                        for q in range(-halfKernelSize,halfKernelSize+1):
-                            iq = i + q
-                            jk = j + k
-                            if iq >= 0 and jk >= 0 and iq<width and jk < height:
-                                r = np.sqrt(i*i+j*j)
-                                ww = np.exp(-r*r/twoSigma2)
-                                w+=ww
-                                if channel == 1:
-                                    sum+=ww*image[jk,iq]
-                                else:
-                                    sum+=ww*image[jk,iq,c]
-                    
-                    if channel == 1:
-                        gaussian_image[j,i]  = sum/w
-                    else:
-                        gaussian_image[j,i,c]  = sum/w
+        for j in range(height):
+            for i in range(width):
+                sumA = [0,0,0]
+                w = 0
+                for k in range(-halfKernelSize,halfKernelSize+1):
+                    for q in range(-halfKernelSize,halfKernelSize+1):
+                        iq = i + q
+                        jk = j + k
+                        if iq >= 0 and jk >= 0 and iq<width and jk < height:
+                            r = np.sqrt(k*k+q*q)
+                            ww = np.exp(-r*r/twoSigma2)
+                            w+=ww
+                            if channel == 1:
+                                sumA[0]+=ww*image[jk,iq]
+                            else:
+                                sumA[0]+=ww*image[jk,iq,0]
+                                sumA[1]+=ww*image[jk,iq,1]
+                                sumA[2]+=ww*image[jk,iq,2]
+                if w == 0:
+                    w = 1
+                if channel == 1:
+                    gaussian_image[j,i]  = sumA[0]/w
+                else:
+                    gaussian_image[j,i,0]  = sumA[0]/w
+                    gaussian_image[j,i,1]  = sumA[1]/w
+                    gaussian_image[j,i,2]  = sumA[2]/w
         return gaussian_image
     
     def sector_calc(self,kernel_size=32,smoothing=0.3333,N=8):
