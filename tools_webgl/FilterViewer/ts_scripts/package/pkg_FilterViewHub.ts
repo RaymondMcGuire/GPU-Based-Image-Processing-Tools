@@ -24,7 +24,7 @@ module EcognitaWeb3D {
 
         btnStatusList:Utils.HashSet<any>;
         constructor(cvs:any){
-            var shaderList = ["filterScene","specCpt","synth","laplacianFilter","sobelFilter","gaussianFilter","kuwaharaFilter","gkuwaharaFilter"];
+            var shaderList = ["SST","Gaussian","TFM","Anisotropic","AKF","filterScene","specCpt","synth","laplacianFilter","sobelFilter","gaussianFilter","kuwaharaFilter","gkuwaharaFilter"];
             super(cvs,shaderList);
 
             //init gobal variable
@@ -40,6 +40,7 @@ module EcognitaWeb3D {
             this.btnStatusList.set("f_GaussianFilter",this.ui_data.f_GaussianFilter);
             this.btnStatusList.set("f_KuwaharaFilter",this.ui_data.f_KuwaharaFilter);
             this.btnStatusList.set("f_GeneralizedKuwaharaFilter",this.ui_data.f_GeneralizedKuwaharaFilter);
+            this.btnStatusList.set("f_AnisotropicVisual",this.ui_data.f_AnisotropicVisual);
             
             //gaussian weight
             var weight = new Array(10);
@@ -126,6 +127,51 @@ module EcognitaWeb3D {
             synthSceneArray.push("glare");
             this.settingUniform("synth",synthSceneArray);
 
+            //show anistropic
+            var SSTArray = new Array<string>();
+            SSTArray.push("mvpMatrix");
+            SSTArray.push("src");
+            SSTArray.push("cvsHeight");
+            SSTArray.push("cvsWidth");
+            this.settingUniform("SST",SSTArray);
+
+            var GaussianArray = new Array<string>();
+            GaussianArray.push("mvpMatrix");
+            GaussianArray.push("src");
+            GaussianArray.push("sigma");
+            GaussianArray.push("cvsHeight");
+            GaussianArray.push("cvsWidth");
+            this.settingUniform("Gaussian",GaussianArray);
+
+            var TFMArray = new Array<string>();
+            TFMArray.push("mvpMatrix");
+            TFMArray.push("src");
+            TFMArray.push("cvsHeight");
+            TFMArray.push("cvsWidth");
+            this.settingUniform("TFM",TFMArray);
+
+            var AnisotropicArray = new Array<string>();
+            AnisotropicArray.push("mvpMatrix");
+            AnisotropicArray.push("src");
+            AnisotropicArray.push("visual");
+            AnisotropicArray.push("cvsHeight");
+            AnisotropicArray.push("cvsWidth");
+            AnisotropicArray.push("anisotropic");
+            this.settingUniform("Anisotropic",AnisotropicArray);
+
+            var AnisotropicKuwaharaArray = new Array<string>();
+            AnisotropicKuwaharaArray.push("mvpMatrix");
+            AnisotropicKuwaharaArray.push("tfm");
+            AnisotropicKuwaharaArray.push("src");
+            AnisotropicKuwaharaArray.push("k0");
+            AnisotropicKuwaharaArray.push("radius");
+            AnisotropicKuwaharaArray.push("q");
+            AnisotropicKuwaharaArray.push("alpha");
+            AnisotropicKuwaharaArray.push("cvsHeight");
+            AnisotropicKuwaharaArray.push("cvsWidth");
+            AnisotropicKuwaharaArray.push("anisotropic");
+            this.settingUniform("AKF",AnisotropicKuwaharaArray);
+            
             //init System
             this.initModel();
 
@@ -237,8 +283,27 @@ module EcognitaWeb3D {
                 gl.uniform1f(GKuwaharaFilterUniformLoc[3], this.canvas.height);
                 gl.uniform1f(GKuwaharaFilterUniformLoc[4], this.canvas.width);
                 gl.uniform1i(GKuwaharaFilterUniformLoc[5], this.btnStatusList.get("f_GeneralizedKuwaharaFilter"));
-            }
+            }else if(this.usrFilter == Filter.ANISTROPIC){
+                //var AnisotropicFilterUniformLoc = this.uniLocations.get("Anisotropic");
+                // gl.uniformMatrix4fv(AnisotropicFilterUniformLoc[0], false, this.filterMvpMatrix);
+                // gl.uniform1i(AnisotropicFilterUniformLoc[1], 0);
+                // gl.uniform1i(AnisotropicFilterUniformLoc[2], 1);
+                // gl.uniform1f(AnisotropicFilterUniformLoc[3], this.canvas.height);
+                // gl.uniform1f(AnisotropicFilterUniformLoc[4], this.canvas.width);
+                // gl.uniform1i(AnisotropicFilterUniformLoc[5], this.btnStatusList.get("f_AnisotropicVisual"));
 
+                var AKFUniformLoc = this.uniLocations.get("AKF");
+                gl.uniformMatrix4fv(AKFUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(AKFUniformLoc[1], 0);
+                gl.uniform1i(AKFUniformLoc[2], 1);
+                gl.uniform1i(AKFUniformLoc[3], 2);
+                gl.uniform1f(AKFUniformLoc[4], 6.0);
+                gl.uniform1f(AKFUniformLoc[5], 8.0);
+                gl.uniform1f(AKFUniformLoc[6], 1.0);
+                gl.uniform1f(AKFUniformLoc[7], this.canvas.height);
+                gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
+                gl.uniform1i(AKFUniformLoc[9], this.btnStatusList.get("f_AnisotropicVisual"));
+            }
         }
 
         settingFrameBuffer(frameBufferName:string){
@@ -313,6 +378,10 @@ module EcognitaWeb3D {
             this.uiUtil.uiController.get("f_GaussianFilter").onChange((val)=> {
                 this.usrSelectChange("f_GaussianFilter",val,RenderPipeLine.CONVOLUTION_TWICE,Filter.GAUSSIAN,"gaussianFilter");
             });
+
+            this.uiUtil.uiController.get("f_AnisotropicVisual").onChange((val)=> {
+                this.usrSelectChange("f_AnisotropicVisual",val,RenderPipeLine.ANISTROPIC,Filter.ANISTROPIC,"AKF");
+            });
         }
 
         
@@ -385,12 +454,23 @@ module EcognitaWeb3D {
                 var invMatrix = this.MATRIX.get("invMatrix");
 
 
-                //user config
+                //------------------------------------user config
                 var specCptShader = this.shaders.get("specCpt");
                 var uniLocation_spec = this.uniLocations.get("specCpt");
 
                 var synthShader = this.shaders.get("synth");
                 var uniLocation_synth = this.uniLocations.get("synth");
+
+                    //anisotropic
+                var SSTShader = this.shaders.get("SST");
+                var uniLocation_SST = this.uniLocations.get("SST");
+
+                var GAUShader = this.shaders.get("Gaussian");
+                var uniLocation_GAU = this.uniLocations.get("Gaussian");
+
+                var TFMShader = this.shaders.get("TFM");
+                var uniLocation_TFM = this.uniLocations.get("TFM");
+                //-----------------------------------------------
 
                 this.settingFrameBuffer("frameBuffer1");
                 var frameBuffer1 = this.framebuffers.get("frameBuffer1");
@@ -424,13 +504,15 @@ module EcognitaWeb3D {
 
                     //rendering parts----------------------------------------------------------------------------------
 
+                    var inTex = this.Texture.get("./image/cat.jpg");
+
                     if(this.usrPipeLine == RenderPipeLine.CONVOLUTION_FILTER){
                         //---------------------using framebuffer1 to render scene and save result to texture0
                         frameBuffer1.bindFrameBuffer();  
                         RenderSimpleScene();
                         gl.activeTexture(gl.TEXTURE0);
-                        if(this.Texture.length!=0  && this.ui_data.useTexture){
-                            this.Texture[0].bind(this.Texture[0].texture);
+                        if(inTex != undefined && this.ui_data.useTexture){  
+                            inTex.bind(inTex.texture);
                         }else{
                             gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
                         }
@@ -508,8 +590,8 @@ module EcognitaWeb3D {
                         RenderSimpleScene();
                         gl.activeTexture(gl.TEXTURE0);
 
-                        if(this.Texture.length!=0  && this.ui_data.useTexture){
-                            this.Texture[0].bind(this.Texture[0].texture);
+                        if(inTex != undefined && this.ui_data.useTexture){  
+                            inTex.bind(inTex.texture);
                         }else{
                             gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
                         }
@@ -525,7 +607,7 @@ module EcognitaWeb3D {
                             ibo_board.bind();
                             this.renderGaussianFilter(true,this.btnStatusList.get("f_GaussianFilter"));
                             ibo_board.draw(gl.TRIANGLES);
-    
+                            
                             gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
                             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                             
@@ -536,7 +618,6 @@ module EcognitaWeb3D {
                             ibo_board.bind();
                             this.renderGaussianFilter(false,this.btnStatusList.get("f_GaussianFilter"));
                         }else{
-                            
                             gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                             gl.clearColor(0.0, 0.0, 0.0, 1.0);
                             gl.clearDepth(1.0);
@@ -547,6 +628,94 @@ module EcognitaWeb3D {
                         }
                         ibo_board.draw(gl.TRIANGLES);
 
+                    }else if(this.usrPipeLine == RenderPipeLine.ANISTROPIC){
+
+                        //render SRC
+                        frameBuffer1.bindFrameBuffer();  
+                        RenderSimpleScene();
+                        gl.activeTexture(gl.TEXTURE0);
+
+                        if(inTex != undefined && this.ui_data.useTexture){  
+                            inTex.bind(inTex.texture);
+                        }else{
+                            gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        }
+
+
+
+                        //render SST
+                        SSTShader.bind();
+                        frameBuffer2.bindFrameBuffer();
+                        
+                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                        gl.clearDepth(1.0);
+                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                        vbo_board.bind(SSTShader);
+                        ibo_board.bind();
+                        gl.uniformMatrix4fv(uniLocation_SST[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_SST[1], 0);
+                        gl.uniform1f(uniLocation_SST[2], this.canvas.height);
+                        gl.uniform1f(uniLocation_SST[3], this.canvas.width);
+                        ibo_board.draw(gl.TRIANGLES);
+
+                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+
+                        //render Gaussian
+                        GAUShader.bind();
+                        frameBuffer1.bindFrameBuffer();
+                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                        gl.clearDepth(1.0);
+                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                        vbo_board.bind(GAUShader);
+                        ibo_board.bind();
+                        gl.uniformMatrix4fv(uniLocation_GAU[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_GAU[1], 0);
+                        gl.uniform1f(uniLocation_GAU[2], 2.0);
+                        gl.uniform1f(uniLocation_GAU[3], this.canvas.height);
+                        gl.uniform1f(uniLocation_GAU[4], this.canvas.width);
+                        ibo_board.draw(gl.TRIANGLES);
+
+                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+
+                        //render TFM
+                        TFMShader.bind();
+                        frameBuffer2.bindFrameBuffer();
+                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                        gl.clearDepth(1.0);
+                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                        vbo_board.bind(TFMShader);
+                        ibo_board.bind();
+                        gl.uniformMatrix4fv(uniLocation_TFM[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_TFM[1], 0);
+                        gl.uniform1f(uniLocation_TFM[2], this.canvas.height);
+                        gl.uniform1f(uniLocation_TFM[3], this.canvas.width);
+                        ibo_board.draw(gl.TRIANGLES);
+
+                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+
+                        //render Anisotropic
+                        this.filterShader.bind();
+                        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                        gl.clearDepth(1.0);
+                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);		
+                        vbo_board.bind(this.filterShader);
+                        ibo_board.bind();
+
+                        gl.activeTexture(gl.TEXTURE1);
+                        if(inTex != undefined && this.ui_data.useTexture){  
+                            inTex.bind(inTex.texture);
+                        }
+
+                        gl.activeTexture(gl.TEXTURE2);
+                        var k0Tex = this.Texture.get("./image/k0.png");
+                        if(k0Tex != undefined && this.ui_data.useTexture){  
+                            k0Tex.bind(k0Tex.texture);
+                        }
+                        this.renderFilter();
+
+
+                        ibo_board.draw(gl.TRIANGLES);
                     }
 
                     //rendering parts----------------------------------------------------------------------------------

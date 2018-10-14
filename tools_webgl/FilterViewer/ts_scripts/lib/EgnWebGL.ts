@@ -32,17 +32,17 @@ module EcognitaWeb3D {
         ui_data:any;
         extHammer:any;
 
-        Texture:Array<any>;
+        Texture:Utils.HashSet<any>;
         vbo:Array<any>;
         ibo:Array<any>;
         MATRIX:Utils.HashSet<any>;
 
-        loadTexture(file_name:string){
+        loadTexture(file_name:string,glType:any=gl.CLAMP_TO_EDGE,glInterType:any=gl.LINEAR){
             var tex =null;
             var image = EcognitaMathLib.imread(file_name);
             image.onload  =  (() => { 
-                tex = new EcognitaMathLib.WebGL_Texture(4,false,image);
-                this.Texture.push(tex);
+                tex = new EcognitaMathLib.WebGL_Texture(4,false,image,glType,glInterType);
+                this.Texture.set(file_name,tex);
             });
         }
 
@@ -69,7 +69,7 @@ module EcognitaWeb3D {
         initGlobalVariables(){
             this.vbo = new Array<any>();
             this.ibo = new Array<any>();
-            this.Texture = new Array();
+            this.Texture = new Utils.HashSet<any>();
             this.matUtil = new EcognitaMathLib.WebGLMatrix();
             this.quatUtil = new EcognitaMathLib.WebGLQuaternion();
         }
@@ -87,13 +87,17 @@ module EcognitaWeb3D {
 
         loadAssets(){
             //load demo texture
-            this.loadTexture("./image/demo.png");
+            this.loadTexture("./image/k0.png",gl.CLAMP_TO_BORDER);
+            this.loadTexture("./image/visual_rgb.png");
+            this.loadTexture("./image/cat.jpg",gl.CLAMP_TO_EDGE);
+
         }
 
         loadExtraLibrary(){
             this.ui_data = {
                 name: 'Filter Viewer',
                 useTexture:false,
+                f_AnisotropicVisual:false,
                 f_LaplacianFilter:false,
                 f_GaussianFilter:false,
                 f_SobelFilter:true,

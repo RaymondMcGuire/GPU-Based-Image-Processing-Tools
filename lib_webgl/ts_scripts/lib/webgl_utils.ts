@@ -30,7 +30,7 @@ module EcognitaMathLib {
         format:any;
         glName:any;
         texture:any;
-        constructor( channels:number, isFloat:boolean, texels:any,texType:any=gl.REPEAT) {
+        constructor( channels:number, isFloat:boolean, texels:any,texType:any=gl.REPEAT,texInterpolation:any=gl.LINEAR) {
             this.type     = isFloat   ? gl.FLOAT         : gl.UNSIGNED_BYTE;
             this.format   = [gl.LUMINANCE, gl.RG, gl.RGB, gl.RGBA][channels - 1];
 
@@ -39,8 +39,8 @@ module EcognitaMathLib {
             gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, texels);
             gl.generateMipmap(gl.TEXTURE_2D);
 
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, texInterpolation);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, texInterpolation);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, texType);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, texType);
             this.texture = this.glName;
