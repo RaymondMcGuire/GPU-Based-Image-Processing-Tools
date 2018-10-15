@@ -284,7 +284,7 @@ module EcognitaWeb3D {
                 gl.uniform1f(GKuwaharaFilterUniformLoc[4], this.canvas.width);
                 gl.uniform1i(GKuwaharaFilterUniformLoc[5], this.btnStatusList.get("f_GeneralizedKuwaharaFilter"));
             }else if(this.usrFilter == Filter.ANISTROPIC){
-                //var AnisotropicFilterUniformLoc = this.uniLocations.get("Anisotropic");
+                // var AnisotropicFilterUniformLoc = this.uniLocations.get("Anisotropic");
                 // gl.uniformMatrix4fv(AnisotropicFilterUniformLoc[0], false, this.filterMvpMatrix);
                 // gl.uniform1i(AnisotropicFilterUniformLoc[1], 0);
                 // gl.uniform1i(AnisotropicFilterUniformLoc[2], 1);
@@ -298,7 +298,7 @@ module EcognitaWeb3D {
                 gl.uniform1i(AKFUniformLoc[2], 1);
                 gl.uniform1i(AKFUniformLoc[3], 2);
                 gl.uniform1f(AKFUniformLoc[4], 6.0);
-                gl.uniform1f(AKFUniformLoc[5], 8.0);
+                gl.uniform1f(AKFUniformLoc[5], 5.0);
                 gl.uniform1f(AKFUniformLoc[6], 1.0);
                 gl.uniform1f(AKFUniformLoc[7], this.canvas.height);
                 gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
@@ -380,6 +380,7 @@ module EcognitaWeb3D {
             });
 
             this.uiUtil.uiController.get("f_AnisotropicVisual").onChange((val)=> {
+                // this.usrSelectChange("f_AnisotropicVisual",val,RenderPipeLine.ANISTROPIC,Filter.ANISTROPIC,"Anisotropic");
                 this.usrSelectChange("f_AnisotropicVisual",val,RenderPipeLine.ANISTROPIC,Filter.ANISTROPIC,"AKF");
             });
         }
@@ -634,9 +635,9 @@ module EcognitaWeb3D {
                         frameBuffer1.bindFrameBuffer();  
                         RenderSimpleScene();
                         gl.activeTexture(gl.TEXTURE0);
-
-                        if(inTex != undefined && this.ui_data.useTexture){  
-                            inTex.bind(inTex.texture);
+                        var inTex_afk = this.Texture.get("./image/anim.png");
+                        if(inTex_afk != undefined && this.ui_data.useTexture){  
+                            inTex_afk.bind(inTex_afk.texture);
                         }else{
                             gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
                         }
@@ -702,9 +703,15 @@ module EcognitaWeb3D {
                         vbo_board.bind(this.filterShader);
                         ibo_board.bind();
 
+                        // gl.activeTexture(gl.TEXTURE1);
+                        // var visTex = this.Texture.get("./image/visual_rgb.png");
+                        // if(visTex != undefined && this.ui_data.useTexture){  
+                        //     visTex.bind(visTex.texture);
+                        // }
+
                         gl.activeTexture(gl.TEXTURE1);
-                        if(inTex != undefined && this.ui_data.useTexture){  
-                            inTex.bind(inTex.texture);
+                        if(inTex_afk != undefined && this.ui_data.useTexture){  
+                            inTex_afk.bind(inTex_afk.texture);
                         }
 
                         gl.activeTexture(gl.TEXTURE2);
@@ -713,8 +720,6 @@ module EcognitaWeb3D {
                             k0Tex.bind(k0Tex.texture);
                         }
                         this.renderFilter();
-
-
                         ibo_board.draw(gl.TRIANGLES);
                     }
 

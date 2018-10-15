@@ -657,15 +657,18 @@ var EcognitaMathLib;
     }
     EcognitaMathLib.GetGLTypeSize = GetGLTypeSize;
     var WebGL_Texture = /** @class */ (function () {
-        function WebGL_Texture(channels, isFloat, texels, texType, texInterpolation) {
+        function WebGL_Texture(channels, isFloat, texels, texType, texInterpolation, useMipmap) {
             if (texType === void 0) { texType = gl.REPEAT; }
             if (texInterpolation === void 0) { texInterpolation = gl.LINEAR; }
+            if (useMipmap === void 0) { useMipmap = true; }
             this.type = isFloat ? gl.FLOAT : gl.UNSIGNED_BYTE;
             this.format = [gl.LUMINANCE, gl.RG, gl.RGB, gl.RGBA][channels - 1];
             this.glName = gl.createTexture();
             this.bind(this.glName);
             gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, texels);
-            gl.generateMipmap(gl.TEXTURE_2D);
+            if (useMipmap) {
+                gl.generateMipmap(gl.TEXTURE_2D);
+            }
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, texInterpolation);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, texInterpolation);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, texType);
@@ -3224,14 +3227,16 @@ var EcognitaWeb3D;
             this.loadInternalLibrary(shaderlist);
             this.initGlobalMatrix();
         }
-        WebGLEnv.prototype.loadTexture = function (file_name, glType, glInterType) {
+        WebGLEnv.prototype.loadTexture = function (file_name, isFloat, glType, glInterType, useMipmap) {
             var _this = this;
+            if (isFloat === void 0) { isFloat = false; }
             if (glType === void 0) { glType = gl.CLAMP_TO_EDGE; }
             if (glInterType === void 0) { glInterType = gl.LINEAR; }
+            if (useMipmap === void 0) { useMipmap = true; }
             var tex = null;
             var image = EcognitaMathLib.imread(file_name);
             image.onload = (function () {
-                tex = new EcognitaMathLib.WebGL_Texture(4, false, image, glType, glInterType);
+                tex = new EcognitaMathLib.WebGL_Texture(4, isFloat, image, glType, glInterType, useMipmap);
                 _this.Texture.set(file_name, tex);
             });
         };
@@ -3265,9 +3270,10 @@ var EcognitaWeb3D;
         };
         WebGLEnv.prototype.loadAssets = function () {
             //load demo texture
-            this.loadTexture("./image/k0.png", gl.CLAMP_TO_BORDER);
+            this.loadTexture("./image/k0.png", false, gl.CLAMP_TO_BORDER);
             this.loadTexture("./image/visual_rgb.png");
-            this.loadTexture("./image/cat.jpg", gl.CLAMP_TO_EDGE);
+            this.loadTexture("./image/cat.jpg", false, gl.CLAMP_TO_EDGE);
+            this.loadTexture("./image/anim.png", false, gl.CLAMP_TO_EDGE, gl.NEAREST);
         };
         WebGLEnv.prototype.loadExtraLibrary = function () {
             this.ui_data = {
@@ -3554,7 +3560,7 @@ var EcognitaWeb3D;
                 gl.uniform1i(GKuwaharaFilterUniformLoc[5], this.btnStatusList.get("f_GeneralizedKuwaharaFilter"));
             }
             else if (this.usrFilter == EcognitaWeb3D.Filter.ANISTROPIC) {
-                //var AnisotropicFilterUniformLoc = this.uniLocations.get("Anisotropic");
+                // var AnisotropicFilterUniformLoc = this.uniLocations.get("Anisotropic");
                 // gl.uniformMatrix4fv(AnisotropicFilterUniformLoc[0], false, this.filterMvpMatrix);
                 // gl.uniform1i(AnisotropicFilterUniformLoc[1], 0);
                 // gl.uniform1i(AnisotropicFilterUniformLoc[2], 1);
@@ -3567,7 +3573,7 @@ var EcognitaWeb3D;
                 gl.uniform1i(AKFUniformLoc[2], 1);
                 gl.uniform1i(AKFUniformLoc[3], 2);
                 gl.uniform1f(AKFUniformLoc[4], 6.0);
-                gl.uniform1f(AKFUniformLoc[5], 8.0);
+                gl.uniform1f(AKFUniformLoc[5], 5.0);
                 gl.uniform1f(AKFUniformLoc[6], 1.0);
                 gl.uniform1f(AKFUniformLoc[7], this.canvas.height);
                 gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
@@ -3636,6 +3642,7 @@ var EcognitaWeb3D;
                 _this.usrSelectChange("f_GaussianFilter", val, EcognitaWeb3D.RenderPipeLine.CONVOLUTION_TWICE, EcognitaWeb3D.Filter.GAUSSIAN, "gaussianFilter");
             });
             this.uiUtil.uiController.get("f_AnisotropicVisual").onChange(function (val) {
+                // this.usrSelectChange("f_AnisotropicVisual",val,RenderPipeLine.ANISTROPIC,Filter.ANISTROPIC,"Anisotropic");
                 _this.usrSelectChange("f_AnisotropicVisual", val, EcognitaWeb3D.RenderPipeLine.ANISTROPIC, EcognitaWeb3D.Filter.ANISTROPIC, "AKF");
             });
         };
@@ -3851,8 +3858,9 @@ var EcognitaWeb3D;
                     frameBuffer1.bindFrameBuffer();
                     RenderSimpleScene();
                     gl.activeTexture(gl.TEXTURE0);
-                    if (inTex != undefined && _this.ui_data.useTexture) {
-                        inTex.bind(inTex.texture);
+                    var inTex_afk = _this.Texture.get("./image/anim.png");
+                    if (inTex_afk != undefined && _this.ui_data.useTexture) {
+                        inTex_afk.bind(inTex_afk.texture);
                     }
                     else {
                         gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
@@ -3908,9 +3916,14 @@ var EcognitaWeb3D;
                     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                     vbo_board.bind(_this.filterShader);
                     ibo_board.bind();
+                    // gl.activeTexture(gl.TEXTURE1);
+                    // var visTex = this.Texture.get("./image/visual_rgb.png");
+                    // if(visTex != undefined && this.ui_data.useTexture){  
+                    //     visTex.bind(visTex.texture);
+                    // }
                     gl.activeTexture(gl.TEXTURE1);
-                    if (inTex != undefined && _this.ui_data.useTexture) {
-                        inTex.bind(inTex.texture);
+                    if (inTex_afk != undefined && _this.ui_data.useTexture) {
+                        inTex_afk.bind(inTex_afk.texture);
                     }
                     gl.activeTexture(gl.TEXTURE2);
                     var k0Tex = _this.Texture.get("./image/k0.png");
