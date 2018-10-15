@@ -61,7 +61,6 @@ module EcognitaWeb3D {
             var ext = gl.getExtension('OES_texture_float');
             if(ext == null){
                 throw new Error("float texture not supported");
-                return;
             }
         }
 
@@ -98,7 +97,7 @@ module EcognitaWeb3D {
             this.loadTexture("./image/k0.png", true, gl.CLAMP_TO_BORDER,gl.NEAREST,false);
             this.loadTexture("./image/visual_rgb.png");
             //this.loadTexture("./image/cat.jpg", true, gl.CLAMP_TO_EDGE,gl.NEAREST);
-            this.loadTexture("./image/lion.png", false, gl.CLAMP_TO_EDGE);
+            this.loadTexture("./image/test1.jpg", false);
             //this.loadTexture("./image/anim.png", true, gl.CLAMP_TO_EDGE, gl.NEAREST);
 
         }

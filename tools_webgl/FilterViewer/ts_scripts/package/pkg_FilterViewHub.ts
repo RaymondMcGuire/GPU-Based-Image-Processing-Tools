@@ -313,8 +313,8 @@ module EcognitaWeb3D {
             var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
             frameBuffer.bindFrameBuffer();
             frameBuffer.bindDepthBuffer();
-            frameBuffer.renderToShadowTexure();
-            //frameBuffer.renderToFloatTexure();
+            //frameBuffer.renderToShadowTexure();
+            frameBuffer.renderToFloatTexure();
             frameBuffer.release();
             this.framebuffers.set(frameBufferName, frameBuffer);
         }
@@ -381,7 +381,7 @@ module EcognitaWeb3D {
             });
 
             this.uiUtil.uiController.get("f_AnisotropicVisual").onChange((val) => {
-                // this.usrSelectChange("f_AnisotropicVisual",val,RenderPipeLine.ANISTROPIC,Filter.ANISTROPIC,"Anisotropic");
+                //this.usrSelectChange("f_AnisotropicVisual",val,RenderPipeLine.ANISTROPIC,Filter.ANISTROPIC,"Anisotropic");
                 this.usrSelectChange("f_AnisotropicVisual", val, RenderPipeLine.ANISTROPIC, Filter.ANISTROPIC, "AKF");
             });
         }
@@ -506,7 +506,7 @@ module EcognitaWeb3D {
 
                 //rendering parts----------------------------------------------------------------------------------
 
-                var inTex = this.Texture.get("./image/lion.png");
+                var inTex = this.Texture.get("./image/test1.jpg");
 
                 if (this.usrPipeLine == RenderPipeLine.CONVOLUTION_FILTER) {
                     //---------------------using framebuffer1 to render scene and save result to texture0

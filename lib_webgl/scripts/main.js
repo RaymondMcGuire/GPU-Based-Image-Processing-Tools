@@ -792,6 +792,18 @@ var EcognitaMathLib;
             //attach framebuff to texture
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
         };
+        WebGL_FrameBuffer.prototype.renderToFloatTexure = function () {
+            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+            //make sure we have enought memory to render the width x height size texture
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.FLOAT, null);
+            //texture settings
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            //attach framebuff to texture
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
+        };
         WebGL_FrameBuffer.prototype.renderToCubeTexture = function (cubeTarget) {
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.targetTexture);
             for (var i = 0; i < cubeTarget.length; i++) {
@@ -2651,34 +2663,24 @@ var Shaders = {
         '    vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / ' +
         'src_size.y);\n' +
         '    vec2 d = 1.0 / src_size;\n' +
-        '    vec3 c = texture2D(src, uv).xyz;\n' +
-        '    float fx = \n' +
-        '                -1.0 * dot(texture2D(src, uv + vec2(-d.x, -d.y)).xyz, monochrome' +
-        'Scale) +\n' +
-        '                -2.0 * dot(texture2D(src, uv + vec2(-d.x,  0.0)).xyz, monochrome' +
-        'Scale) + \n' +
-        '                -1.0 * dot(texture2D(src, uv + vec2(-d.x,  d.y)).xyz, monochrome' +
-        'Scale) +\n' +
-        '                +1.0 * dot(texture2D(src, uv + vec2( d.x, -d.y)).xyz, monochrome' +
-        'Scale) +\n' +
-        '                +2.0 * dot(texture2D(src, uv + vec2( d.x,  0.0)).xyz, monochrome' +
-        'Scale) + \n' +
-        '                +1.0 * dot(texture2D(src, uv + vec2( d.x,  d.y)).xyz, monochrome' +
-        'Scale) ;\n\n' +
-        '    float fy = \n' +
-        '                -1.0 * dot(texture2D(src, uv + vec2(-d.x, -d.y)).xyz, monochrome' +
-        'Scale) + \n' +
-        '                -2.0 * dot(texture2D(src, uv + vec2( 0.0, -d.y)).xyz, monochrome' +
-        'Scale) + \n' +
-        '                -1.0 * dot(texture2D(src, uv + vec2( d.x, -d.y)).xyz, monochrome' +
-        'Scale) +\n' +
-        '                +1.0 * dot(texture2D(src, uv + vec2(-d.x,  d.y)).xyz, monochrome' +
-        'Scale) +\n' +
-        '                +2.0 * dot(texture2D(src, uv + vec2( 0.0,  d.y)).xyz, monochrome' +
-        'Scale) + \n' +
-        '                +1.0 * dot(texture2D(src, uv + vec2( d.x,  d.y)).xyz, monochrome' +
-        'Scale) ;\n' +
-        '    gl_FragColor = vec4(fx*fx, fy*fy, fx*fy, 1.0);\n' +
+        '    vec3 c = texture2D(src, uv).xyz;\n\n' +
+        '    vec3 u = (\n' +
+        '        -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz +\n' +
+        '        -2.0 * texture2D(src, uv + vec2(-d.x,  0.0)).xyz + \n' +
+        '        -1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +\n' +
+        '        +1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +\n' +
+        '        +2.0 * texture2D(src, uv + vec2( d.x,  0.0)).xyz + \n' +
+        '        +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz\n' +
+        '        ) / 4.0;\n\n' +
+        '    vec3 v = (\n' +
+        '           -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz + \n' +
+        '           -2.0 * texture2D(src, uv + vec2( 0.0, -d.y)).xyz + \n' +
+        '           -1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +\n' +
+        '           +1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +\n' +
+        '           +2.0 * texture2D(src, uv + vec2( 0.0,  d.y)).xyz + \n' +
+        '           +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz\n' +
+        '           ) / 4.0;\n\n' +
+        '    gl_FragColor = vec4(dot(u, u), dot(v, v), dot(u, v), 1.0);\n' +
         '}\n',
     'SST-vert': 'attribute vec3 position;\n' +
         'attribute vec2 texCoord;\n' +
@@ -2786,8 +2788,8 @@ var Shaders = {
         '        t = vec2(0.0, 1.0);\n' +
         '    }\n\n' +
         '    float phi = atan(t.y, t.x);\n\n' +
-        '    float A = (lambda1 + lambda2 != 0.0)?(lambda1 - lambda2) / (lambda1 + lambda' +
-        '2) : 0.0;\n' +
+        '    float A = (lambda1 + lambda2 > 0.0)?(lambda1 - lambda2) / (lambda1 + lambda2' +
+        ') : 0.0;\n' +
         '    gl_FragColor = vec4(t, phi, A);\n' +
         '}\n',
     'TFM-vert': 'attribute vec3 position;\n' +

@@ -15,23 +15,24 @@ void main (void) {
     vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / src_size.y);
     vec2 d = 1.0 / src_size;
     vec3 c = texture2D(src, uv).xyz;
-    float fx = 
-                -1.0 * dot(texture2D(src, uv + vec2(-d.x, -d.y)).xyz, monochromeScale) +
-                -2.0 * dot(texture2D(src, uv + vec2(-d.x,  0.0)).xyz, monochromeScale) + 
-                -1.0 * dot(texture2D(src, uv + vec2(-d.x,  d.y)).xyz, monochromeScale) +
-                +1.0 * dot(texture2D(src, uv + vec2( d.x, -d.y)).xyz, monochromeScale) +
-                +2.0 * dot(texture2D(src, uv + vec2( d.x,  0.0)).xyz, monochromeScale) + 
-                +1.0 * dot(texture2D(src, uv + vec2( d.x,  d.y)).xyz, monochromeScale) ;
 
-    float fy = 
-                -1.0 * dot(texture2D(src, uv + vec2(-d.x, -d.y)).xyz, monochromeScale) + 
-                -2.0 * dot(texture2D(src, uv + vec2( 0.0, -d.y)).xyz, monochromeScale) + 
-                -1.0 * dot(texture2D(src, uv + vec2( d.x, -d.y)).xyz, monochromeScale) +
-                +1.0 * dot(texture2D(src, uv + vec2(-d.x,  d.y)).xyz, monochromeScale) +
-                +2.0 * dot(texture2D(src, uv + vec2( 0.0,  d.y)).xyz, monochromeScale) + 
-                +1.0 * dot(texture2D(src, uv + vec2( d.x,  d.y)).xyz, monochromeScale) ;
-    
-    fx /= 4.0;
-    fy /= 4.0;
-    gl_FragColor = vec4(fx*fx, fy*fy, fx*fy, 1.0);
+    vec3 u = (
+        -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz +
+        -2.0 * texture2D(src, uv + vec2(-d.x,  0.0)).xyz + 
+        -1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +
+        +1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +
+        +2.0 * texture2D(src, uv + vec2( d.x,  0.0)).xyz + 
+        +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz
+        ) / 4.0;
+
+    vec3 v = (
+           -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz + 
+           -2.0 * texture2D(src, uv + vec2( 0.0, -d.y)).xyz + 
+           -1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +
+           +1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +
+           +2.0 * texture2D(src, uv + vec2( 0.0,  d.y)).xyz + 
+           +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz
+           ) / 4.0;
+
+    gl_FragColor = vec4(dot(u, u), dot(v, v), dot(u, v), 1.0);
 }
