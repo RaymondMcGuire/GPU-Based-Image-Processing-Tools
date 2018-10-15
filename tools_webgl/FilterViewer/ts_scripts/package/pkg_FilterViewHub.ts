@@ -298,7 +298,7 @@ module EcognitaWeb3D {
                 gl.uniform1i(AKFUniformLoc[2], 1);
                 gl.uniform1i(AKFUniformLoc[3], 2);
                 gl.uniform1f(AKFUniformLoc[4], 6.0);
-                gl.uniform1f(AKFUniformLoc[5], 5.0);
+                gl.uniform1f(AKFUniformLoc[5], 8.0);
                 gl.uniform1f(AKFUniformLoc[6], 1.0);
                 gl.uniform1f(AKFUniformLoc[7], this.canvas.height);
                 gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
@@ -636,8 +636,8 @@ module EcognitaWeb3D {
                         RenderSimpleScene();
                         gl.activeTexture(gl.TEXTURE0);
                         var inTex_afk = this.Texture.get("./image/anim.png");
-                        if(inTex_afk != undefined && this.ui_data.useTexture){  
-                            inTex_afk.bind(inTex_afk.texture);
+                        if(inTex != undefined && this.ui_data.useTexture){  
+                            inTex.bind(inTex.texture);
                         }else{
                             gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
                         }
@@ -710,8 +710,8 @@ module EcognitaWeb3D {
                         // }
 
                         gl.activeTexture(gl.TEXTURE1);
-                        if(inTex_afk != undefined && this.ui_data.useTexture){  
-                            inTex_afk.bind(inTex_afk.texture);
+                        if(inTex != undefined && this.ui_data.useTexture){  
+                            inTex.bind(inTex.texture);
                         }
 
                         gl.activeTexture(gl.TEXTURE2);
