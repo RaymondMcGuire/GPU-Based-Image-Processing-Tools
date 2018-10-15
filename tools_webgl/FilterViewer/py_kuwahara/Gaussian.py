@@ -86,6 +86,6 @@ class Gaussian:
         for j in range(kernel_size):
             for i in range(kernel_size):
                 g[j,i] /=mx
-                g[j,i]*=255
+                #g[j,i]*=255
         print("init gaussian function finished!")
         return g

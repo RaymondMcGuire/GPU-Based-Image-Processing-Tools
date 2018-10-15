@@ -3258,6 +3258,7 @@ var EcognitaMathLib;
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_shaders.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_model.ts" />
 /// <reference path="../lib/HashSet.ts" />
+/// <reference path="../lib/FilterViewerUi.ts" />
 var EcognitaWeb3D;
 (function (EcognitaWeb3D) {
     var WebGLEnv = /** @class */ (function () {
@@ -3293,6 +3294,12 @@ var EcognitaWeb3D;
             catch (e) { }
             if (!gl)
                 throw new Error("Could not initialise WebGL");
+            //check extension
+            var ext = gl.getExtension('OES_texture_float');
+            if (ext == null) {
+                throw new Error("float texture not supported");
+                return;
+            }
         };
         WebGLEnv.prototype.initGlobalVariables = function () {
             this.vbo = new Array();
@@ -3313,11 +3320,11 @@ var EcognitaWeb3D;
         };
         WebGLEnv.prototype.loadAssets = function () {
             //load demo texture
-            this.loadTexture("./image/k0.png", false, gl.CLAMP_TO_BORDER, gl.LINEAR);
+            this.loadTexture("./image/k0.png", true, gl.CLAMP_TO_BORDER, gl.NEAREST, false);
             this.loadTexture("./image/visual_rgb.png");
-            this.loadTexture("./image/cat.jpg", false, gl.CLAMP_TO_EDGE);
+            //this.loadTexture("./image/cat.jpg", true, gl.CLAMP_TO_EDGE,gl.NEAREST);
             this.loadTexture("./image/lion.png", false, gl.CLAMP_TO_EDGE);
-            this.loadTexture("./image/anim.png", false, gl.CLAMP_TO_EDGE, gl.NEAREST);
+            //this.loadTexture("./image/anim.png", true, gl.CLAMP_TO_EDGE, gl.NEAREST);
         };
         WebGLEnv.prototype.loadExtraLibrary = function () {
             this.ui_data = {
