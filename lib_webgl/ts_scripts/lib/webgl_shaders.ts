@@ -23,60 +23,96 @@ var Shaders = {
         '	vec2 src_uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) /' +
                                                                        ' src_size.y);\n\n' +
 
-        '    vec4 m[8];\n'                                                                 +
-        '    vec3 s[8];\n'                                                                 +
-        '    for (int k = 0; k < N; ++k) {\n'                                              +
-        '        m[k] = vec4(0.0);\n'                                                      +
-        '        s[k] = vec3(0.0);\n'                                                      +
-        '    }\n\n'                                                                        +
+        '    if(anisotropic){\n'                                                           +
+        '        vec4 m[8];\n'                                                             +
+        '        vec3 s[8];\n'                                                             +
+        '        for (int k = 0; k < N; ++k) {\n'                                          +
+        '            m[k] = vec4(0.0);\n'                                                  +
+        '            s[k] = vec3(0.0);\n'                                                  +
+        '        }\n\n'                                                                    +
 
-        '    float piN = 2.0 * PI / float(N);\n'                                           +
-        '    mat2 X = mat2(cos(piN), sin(piN), -sin(piN), cos(piN));\n\n'                  +
+        '        float piN = 2.0 * PI / float(N);\n'                                       +
+        '        mat2 X = mat2(cos(piN), sin(piN), -sin(piN), cos(piN));\n\n'              +
 
-        '    vec4 t = texture2D(tfm, uv);\n'                                               +
-        '    float a = radius * clamp((alpha + t.w) / alpha, 0.1, 2.0); \n'                +
-        '    float b = radius * clamp(alpha / (alpha + t.w), 0.1, 2.0);\n\n'               +
+        '        vec4 t = texture2D(tfm, uv);\n'                                           +
+        '        float a = radius * clamp((alpha + t.w) / alpha, 0.1, 2.0); \n'            +
+        '        float b = radius * clamp(alpha / (alpha + t.w), 0.1, 2.0);\n\n'           +
 
-        '    float cos_phi = cos(t.z);\n'                                                  +
-        '    float sin_phi = sin(t.z);\n\n'                                                +
+        '        float cos_phi = cos(t.z);\n'                                              +
+        '        float sin_phi = sin(t.z);\n\n'                                            +
 
-        '    mat2 R = mat2(cos_phi, -sin_phi, sin_phi, cos_phi);\n'                        +
-        '    mat2 S = mat2(0.5/a, 0.0, 0.0, 0.5/b);\n'                                     +
-        '    mat2 SR = S * R;\n\n'                                                         +
+        '        mat2 R = mat2(cos_phi, -sin_phi, sin_phi, cos_phi);\n'                    +
+        '        mat2 S = mat2(0.5/a, 0.0, 0.0, 0.5/b);\n'                                 +
+        '        mat2 SR = S * R;\n\n'                                                     +
 
-        '    const int max_x = 6;\n'                                                       +
-        '    const int max_y = 6;\n\n'                                                     +
+        '        // int max_x = int(sqrt(a*a * cos_phi*cos_phi +\n'                        +
+        '        //                     b*b * sin_phi*sin_phi));\n'                        +
+        '        // int max_y = int(sqrt(a*a * sin_phi*sin_phi +\n'                        +
+        '        //                     b*b * cos_phi*cos_phi));\n\n'                      +
 
-        '    for (int j = -max_y; j <= max_y; ++j) {\n'                                    +
-        '        for (int i = -max_x; i <= max_x; ++i) {\n'                                +
-        '            vec2 v = SR * vec2(i,j);\n'                                           +
-        '            if (dot(v,v) <= 0.25) {\n'                                            +
-        '            vec4 c_fix = texture2D(src, src_uv + vec2(i,j) / src_size);\n'        +
-        '            vec3 c = c_fix.rgb;\n'                                                +
-        '            for (int k = 0; k < N; ++k) {\n'                                      +
-        '                float w = texture2D(k0, vec2(0.5, 0.5) + v).x;\n\n'               +
+        '        // const int MAX_ITERATIONS = 100;\n'                                     +
+        '        // int numBreak = (2*max_x+1) * (2*max_y+1);\n\n'                         +
 
-        '                m[k] += vec4(c * w, w);\n'                                        +
-        '                s[k] += c * c * w;\n\n'                                           +
+        '        // for (int i = 0; i <= MAX_ITERATIONS; i += 1) {\n'                      +
+        '        //     if(i>=numBreak){break;}\n\n'                                       +
 
-        '                v *= X;\n'                                                        +
+        '        //     int i_idx = (i - (int(i / (max_x*2+1)))*(max_x*2+1)) - max_x;\n'   +
+        '        //     int j_idx = (int(i / (max_x*2+1))) - max_y;\n'                     +
+        '        //     vec2 v = SR * vec2(i_idx,j_idx);\n\n'                              +
+
+        '        //     float lim = 0.25*255.0;\n'                                         +
+        '        //     if (dot(v,v) <= lim) {\n'                                          +
+        '        //     vec4 c_fix = texture2D(src, src_uv + vec2(i_idx,j_idx) / src_size' +
+                                                                                  ');\n'   +
+        '        //     vec3 c = c_fix.rgb;\n'                                             +
+        '        //     for (int k = 0; k < N; ++k) {\n'                                   +
+        '        //         float w = texture2D(k0, vec2(0.5, 0.5) + v).x;\n\n'            +
+
+        '        //         m[k] += vec4(c * w, w);\n'                                     +
+        '        //         s[k] += c * c * w;\n\n'                                        +
+
+        '        //         v *= X;\n'                                                     +
+        '        //         }\n'                                                           +
+        '        //     }\n'                                                               +
+        '        // }\n\n'                                                                 +
+
+        '        const int max_x = 8;\n'                                                   +
+        '        const int max_y = 8;\n\n'                                                 +
+
+        '        for (int j = -max_y; j <= max_y; ++j) {\n'                                +
+        '            for (int i = -max_x; i <= max_x; ++i) {\n'                            +
+        '                vec2 v = SR * vec2(i,j);\n'                                       +
+        '                if (dot(v,v) <= 0.25) {\n'                                        +
+        '                vec4 c_fix = texture2D(src, src_uv + vec2(i,j) / src_size);\n'    +
+        '                vec3 c = c_fix.rgb;\n'                                            +
+        '                for (int k = 0; k < N; ++k) {\n'                                  +
+        '                    float w = texture2D(k0, vec2(0.5, 0.5) + v).x;\n\n'           +
+
+        '                    m[k] += vec4(c * w, w);\n'                                    +
+        '                    s[k] += c * c * w;\n\n'                                       +
+
+        '                    v *= X;\n'                                                    +
+        '                    }\n'                                                          +
         '                }\n'                                                              +
         '            }\n'                                                                  +
-        '        }\n'                                                                      +
+        '        }\n\n'                                                                    +
+
+        '        vec4 o = vec4(0.0);\n'                                                    +
+        '        for (int k = 0; k < N; ++k) {\n'                                          +
+        '            m[k].rgb /= m[k].w;\n'                                                +
+        '            s[k] = abs(s[k] / m[k].w - m[k].rgb * m[k].rgb);\n\n'                 +
+
+        '            float sigma2 = s[k].r + s[k].g + s[k].b;\n'                           +
+        '            float w = 1.0 / (1.0 + pow(255.0 * sigma2, 0.5 * q));\n\n'            +
+
+        '            o += vec4(m[k].rgb * w, w);\n'                                        +
+        '        }\n\n'                                                                    +
+
+        '        gl_FragColor = vec4(o.rgb / o.w, 1.0);\n'                                 +
+        '    }else{\n'                                                                     +
+        '        gl_FragColor = texture2D(src, src_uv);\n'                                 +
         '    }\n\n'                                                                        +
 
-        '    vec4 o = vec4(0.0);\n'                                                        +
-        '    for (int k = 0; k < N; ++k) {\n'                                              +
-        '        m[k].rgb /= m[k].w;\n'                                                    +
-        '        s[k] = abs(s[k] / m[k].w - m[k].rgb * m[k].rgb);\n\n'                     +
-
-        '        float sigma2 = s[k].r + s[k].g + s[k].b;\n'                               +
-        '        float w = 1.0 / (1.0 + pow(255.0 * sigma2, 0.5 * q));\n\n'                +
-
-        '        o += vec4(m[k].rgb * w, w);\n'                                            +
-        '    }\n\n'                                                                        +
-
-        '    gl_FragColor = vec4(o.rgb / o.w, 1.0);\n'                                     +
         '}\n',
 
     'AKF-vert':

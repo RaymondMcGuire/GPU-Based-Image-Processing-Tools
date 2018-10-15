@@ -13,19 +13,19 @@ module EcognitaWeb3D {
     declare var gl: any;
 
     export class FilterViewer extends WebGLEnv {
-        usrFilter:Filter;
-        usrPipeLine:RenderPipeLine;
+        usrFilter: Filter;
+        usrPipeLine: RenderPipeLine;
 
-        usrQuaternion :any;
+        usrQuaternion: any;
         usrParams: any;
 
-        filterMvpMatrix:any;
-        filterShader:any;
+        filterMvpMatrix: any;
+        filterShader: any;
 
-        btnStatusList:Utils.HashSet<any>;
-        constructor(cvs:any){
-            var shaderList = ["SST","Gaussian","TFM","Anisotropic","AKF","filterScene","specCpt","synth","laplacianFilter","sobelFilter","gaussianFilter","kuwaharaFilter","gkuwaharaFilter"];
-            super(cvs,shaderList);
+        btnStatusList: Utils.HashSet<any>;
+        constructor(cvs: any) {
+            var shaderList = ["SST", "Gaussian", "TFM", "Anisotropic", "AKF", "filterScene", "specCpt", "synth", "laplacianFilter", "sobelFilter", "gaussianFilter", "kuwaharaFilter", "gkuwaharaFilter"];
+            super(cvs, shaderList);
 
             //init gobal variable
             this.filterMvpMatrix = this.matUtil.identity(this.matUtil.create());
@@ -34,44 +34,44 @@ module EcognitaWeb3D {
             this.filterShader = this.shaders.get("sobelFilter");
 
             this.btnStatusList = new Utils.HashSet<any>();
-            this.btnStatusList.set("f_LaplacianFilter",this.ui_data.f_LaplacianFilter);
-            this.btnStatusList.set("f_SobelFilter",this.ui_data.f_SobelFilter);
-            this.btnStatusList.set("f_BloomEffect",this.ui_data.f_BloomEffect);
-            this.btnStatusList.set("f_GaussianFilter",this.ui_data.f_GaussianFilter);
-            this.btnStatusList.set("f_KuwaharaFilter",this.ui_data.f_KuwaharaFilter);
-            this.btnStatusList.set("f_GeneralizedKuwaharaFilter",this.ui_data.f_GeneralizedKuwaharaFilter);
-            this.btnStatusList.set("f_AnisotropicVisual",this.ui_data.f_AnisotropicVisual);
-            
+            this.btnStatusList.set("f_LaplacianFilter", this.ui_data.f_LaplacianFilter);
+            this.btnStatusList.set("f_SobelFilter", this.ui_data.f_SobelFilter);
+            this.btnStatusList.set("f_BloomEffect", this.ui_data.f_BloomEffect);
+            this.btnStatusList.set("f_GaussianFilter", this.ui_data.f_GaussianFilter);
+            this.btnStatusList.set("f_KuwaharaFilter", this.ui_data.f_KuwaharaFilter);
+            this.btnStatusList.set("f_GeneralizedKuwaharaFilter", this.ui_data.f_GeneralizedKuwaharaFilter);
+            this.btnStatusList.set("f_AnisotropicVisual", this.ui_data.f_AnisotropicVisual);
+
             //gaussian weight
             var weight = new Array(10);
             var t = 0.0;
             var d = 50 * 50 / 100;
-            for(var i = 0; i < weight.length; i++){
+            for (var i = 0; i < weight.length; i++) {
                 var r = 1.0 + 2.0 * i;
                 var w = Math.exp(-0.5 * (r * r) / d);
                 weight[i] = w;
-                if(i > 0){w *= 2.0;}
+                if (i > 0) { w *= 2.0; }
                 t += w;
             }
-            for(i = 0; i < weight.length; i++){
+            for (i = 0; i < weight.length; i++) {
                 weight[i] /= t;
             }
 
             //user config param (load params from file is better TODO)
             this.usrParams = {
-                laplacianCoef :  [1.0,  1.0, 1.0,
-                                  1.0, -8.0, 1.0,
-                                  1.0,  1.0, 1.0],
-                sobelHorCoef :   [1.0, 0.0, -1.0,
-                                  2.0, 0.0, -2.0,
-                                  1.0, 0.0, -1.0],
-                       
-                sobelVerCoef :  [ 1.0,  2.0,  1.0,
-                                  0.0,  0.0,  0.0,
-                                 -1.0, -2.0, -1.0],
-                gaussianWeight : weight,
+                laplacianCoef: [1.0, 1.0, 1.0,
+                    1.0, -8.0, 1.0,
+                    1.0, 1.0, 1.0],
+                sobelHorCoef: [1.0, 0.0, -1.0,
+                    2.0, 0.0, -2.0,
+                    1.0, 0.0, -1.0],
 
-                gkweight :[0.8322 ,0.8758 ,0.903 ,0.9123 ,0.903 ,0.8758 ,0.8322 ,0.8758 ,0.9216 ,0.9503 ,0.96 ,0.9503 ,0.9216 ,0.8758 ,0.903 ,0.9503 ,0.9798 ,0.9898 ,0.9798 ,0.9503 ,0.903 ,0.9123 ,0.96 ,0.9898 ,1.0 ,0.9898 ,0.96 ,0.9123 ,0.903 ,0.9503 ,0.9798 ,0.9898 ,0.9798 ,0.9503 ,0.903 ,0.8758 ,0.9216 ,0.9503 ,0.96 ,0.9503 ,0.9216 ,0.8758 ,0.8322 ,0.8758 ,0.903 ,0.9123 ,0.903 ,0.8758 ,0.8322 ]
+                sobelVerCoef: [1.0, 2.0, 1.0,
+                    0.0, 0.0, 0.0,
+                    -1.0, -2.0, -1.0],
+                gaussianWeight: weight,
+
+                gkweight: [0.8322, 0.8758, 0.903, 0.9123, 0.903, 0.8758, 0.8322, 0.8758, 0.9216, 0.9503, 0.96, 0.9503, 0.9216, 0.8758, 0.903, 0.9503, 0.9798, 0.9898, 0.9798, 0.9503, 0.903, 0.9123, 0.96, 0.9898, 1.0, 0.9898, 0.96, 0.9123, 0.903, 0.9503, 0.9798, 0.9898, 0.9798, 0.9503, 0.903, 0.8758, 0.9216, 0.9503, 0.96, 0.9503, 0.9216, 0.8758, 0.8322, 0.8758, 0.903, 0.9123, 0.903, 0.8758, 0.8322]
             };
 
             var laplacianFilterArray = new Array<string>();
@@ -81,7 +81,7 @@ module EcognitaWeb3D {
             laplacianFilterArray.push("cvsHeight");
             laplacianFilterArray.push("cvsWidth");
             laplacianFilterArray.push("b_laplacian");
-            this.settingUniform("laplacianFilter",laplacianFilterArray);
+            this.settingUniform("laplacianFilter", laplacianFilterArray);
 
             var sobelFilterArray = new Array<string>();
             sobelFilterArray.push("mvpMatrix");
@@ -91,7 +91,7 @@ module EcognitaWeb3D {
             sobelFilterArray.push("cvsHeight");
             sobelFilterArray.push("cvsWidth");
             sobelFilterArray.push("b_sobel");
-            this.settingUniform("sobelFilter",sobelFilterArray);
+            this.settingUniform("sobelFilter", sobelFilterArray);
 
             var gaussianFilterArray = new Array<string>();
             gaussianFilterArray.push("mvpMatrix");
@@ -101,7 +101,7 @@ module EcognitaWeb3D {
             gaussianFilterArray.push("cvsHeight");
             gaussianFilterArray.push("cvsWidth");
             gaussianFilterArray.push("b_gaussian");
-            this.settingUniform("gaussianFilter",gaussianFilterArray);
+            this.settingUniform("gaussianFilter", gaussianFilterArray);
 
             var kuwaharaFilterArray = new Array<string>();
             kuwaharaFilterArray.push("mvpMatrix");
@@ -109,7 +109,7 @@ module EcognitaWeb3D {
             kuwaharaFilterArray.push("cvsHeight");
             kuwaharaFilterArray.push("cvsWidth");
             kuwaharaFilterArray.push("b_kuwahara");
-            this.settingUniform("kuwaharaFilter",kuwaharaFilterArray);
+            this.settingUniform("kuwaharaFilter", kuwaharaFilterArray);
 
             var gkuwaharaFilterArray = new Array<string>();
             gkuwaharaFilterArray.push("mvpMatrix");
@@ -118,14 +118,14 @@ module EcognitaWeb3D {
             gkuwaharaFilterArray.push("cvsHeight");
             gkuwaharaFilterArray.push("cvsWidth");
             gkuwaharaFilterArray.push("b_gkuwahara");
-            this.settingUniform("gkuwaharaFilter",gkuwaharaFilterArray);
+            this.settingUniform("gkuwaharaFilter", gkuwaharaFilterArray);
 
             var synthSceneArray = new Array<string>();
             synthSceneArray.push("mvpMatrix");
             synthSceneArray.push("texture1");
             synthSceneArray.push("texture2");
             synthSceneArray.push("glare");
-            this.settingUniform("synth",synthSceneArray);
+            this.settingUniform("synth", synthSceneArray);
 
             //show anistropic
             var SSTArray = new Array<string>();
@@ -133,7 +133,7 @@ module EcognitaWeb3D {
             SSTArray.push("src");
             SSTArray.push("cvsHeight");
             SSTArray.push("cvsWidth");
-            this.settingUniform("SST",SSTArray);
+            this.settingUniform("SST", SSTArray);
 
             var GaussianArray = new Array<string>();
             GaussianArray.push("mvpMatrix");
@@ -141,14 +141,14 @@ module EcognitaWeb3D {
             GaussianArray.push("sigma");
             GaussianArray.push("cvsHeight");
             GaussianArray.push("cvsWidth");
-            this.settingUniform("Gaussian",GaussianArray);
+            this.settingUniform("Gaussian", GaussianArray);
 
             var TFMArray = new Array<string>();
             TFMArray.push("mvpMatrix");
             TFMArray.push("src");
             TFMArray.push("cvsHeight");
             TFMArray.push("cvsWidth");
-            this.settingUniform("TFM",TFMArray);
+            this.settingUniform("TFM", TFMArray);
 
             var AnisotropicArray = new Array<string>();
             AnisotropicArray.push("mvpMatrix");
@@ -157,7 +157,7 @@ module EcognitaWeb3D {
             AnisotropicArray.push("cvsHeight");
             AnisotropicArray.push("cvsWidth");
             AnisotropicArray.push("anisotropic");
-            this.settingUniform("Anisotropic",AnisotropicArray);
+            this.settingUniform("Anisotropic", AnisotropicArray);
 
             var AnisotropicKuwaharaArray = new Array<string>();
             AnisotropicKuwaharaArray.push("mvpMatrix");
@@ -170,8 +170,8 @@ module EcognitaWeb3D {
             AnisotropicKuwaharaArray.push("cvsHeight");
             AnisotropicKuwaharaArray.push("cvsWidth");
             AnisotropicKuwaharaArray.push("anisotropic");
-            this.settingUniform("AKF",AnisotropicKuwaharaArray);
-            
+            this.settingUniform("AKF", AnisotropicKuwaharaArray);
+
             //init System
             this.initModel();
 
@@ -181,14 +181,14 @@ module EcognitaWeb3D {
             filterSceneArray.push("lightDirection");
             filterSceneArray.push("eyeDirection");
             filterSceneArray.push("ambientColor");
-            this.settingUniform("filterScene",filterSceneArray);
+            this.settingUniform("filterScene", filterSceneArray);
 
             var specSceneArray = new Array<string>();
             specSceneArray.push("mvpMatrix");
             specSceneArray.push("invMatrix");
             specSceneArray.push("lightDirection");
             specSceneArray.push("eyeDirection");
-            this.settingUniform("specCpt",specSceneArray);
+            this.settingUniform("specCpt", specSceneArray);
 
             this.regisEvent();
             this.regisUIEvent();
@@ -196,9 +196,9 @@ module EcognitaWeb3D {
             this.regisAnimeFunc();
         }
 
-        initModel(){
+        initModel() {
             //scene model : torus
-            var torusData = new EcognitaMathLib.TorusModel(64, 64, 1.0, 2.0,[1.0, 1.0, 1.0, 1.0],true,false); 
+            var torusData = new EcognitaMathLib.TorusModel(64, 64, 1.0, 2.0, [1.0, 1.0, 1.0, 1.0], true, false);
             var vbo_torus = new EcognitaMathLib.WebGL_VertexBuffer();
             var ibo_torus = new EcognitaMathLib.WebGL_IndexBuffer();
             this.vbo.push(vbo_torus);
@@ -208,19 +208,19 @@ module EcognitaWeb3D {
             vbo_torus.addAttribute("normal", 3, gl.FLOAT, false);
             vbo_torus.addAttribute("color", 4, gl.FLOAT, false);
 
-            vbo_torus.init(torusData.data.length/10);
+            vbo_torus.init(torusData.data.length / 10);
             vbo_torus.copy(torusData.data);
 
             ibo_torus.init(torusData.index);
 
             var position = [
-                -1.0,  1.0,  0.0,
-                1.0,  1.0,  0.0,
-                -1.0, -1.0,  0.0,
-                1.0, -1.0,  0.0
+                -1.0, 1.0, 0.0,
+                1.0, 1.0, 0.0,
+                -1.0, -1.0, 0.0,
+                1.0, -1.0, 0.0
             ];
 
-            var boardData = new EcognitaMathLib.BoardModel(position,undefined,false,false,true); 
+            var boardData = new EcognitaMathLib.BoardModel(position, undefined, false, false, true);
             var vbo_board = new EcognitaMathLib.WebGL_VertexBuffer();
             var ibo_board = new EcognitaMathLib.WebGL_IndexBuffer();
             this.vbo.push(vbo_board);
@@ -234,12 +234,12 @@ module EcognitaWeb3D {
                 2, 3, 1
             ];
 
-            vbo_board.init(boardData.data.length/5);
+            vbo_board.init(boardData.data.length / 5);
             vbo_board.copy(boardData.data);
             ibo_board.init(boardData.index);
         }
 
-        renderGaussianFilter(horizontal:boolean,b_gaussian:boolean){
+        renderGaussianFilter(horizontal: boolean, b_gaussian: boolean) {
             var GaussianFilterUniformLoc = this.uniLocations.get("gaussianFilter");
             gl.uniformMatrix4fv(GaussianFilterUniformLoc[0], false, this.filterMvpMatrix);
             gl.uniform1i(GaussianFilterUniformLoc[1], 0);
@@ -250,8 +250,8 @@ module EcognitaWeb3D {
             gl.uniform1i(GaussianFilterUniformLoc[6], b_gaussian);
         }
         //user config
-        renderFilter(){
-            if(this.usrFilter == Filter.LAPLACIAN){
+        renderFilter() {
+            if (this.usrFilter == Filter.LAPLACIAN) {
                 var LapFilterUniformLoc = this.uniLocations.get("laplacianFilter");
                 gl.uniformMatrix4fv(LapFilterUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(LapFilterUniformLoc[1], 0);
@@ -259,7 +259,7 @@ module EcognitaWeb3D {
                 gl.uniform1f(LapFilterUniformLoc[3], this.canvas.height);
                 gl.uniform1f(LapFilterUniformLoc[4], this.canvas.width);
                 gl.uniform1i(LapFilterUniformLoc[5], this.btnStatusList.get("f_LaplacianFilter"));
-            }else if(this.usrFilter == Filter.SOBEL){
+            } else if (this.usrFilter == Filter.SOBEL) {
                 var SobelFilterUniformLoc = this.uniLocations.get("sobelFilter");
                 gl.uniformMatrix4fv(SobelFilterUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(SobelFilterUniformLoc[1], 0);
@@ -268,14 +268,14 @@ module EcognitaWeb3D {
                 gl.uniform1f(SobelFilterUniformLoc[4], this.canvas.height);
                 gl.uniform1f(SobelFilterUniformLoc[5], this.canvas.width);
                 gl.uniform1i(SobelFilterUniformLoc[6], this.btnStatusList.get("f_SobelFilter"));
-            }else if(this.usrFilter == Filter.KUWAHARA){
+            } else if (this.usrFilter == Filter.KUWAHARA) {
                 var KuwaharaFilterUniformLoc = this.uniLocations.get("kuwaharaFilter");
                 gl.uniformMatrix4fv(KuwaharaFilterUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(KuwaharaFilterUniformLoc[1], 0);
                 gl.uniform1f(KuwaharaFilterUniformLoc[2], this.canvas.height);
                 gl.uniform1f(KuwaharaFilterUniformLoc[3], this.canvas.width);
                 gl.uniform1i(KuwaharaFilterUniformLoc[4], this.btnStatusList.get("f_KuwaharaFilter"));
-            }else if(this.usrFilter == Filter.GKUWAHARA){
+            } else if (this.usrFilter == Filter.GKUWAHARA) {
                 var GKuwaharaFilterUniformLoc = this.uniLocations.get("gkuwaharaFilter");
                 gl.uniformMatrix4fv(GKuwaharaFilterUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(GKuwaharaFilterUniformLoc[1], 0);
@@ -283,7 +283,7 @@ module EcognitaWeb3D {
                 gl.uniform1f(GKuwaharaFilterUniformLoc[3], this.canvas.height);
                 gl.uniform1f(GKuwaharaFilterUniformLoc[4], this.canvas.width);
                 gl.uniform1i(GKuwaharaFilterUniformLoc[5], this.btnStatusList.get("f_GeneralizedKuwaharaFilter"));
-            }else if(this.usrFilter == Filter.ANISTROPIC){
+            } else if (this.usrFilter == Filter.ANISTROPIC) {
                 // var AnisotropicFilterUniformLoc = this.uniLocations.get("Anisotropic");
                 // gl.uniformMatrix4fv(AnisotropicFilterUniformLoc[0], false, this.filterMvpMatrix);
                 // gl.uniform1i(AnisotropicFilterUniformLoc[1], 0);
@@ -306,19 +306,19 @@ module EcognitaWeb3D {
             }
         }
 
-        settingFrameBuffer(frameBufferName:string){
+        settingFrameBuffer(frameBufferName: string) {
             //frame buffer
-            var fBufferWidth  = this.canvas.width;
+            var fBufferWidth = this.canvas.width;
             var fBufferHeight = this.canvas.height;
-            var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth,fBufferHeight);
+            var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
             frameBuffer.bindFrameBuffer();
             frameBuffer.bindDepthBuffer();
             frameBuffer.renderToShadowTexure();
             frameBuffer.release();
-            this.framebuffers.set(frameBufferName,frameBuffer);
+            this.framebuffers.set(frameBufferName, frameBuffer);
         }
 
-        settingUniform(shaderName:string,uniformIndexArray:Array<string>){
+        settingUniform(shaderName: string, uniformIndexArray: Array<string>) {
 
             var uniLocArray = this.uniLocations.get(shaderName);
             var shader = this.shaders.get(shaderName);
@@ -327,81 +327,81 @@ module EcognitaWeb3D {
             });
         }
 
-        settingRenderPipeline(){
+        settingRenderPipeline() {
             gl.enable(gl.DEPTH_TEST);
             gl.depthFunc(gl.LEQUAL);
-            gl.enable(gl.CULL_FACE); 
+            gl.enable(gl.CULL_FACE);
         }
 
-        usrSelectChange(btnName:string,val:any,pipeline:any,filter:any,filter_name:any){
-            this.btnStatusList.set(btnName,val);
+        usrSelectChange(btnName: string, val: any, pipeline: any, filter: any, filter_name: any) {
+            this.btnStatusList.set(btnName, val);
 
-            if(val){
+            if (val) {
                 this.usrPipeLine = pipeline;
                 this.usrFilter = filter;
                 this.filterShader = this.shaders.get(filter_name);
 
-                for(var key in this.ui_data) { 
-                    if((<any>key).includes('_')){
+                for (var key in this.ui_data) {
+                    if ((<any>key).includes('_')) {
                         let f_name = key.split("_");
-                        if(f_name[0]=="f" && key!=btnName){
+                        if (f_name[0] == "f" && key != btnName) {
                             //un select other btn
-                            this.btnStatusList.set(key,!val);
+                            this.btnStatusList.set(key, !val);
                             this.ui_data[key] = !val;
                         }
-                    } 
+                    }
                 }
             }
         }
 
-        regisUIEvent(){
-            this.uiUtil.uiController.get("f_LaplacianFilter").onChange((val)=> {
-                this.usrSelectChange("f_LaplacianFilter",val,RenderPipeLine.CONVOLUTION_FILTER,Filter.LAPLACIAN,"laplacianFilter");
+        regisUIEvent() {
+            this.uiUtil.uiController.get("f_LaplacianFilter").onChange((val) => {
+                this.usrSelectChange("f_LaplacianFilter", val, RenderPipeLine.CONVOLUTION_FILTER, Filter.LAPLACIAN, "laplacianFilter");
             });
 
-            this.uiUtil.uiController.get("f_SobelFilter").onChange((val)=> {
-                this.usrSelectChange("f_SobelFilter",val,RenderPipeLine.CONVOLUTION_FILTER,Filter.SOBEL,"sobelFilter");
+            this.uiUtil.uiController.get("f_SobelFilter").onChange((val) => {
+                this.usrSelectChange("f_SobelFilter", val, RenderPipeLine.CONVOLUTION_FILTER, Filter.SOBEL, "sobelFilter");
             });
 
-            this.uiUtil.uiController.get("f_KuwaharaFilter").onChange((val)=> {
-                this.usrSelectChange("f_KuwaharaFilter",val,RenderPipeLine.CONVOLUTION_FILTER,Filter.KUWAHARA,"kuwaharaFilter");
+            this.uiUtil.uiController.get("f_KuwaharaFilter").onChange((val) => {
+                this.usrSelectChange("f_KuwaharaFilter", val, RenderPipeLine.CONVOLUTION_FILTER, Filter.KUWAHARA, "kuwaharaFilter");
             });
 
-            this.uiUtil.uiController.get("f_GeneralizedKuwaharaFilter").onChange((val)=> {
-                this.usrSelectChange("f_GeneralizedKuwaharaFilter",val,RenderPipeLine.CONVOLUTION_FILTER,Filter.GKUWAHARA,"gkuwaharaFilter");
+            this.uiUtil.uiController.get("f_GeneralizedKuwaharaFilter").onChange((val) => {
+                this.usrSelectChange("f_GeneralizedKuwaharaFilter", val, RenderPipeLine.CONVOLUTION_FILTER, Filter.GKUWAHARA, "gkuwaharaFilter");
             });
 
-            this.uiUtil.uiController.get("f_BloomEffect").onChange((val)=> {
-                this.usrSelectChange("f_BloomEffect",val,RenderPipeLine.BLOOM_EFFECT,Filter.GAUSSIAN,"gaussianFilter");
+            this.uiUtil.uiController.get("f_BloomEffect").onChange((val) => {
+                this.usrSelectChange("f_BloomEffect", val, RenderPipeLine.BLOOM_EFFECT, Filter.GAUSSIAN, "gaussianFilter");
             });
 
-            this.uiUtil.uiController.get("f_GaussianFilter").onChange((val)=> {
-                this.usrSelectChange("f_GaussianFilter",val,RenderPipeLine.CONVOLUTION_TWICE,Filter.GAUSSIAN,"gaussianFilter");
+            this.uiUtil.uiController.get("f_GaussianFilter").onChange((val) => {
+                this.usrSelectChange("f_GaussianFilter", val, RenderPipeLine.CONVOLUTION_TWICE, Filter.GAUSSIAN, "gaussianFilter");
             });
 
-            this.uiUtil.uiController.get("f_AnisotropicVisual").onChange((val)=> {
+            this.uiUtil.uiController.get("f_AnisotropicVisual").onChange((val) => {
                 // this.usrSelectChange("f_AnisotropicVisual",val,RenderPipeLine.ANISTROPIC,Filter.ANISTROPIC,"Anisotropic");
-                this.usrSelectChange("f_AnisotropicVisual",val,RenderPipeLine.ANISTROPIC,Filter.ANISTROPIC,"AKF");
+                this.usrSelectChange("f_AnisotropicVisual", val, RenderPipeLine.ANISTROPIC, Filter.ANISTROPIC, "AKF");
             });
         }
 
-        
-        regisEvent(){
+
+        regisEvent() {
             var lastPosX = 0;
             var lastPosY = 0;
             var isDragging = false;
             var hammer = this.extHammer;
-            hammer.on_pan = (ev) => { 
+            hammer.on_pan = (ev) => {
                 var elem = ev.target;
-                if (!isDragging ) {
+                if (!isDragging) {
                     isDragging = true;
                     lastPosX = elem.offsetLeft;
                     lastPosY = elem.offsetTop;
                 }
-            
-                var posX = ev.center.x -lastPosX;
-                  var posY = ev.center.y -lastPosY;
-            
+
+                var posX = ev.center.x - lastPosX;
+                var posY = ev.center.y - lastPosY;
+
                 var cw = this.canvas.width;
                 var ch = this.canvas.height;
                 var wh = 1 / Math.sqrt(cw * cw + ch * ch);
@@ -409,379 +409,384 @@ module EcognitaWeb3D {
                 var y = posY - ch * 0.5;
                 var sq = Math.sqrt(x * x + y * y);
                 var r = sq * 2.0 * Math.PI * wh;
-                if(sq != 1){
+                if (sq != 1) {
                     sq = 1 / sq;
                     x *= sq;
                     y *= sq;
                 }
-                
+
                 this.usrQuaternion = this.quatUtil.rotate(r, [y, x, 0.0]);
 
                 if (ev.isFinal) {
                     isDragging = false;
-                  }
+                }
             }
             hammer.enablePan();
         }
 
-        regisAnimeFunc(){
+        regisAnimeFunc() {
 
-                //fundmental setting and variables
-                var cnt = 0;
-                var cnt1 = 0;
-
-
-
-                var lightDirection = [-0.577, 0.577, 0.577];
-                var m = this.matUtil;
-                var q = this.quatUtil;         
-                this.usrQuaternion = q.identity(q.create());
-
-                //init scene and model
-                var sceneShader = this.shaders.get("filterScene");
-                var sceneUniformLoc = this.uniLocations.get("filterScene");
-
-                var vbo_torus = this.vbo[0];
-                var ibo_torus = this.ibo[0];
-
-                var vbo_board = this.vbo[1];
-                var ibo_board = this.ibo[1];
-
-                var mMatrix = this.MATRIX.get("mMatrix");
-                var vMatrix = this.MATRIX.get("vMatrix");
-                var pMatrix = this.MATRIX.get("pMatrix");
-                var vpMatrix = this.MATRIX.get("vpMatrix");
-                var mvpMatrix = this.MATRIX.get("mvpMatrix");
-                var invMatrix = this.MATRIX.get("invMatrix");
+            //fundmental setting and variables
+            var cnt = 0;
+            var cnt1 = 0;
 
 
-                //------------------------------------user config
-                var specCptShader = this.shaders.get("specCpt");
-                var uniLocation_spec = this.uniLocations.get("specCpt");
 
-                var synthShader = this.shaders.get("synth");
-                var uniLocation_synth = this.uniLocations.get("synth");
+            var lightDirection = [-0.577, 0.577, 0.577];
+            var m = this.matUtil;
+            var q = this.quatUtil;
+            this.usrQuaternion = q.identity(q.create());
 
-                    //anisotropic
-                var SSTShader = this.shaders.get("SST");
-                var uniLocation_SST = this.uniLocations.get("SST");
+            //init scene and model
+            var sceneShader = this.shaders.get("filterScene");
+            var sceneUniformLoc = this.uniLocations.get("filterScene");
 
-                var GAUShader = this.shaders.get("Gaussian");
-                var uniLocation_GAU = this.uniLocations.get("Gaussian");
+            var vbo_torus = this.vbo[0];
+            var ibo_torus = this.ibo[0];
 
-                var TFMShader = this.shaders.get("TFM");
-                var uniLocation_TFM = this.uniLocations.get("TFM");
-                //-----------------------------------------------
+            var vbo_board = this.vbo[1];
+            var ibo_board = this.ibo[1];
 
-                this.settingFrameBuffer("frameBuffer1");
-                var frameBuffer1 = this.framebuffers.get("frameBuffer1");
-                this.settingFrameBuffer("frameBuffer2");
-                var frameBuffer2 = this.framebuffers.get("frameBuffer2");
-
-                var loop = () => { 
-                    //--------------------------------------animation global variables
-                    this.stats.begin();
-
-                    cnt++;
-                    if(cnt % 2 == 0){cnt1++;}
-                    var rad = (cnt % 360) * Math.PI / 180;
-                    var eyePosition = new Array();
-                    var camUpDirection = new Array();
-
-                    eyePosition = q.ToV3([0.0, 20.0, 0.0],this.usrQuaternion);
-                    camUpDirection = q.ToV3([0.0,0.0,-1.0],this.usrQuaternion);
-                    
-                    //camera setting
-                    vMatrix = m.viewMatrix(eyePosition, [0, 0, 0], camUpDirection);
-                    pMatrix = m.perspectiveMatrix(90, this.canvas.width / this.canvas.height, 0.1, 100);
-                    vpMatrix =m.multiply(pMatrix, vMatrix);
+            var mMatrix = this.MATRIX.get("mMatrix");
+            var vMatrix = this.MATRIX.get("vMatrix");
+            var pMatrix = this.MATRIX.get("pMatrix");
+            var vpMatrix = this.MATRIX.get("vpMatrix");
+            var mvpMatrix = this.MATRIX.get("mvpMatrix");
+            var invMatrix = this.MATRIX.get("invMatrix");
 
 
-                    // orth matrix
-                    vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
-                    pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
-                    this.filterMvpMatrix = m.multiply(pMatrix, vMatrix);
-                    //--------------------------------------animation global variables
+            //------------------------------------user config
+            var specCptShader = this.shaders.get("specCpt");
+            var uniLocation_spec = this.uniLocations.get("specCpt");
 
-                    //rendering parts----------------------------------------------------------------------------------
+            var synthShader = this.shaders.get("synth");
+            var uniLocation_synth = this.uniLocations.get("synth");
 
-                    var inTex = this.Texture.get("./image/cat.jpg");
+            //anisotropic
+            var SSTShader = this.shaders.get("SST");
+            var uniLocation_SST = this.uniLocations.get("SST");
 
-                    if(this.usrPipeLine == RenderPipeLine.CONVOLUTION_FILTER){
-                        //---------------------using framebuffer1 to render scene and save result to texture0
-                        frameBuffer1.bindFrameBuffer();  
-                        RenderSimpleScene();
-                        gl.activeTexture(gl.TEXTURE0);
-                        if(inTex != undefined && this.ui_data.useTexture){  
-                            inTex.bind(inTex.texture);
-                        }else{
-                            gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
-                        }
-        
-                        //---------------------using framebuffer1 to render scene and save result to texture0
+            var GAUShader = this.shaders.get("Gaussian");
+            var uniLocation_GAU = this.uniLocations.get("Gaussian");
+
+            var TFMShader = this.shaders.get("TFM");
+            var uniLocation_TFM = this.uniLocations.get("TFM");
+            //-----------------------------------------------
+
+            this.settingFrameBuffer("frameBuffer1");
+            var frameBuffer1 = this.framebuffers.get("frameBuffer1");
+            this.settingFrameBuffer("frameBuffer2");
+            var frameBuffer2 = this.framebuffers.get("frameBuffer2");
+
+            var loop = () => {
+                //--------------------------------------animation global variables
+                this.stats.begin();
+
+                cnt++;
+                if (cnt % 2 == 0) { cnt1++; }
+                var rad = (cnt % 360) * Math.PI / 180;
+                var eyePosition = new Array();
+                var camUpDirection = new Array();
+
+                eyePosition = q.ToV3([0.0, 20.0, 0.0], this.usrQuaternion);
+                camUpDirection = q.ToV3([0.0, 0.0, -1.0], this.usrQuaternion);
+
+                //camera setting
+                vMatrix = m.viewMatrix(eyePosition, [0, 0, 0], camUpDirection);
+                pMatrix = m.perspectiveMatrix(90, this.canvas.width / this.canvas.height, 0.1, 100);
+                vpMatrix = m.multiply(pMatrix, vMatrix);
 
 
-                        //---------------------rendering texture0 to a board and show it in screen
-                        this.filterShader.bind();
-                        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                // orth matrix
+                vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+                pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
+                this.filterMvpMatrix = m.multiply(pMatrix, vMatrix);
+                //--------------------------------------animation global variables
+
+                //rendering parts----------------------------------------------------------------------------------
+
+                var inTex = this.Texture.get("./image/lion.png");
+
+                if (this.usrPipeLine == RenderPipeLine.CONVOLUTION_FILTER) {
+                    //---------------------using framebuffer1 to render scene and save result to texture0
+                    frameBuffer1.bindFrameBuffer();
+                    RenderSimpleScene();
+                    gl.activeTexture(gl.TEXTURE0);
+                    if (inTex != undefined && this.ui_data.useTexture) {
+                        inTex.bind(inTex.texture);
+                    } else {
+                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    }
+
+                    //---------------------using framebuffer1 to render scene and save result to texture0
+
+
+                    //---------------------rendering texture0 to a board and show it in screen
+                    this.filterShader.bind();
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    //draw filter image into board
+                    vbo_board.bind(this.filterShader);
+                    ibo_board.bind();
+                    this.renderFilter();
+                    ibo_board.draw(gl.TRIANGLES);
+                    //---------------------rendering texture0 to a board and show it in screen
+                } else if (this.usrPipeLine == RenderPipeLine.BLOOM_EFFECT) {
+                    //render torus specular component, save to frame1  
+                    specCptShader.bind();
+                    frameBuffer1.bindFrameBuffer();
+                    RenderSimpleSceneSpecularParts();
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+
+                    //horizontal blur, save to frame2
+                    this.filterShader.bind();
+                    frameBuffer2.bindFrameBuffer();
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(this.filterShader);
+                    ibo_board.bind();
+                    this.renderGaussianFilter(true, this.btnStatusList.get("f_BloomEffect"));
+                    ibo_board.draw(gl.TRIANGLES);
+
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+
+                    //vertical blur,save to frame1 and render to texture1
+                    frameBuffer1.bindFrameBuffer();
+                    this.renderGaussianFilter(false, this.btnStatusList.get("f_BloomEffect"));
+                    ibo_board.draw(gl.TRIANGLES);
+
+                    gl.activeTexture(gl.TEXTURE1);
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+
+                    //render scene, save to texture0
+                    frameBuffer2.bindFrameBuffer();
+                    RenderSimpleScene();
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+
+                    //synthsis texture0 and texture1
+                    synthShader.bind();
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+                    //render texture to board and show this board to user		
+                    vbo_board.bind(synthShader);
+                    ibo_board.bind();
+                    gl.uniformMatrix4fv(uniLocation_synth[0], false, this.filterMvpMatrix);
+                    gl.uniform1i(uniLocation_synth[1], 0);
+                    gl.uniform1i(uniLocation_synth[2], 1);
+                    gl.uniform1i(uniLocation_synth[3], this.btnStatusList.get("f_BloomEffect"));
+                    ibo_board.draw(gl.TRIANGLES);
+                } else if (this.usrPipeLine == RenderPipeLine.CONVOLUTION_TWICE) {
+                    //---------------------using framebuffer1 to render scene and save result to texture0
+
+                    frameBuffer1.bindFrameBuffer();
+                    RenderSimpleScene();
+                    gl.activeTexture(gl.TEXTURE0);
+
+                    if (inTex != undefined && this.ui_data.useTexture) {
                         gl.clearColor(0.0, 0.0, 0.0, 1.0);
                         gl.clearDepth(1.0);
                         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                        //draw filter image into board
-                        vbo_board.bind(this.filterShader);
-                        ibo_board.bind();
-                        this.renderFilter();
-                        ibo_board.draw(gl.TRIANGLES);
-                        //---------------------rendering texture0 to a board and show it in screen
-                    }else if(this.usrPipeLine == RenderPipeLine.BLOOM_EFFECT){
-                        //render torus specular component, save to frame1  
-                        specCptShader.bind();
-                        frameBuffer1.bindFrameBuffer();
-                        RenderSimpleSceneSpecularParts();
-                        gl.activeTexture(gl.TEXTURE0);
+                        inTex.bind(inTex.texture);
+                    } else {
                         gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    }
 
-                        //horizontal blur, save to frame2
-                        this.filterShader.bind();
+                    //horizontal blur, save to frame2
+                    this.filterShader.bind();
+                    if (this.btnStatusList.get("f_GaussianFilter")) {
                         frameBuffer2.bindFrameBuffer();
                         gl.clearColor(0.0, 0.0, 0.0, 1.0);
                         gl.clearDepth(1.0);
                         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                         vbo_board.bind(this.filterShader);
                         ibo_board.bind();
-                        this.renderGaussianFilter(true,this.btnStatusList.get("f_BloomEffect"));
+                        this.renderGaussianFilter(true, this.btnStatusList.get("f_GaussianFilter"));
                         ibo_board.draw(gl.TRIANGLES);
 
                         gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+                        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
-                        //vertical blur,save to frame1 and render to texture1
-                        frameBuffer1.bindFrameBuffer();
-                        this.renderGaussianFilter(false,this.btnStatusList.get("f_BloomEffect"));
-                        ibo_board.draw(gl.TRIANGLES);
+                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                        gl.clearDepth(1.0);
+                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                        vbo_board.bind(this.filterShader);
+                        ibo_board.bind();
+                        this.renderGaussianFilter(false, this.btnStatusList.get("f_GaussianFilter"));
+                    } else {
+                        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                        gl.clearDepth(1.0);
+                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                        vbo_board.bind(this.filterShader);
+                        ibo_board.bind();
+                        this.renderGaussianFilter(false, this.btnStatusList.get("f_GaussianFilter"));
+                    }
+                    ibo_board.draw(gl.TRIANGLES);
 
+                } else if (this.usrPipeLine == RenderPipeLine.ANISTROPIC) {
+
+                    //render SRC
+                    frameBuffer1.bindFrameBuffer();
+                    RenderSimpleScene();
+                    gl.activeTexture(gl.TEXTURE0);
+                    var inTex_afk = this.Texture.get("./image/anim.png");
+                    if (inTex != undefined && this.ui_data.useTexture) {
+                        inTex.bind(inTex.texture);
+                    } else {
+                        //gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    }
+
+
+
+                    //render SST
+                    SSTShader.bind();
+                    frameBuffer2.bindFrameBuffer();
+
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(SSTShader);
+                    ibo_board.bind();
+                    gl.uniformMatrix4fv(uniLocation_SST[0], false, this.filterMvpMatrix);
+                    gl.uniform1i(uniLocation_SST[1], 0);
+                    gl.uniform1f(uniLocation_SST[2], this.canvas.height);
+                    gl.uniform1f(uniLocation_SST[3], this.canvas.width);
+                    ibo_board.draw(gl.TRIANGLES);
+
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+
+                    //render Gaussian
+                    GAUShader.bind();
+                    frameBuffer1.bindFrameBuffer();
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(GAUShader);
+                    ibo_board.bind();
+                    gl.uniformMatrix4fv(uniLocation_GAU[0], false, this.filterMvpMatrix);
+                    gl.uniform1i(uniLocation_GAU[1], 0);
+                    gl.uniform1f(uniLocation_GAU[2], 2.0);
+                    gl.uniform1f(uniLocation_GAU[3], this.canvas.height);
+                    gl.uniform1f(uniLocation_GAU[4], this.canvas.width);
+                    ibo_board.draw(gl.TRIANGLES);
+
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+
+                    //render TFM
+                    TFMShader.bind();
+                    frameBuffer2.bindFrameBuffer();
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(TFMShader);
+                    ibo_board.bind();
+                    gl.uniformMatrix4fv(uniLocation_TFM[0], false, this.filterMvpMatrix);
+                    gl.uniform1i(uniLocation_TFM[1], 0);
+                    gl.uniform1f(uniLocation_TFM[2], this.canvas.height);
+                    gl.uniform1f(uniLocation_TFM[3], this.canvas.width);
+                    ibo_board.draw(gl.TRIANGLES);
+
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+
+                    //render Anisotropic
+                    this.filterShader.bind();
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(this.filterShader);
+                    ibo_board.bind();
+
+                    // gl.activeTexture(gl.TEXTURE1);
+                    // var visTex = this.Texture.get("./image/visual_rgb.png");
+                    // if(visTex != undefined && this.ui_data.useTexture){  
+                    //     visTex.bind(visTex.texture);
+                    // }
+
+
+                    if (inTex != undefined && this.ui_data.useTexture) {
                         gl.activeTexture(gl.TEXTURE1);
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
-
-                        //render scene, save to texture0
-                        frameBuffer2.bindFrameBuffer();
-                        RenderSimpleScene();
-                        gl.activeTexture(gl.TEXTURE0);
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
-
-                        //synthsis texture0 and texture1
-                        synthShader.bind();
-                        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-            
-                        //render texture to board and show this board to user		
-                        vbo_board.bind(synthShader);
-                        ibo_board.bind();
-                        gl.uniformMatrix4fv(uniLocation_synth[0], false, this.filterMvpMatrix);
-                        gl.uniform1i(uniLocation_synth[1], 0);
-                        gl.uniform1i(uniLocation_synth[2], 1);
-                        gl.uniform1i(uniLocation_synth[3], this.btnStatusList.get("f_BloomEffect"));
-                        ibo_board.draw(gl.TRIANGLES);
-                    }else if(this.usrPipeLine == RenderPipeLine.CONVOLUTION_TWICE){
-                        //---------------------using framebuffer1 to render scene and save result to texture0
-
-                        frameBuffer1.bindFrameBuffer();  
-                        RenderSimpleScene();
-                        gl.activeTexture(gl.TEXTURE0);
-
-                        if(inTex != undefined && this.ui_data.useTexture){  
-                            inTex.bind(inTex.texture);
-                        }else{
-                            gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
-                        }
-                        
-                        //horizontal blur, save to frame2
-                        this.filterShader.bind();
-                        if(this.btnStatusList.get("f_GaussianFilter")){
-                            frameBuffer2.bindFrameBuffer();
-                            gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                            gl.clearDepth(1.0);
-                            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                            vbo_board.bind(this.filterShader);
-                            ibo_board.bind();
-                            this.renderGaussianFilter(true,this.btnStatusList.get("f_GaussianFilter"));
-                            ibo_board.draw(gl.TRIANGLES);
-                            
-                            gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
-                            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-                            
-                            gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                            gl.clearDepth(1.0);
-                            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                            vbo_board.bind(this.filterShader);
-                            ibo_board.bind();
-                            this.renderGaussianFilter(false,this.btnStatusList.get("f_GaussianFilter"));
-                        }else{
-                            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-                            gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                            gl.clearDepth(1.0);
-                            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                            vbo_board.bind(this.filterShader);
-                            ibo_board.bind();
-                            this.renderGaussianFilter(false,this.btnStatusList.get("f_GaussianFilter"));
-                        }
-                        ibo_board.draw(gl.TRIANGLES);
-
-                    }else if(this.usrPipeLine == RenderPipeLine.ANISTROPIC){
-
-                        //render SRC
-                        frameBuffer1.bindFrameBuffer();  
-                        RenderSimpleScene();
-                        gl.activeTexture(gl.TEXTURE0);
-                        var inTex_afk = this.Texture.get("./image/anim.png");
-                        if(inTex != undefined && this.ui_data.useTexture){  
-                            inTex.bind(inTex.texture);
-                        }else{
-                            gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
-                        }
+                        inTex.bind(inTex.texture);
+                    }
 
 
-
-                        //render SST
-                        SSTShader.bind();
-                        frameBuffer2.bindFrameBuffer();
-                        
-                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                        vbo_board.bind(SSTShader);
-                        ibo_board.bind();
-                        gl.uniformMatrix4fv(uniLocation_SST[0], false, this.filterMvpMatrix);
-                        gl.uniform1i(uniLocation_SST[1], 0);
-                        gl.uniform1f(uniLocation_SST[2], this.canvas.height);
-                        gl.uniform1f(uniLocation_SST[3], this.canvas.width);
-                        ibo_board.draw(gl.TRIANGLES);
-
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
-
-                        //render Gaussian
-                        GAUShader.bind();
-                        frameBuffer1.bindFrameBuffer();
-                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                        vbo_board.bind(GAUShader);
-                        ibo_board.bind();
-                        gl.uniformMatrix4fv(uniLocation_GAU[0], false, this.filterMvpMatrix);
-                        gl.uniform1i(uniLocation_GAU[1], 0);
-                        gl.uniform1f(uniLocation_GAU[2], 2.0);
-                        gl.uniform1f(uniLocation_GAU[3], this.canvas.height);
-                        gl.uniform1f(uniLocation_GAU[4], this.canvas.width);
-                        ibo_board.draw(gl.TRIANGLES);
-
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
-
-                        //render TFM
-                        TFMShader.bind();
-                        frameBuffer2.bindFrameBuffer();
-                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                        vbo_board.bind(TFMShader);
-                        ibo_board.bind();
-                        gl.uniformMatrix4fv(uniLocation_TFM[0], false, this.filterMvpMatrix);
-                        gl.uniform1i(uniLocation_TFM[1], 0);
-                        gl.uniform1f(uniLocation_TFM[2], this.canvas.height);
-                        gl.uniform1f(uniLocation_TFM[3], this.canvas.width);
-                        ibo_board.draw(gl.TRIANGLES);
-
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
-
-                        //render Anisotropic
-                        this.filterShader.bind();
-                        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);		
-                        vbo_board.bind(this.filterShader);
-                        ibo_board.bind();
-
-                        // gl.activeTexture(gl.TEXTURE1);
-                        // var visTex = this.Texture.get("./image/visual_rgb.png");
-                        // if(visTex != undefined && this.ui_data.useTexture){  
-                        //     visTex.bind(visTex.texture);
-                        // }
-
-                        gl.activeTexture(gl.TEXTURE1);
-                        if(inTex != undefined && this.ui_data.useTexture){  
-                            inTex.bind(inTex.texture);
-                        }
-
+                    var k0Tex = this.Texture.get("./image/k0.png");
+                    if (k0Tex != undefined && this.ui_data.useTexture) {
                         gl.activeTexture(gl.TEXTURE2);
-                        var k0Tex = this.Texture.get("./image/k0.png");
-                        if(k0Tex != undefined && this.ui_data.useTexture){  
-                            k0Tex.bind(k0Tex.texture);
-                        }
-                        this.renderFilter();
-                        ibo_board.draw(gl.TRIANGLES);
+                        k0Tex.bind(k0Tex.texture);
                     }
+                    this.renderFilter();
+                    ibo_board.draw(gl.TRIANGLES);
+                }
 
-                    //rendering parts----------------------------------------------------------------------------------
+                //rendering parts----------------------------------------------------------------------------------
 
-                    //--------------------------------------animation global variables
-                    gl.flush();
-                    this.stats.end();
-                    requestAnimationFrame(loop);
+                //--------------------------------------animation global variables
+                gl.flush();
+                this.stats.end();
+                requestAnimationFrame(loop);
 
 
-                    function RenderSimpleScene(){
-                        sceneShader.bind();
-                        var hsv = EcognitaMathLib.HSV2RGB(cnt1 % 360, 1, 1, 1); 
-                        gl.clearColor(hsv[0], hsv[1], hsv[2], hsv[3]);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-      
-                        vbo_torus.bind(sceneShader);
-                        ibo_torus.bind();
-                        for(var i = 0; i < 9; i++){
-                            var amb = EcognitaMathLib.HSV2RGB(i * 40, 1, 1, 1);
-                            mMatrix = m.identity(mMatrix);
-                            mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
-                            mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
-                            mMatrix= m.rotate(mMatrix, rad, [1, 1, 0]);
-                            mvpMatrix = m.multiply(vpMatrix, mMatrix);
-                            invMatrix = m.inverse(mMatrix);
-                            gl.uniformMatrix4fv(sceneUniformLoc[0], false, mvpMatrix);
-                            gl.uniformMatrix4fv(sceneUniformLoc[1], false, invMatrix);
-                            gl.uniform3fv(sceneUniformLoc[2], lightDirection);
-                            gl.uniform3fv(sceneUniformLoc[3], eyePosition);
-                            gl.uniform4fv(sceneUniformLoc[4], amb);
-                            ibo_torus.draw(gl.TRIANGLES);
-                        }
+                function RenderSimpleScene() {
+                    sceneShader.bind();
+                    var hsv = EcognitaMathLib.HSV2RGB(cnt1 % 360, 1, 1, 1);
+                    gl.clearColor(hsv[0], hsv[1], hsv[2], hsv[3]);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+                    vbo_torus.bind(sceneShader);
+                    ibo_torus.bind();
+                    for (var i = 0; i < 9; i++) {
+                        var amb = EcognitaMathLib.HSV2RGB(i * 40, 1, 1, 1);
+                        mMatrix = m.identity(mMatrix);
+                        mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
+                        mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
+                        mMatrix = m.rotate(mMatrix, rad, [1, 1, 0]);
+                        mvpMatrix = m.multiply(vpMatrix, mMatrix);
+                        invMatrix = m.inverse(mMatrix);
+                        gl.uniformMatrix4fv(sceneUniformLoc[0], false, mvpMatrix);
+                        gl.uniformMatrix4fv(sceneUniformLoc[1], false, invMatrix);
+                        gl.uniform3fv(sceneUniformLoc[2], lightDirection);
+                        gl.uniform3fv(sceneUniformLoc[3], eyePosition);
+                        gl.uniform4fv(sceneUniformLoc[4], amb);
+                        ibo_torus.draw(gl.TRIANGLES);
                     }
+                }
 
-                    function RenderSimpleSceneSpecularParts(){    
-                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                        
-                        vbo_torus.bind(specCptShader);
-                        ibo_torus.bind();
-                        for(var i = 0; i < 9; i++){
-                            mMatrix = m.identity(mMatrix);
-                            mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
-                            mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
-                            mMatrix= m.rotate(mMatrix, rad, [1, 1, 0]);
-                            mvpMatrix = m.multiply(vpMatrix, mMatrix);
-                            invMatrix = m.inverse(mMatrix);
-                            gl.uniformMatrix4fv(uniLocation_spec[0], false, mvpMatrix);
-                            gl.uniformMatrix4fv(uniLocation_spec[1], false, invMatrix);
-                            gl.uniform3fv(uniLocation_spec[2], lightDirection);
-                            gl.uniform3fv(uniLocation_spec[3], eyePosition);
-                            ibo_torus.draw(gl.TRIANGLES);
-                        }
+                function RenderSimpleSceneSpecularParts() {
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+                    vbo_torus.bind(specCptShader);
+                    ibo_torus.bind();
+                    for (var i = 0; i < 9; i++) {
+                        mMatrix = m.identity(mMatrix);
+                        mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
+                        mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
+                        mMatrix = m.rotate(mMatrix, rad, [1, 1, 0]);
+                        mvpMatrix = m.multiply(vpMatrix, mMatrix);
+                        invMatrix = m.inverse(mMatrix);
+                        gl.uniformMatrix4fv(uniLocation_spec[0], false, mvpMatrix);
+                        gl.uniformMatrix4fv(uniLocation_spec[1], false, invMatrix);
+                        gl.uniform3fv(uniLocation_spec[2], lightDirection);
+                        gl.uniform3fv(uniLocation_spec[3], eyePosition);
+                        ibo_torus.draw(gl.TRIANGLES);
                     }
-                    //--------------------------------------animation global variables
-                };
+                }
+                //--------------------------------------animation global variables
+            };
 
-                loop();
+            loop();
         }
     }
 }
