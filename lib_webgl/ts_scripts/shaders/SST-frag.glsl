@@ -30,5 +30,8 @@ void main (void) {
                 +1.0 * dot(texture2D(src, uv + vec2(-d.x,  d.y)).xyz, monochromeScale) +
                 +2.0 * dot(texture2D(src, uv + vec2( 0.0,  d.y)).xyz, monochromeScale) + 
                 +1.0 * dot(texture2D(src, uv + vec2( d.x,  d.y)).xyz, monochromeScale) ;
+    
+    fx /= 4.0;
+    fy /= 4.0;
     gl_FragColor = vec4(fx*fx, fy*fy, fx*fy, 1.0);
 }

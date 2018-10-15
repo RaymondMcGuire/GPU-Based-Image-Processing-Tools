@@ -37,11 +37,11 @@ module EcognitaWeb3D {
         ibo: Array<any>;
         MATRIX: Utils.HashSet<any>;
 
-        loadTexture(file_name: string, isFloat: boolean = false, glType: any = gl.CLAMP_TO_EDGE, glInterType: any = gl.LINEAR, useMipmap: boolean = true) {
+        loadTexture(file_name: string, isFloat: boolean = false, glType: any = gl.CLAMP_TO_EDGE, glInterType: any = gl.LINEAR, useMipmap: boolean = true, channel:number=4) {
             var tex = null;
             var image = EcognitaMathLib.imread(file_name);
             image.onload = (() => {
-                tex = new EcognitaMathLib.WebGL_Texture(4, isFloat, image, glType, glInterType, useMipmap);
+                tex = new EcognitaMathLib.WebGL_Texture(channel, isFloat, image, glType, glInterType, useMipmap);
                 this.Texture.set(file_name, tex);
             });
         }
@@ -87,7 +87,7 @@ module EcognitaWeb3D {
 
         loadAssets() {
             //load demo texture
-            this.loadTexture("./image/k0.png", false, gl.CLAMP_TO_BORDER);
+            this.loadTexture("./image/k0.png", false, gl.CLAMP_TO_BORDER,gl.LINEAR);
             this.loadTexture("./image/visual_rgb.png");
             this.loadTexture("./image/cat.jpg", false, gl.CLAMP_TO_EDGE);
             this.loadTexture("./image/lion.png", false, gl.CLAMP_TO_EDGE);

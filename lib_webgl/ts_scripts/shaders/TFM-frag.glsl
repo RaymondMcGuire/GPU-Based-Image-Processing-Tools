@@ -22,6 +22,6 @@ void main (void) {
 
     float phi = atan(t.y, t.x);
 
-    float A = (lambda1 + lambda2 != 0.0)?(lambda1 - lambda2) / (lambda1 + lambda2) : 0.0;
+    float A = (lambda1 + lambda2 > 0.0)?(lambda1 - lambda2) / (lambda1 + lambda2) : 0.0;
     gl_FragColor = vec4(t, phi, A);
 }

@@ -314,6 +314,7 @@ module EcognitaWeb3D {
             frameBuffer.bindFrameBuffer();
             frameBuffer.bindDepthBuffer();
             frameBuffer.renderToShadowTexure();
+            //frameBuffer.renderToFloatTexure();
             frameBuffer.release();
             this.framebuffers.set(frameBufferName, frameBuffer);
         }
