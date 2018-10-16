@@ -1,7 +1,10 @@
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -1412,38 +1415,6 @@ var Shaders = {
         '	vTextureCoord  = textureCoord;\n' +
         '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
-    'Gaussian-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
-        'precision mediump float;\n\n' +
-        'uniform sampler2D src;\n' +
-        'uniform float sigma;\n' +
-        'uniform float cvsHeight;\n' +
-        'uniform float cvsWidth;\n\n' +
-        'void main (void) {\n' +
-        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
-        '    vec2 uv = gl_FragCoord.xy / src_size;\n\n' +
-        '    float twoSigma2 = 2.0 * 2.0 * 2.0;\n' +
-        '    const int halfWidth = 4;//int(ceil( 2.0 * sigma ));\n\n' +
-        '    vec3 sum = vec3(0.0);\n' +
-        '    float norm = 0.0;\n' +
-        '    for ( int i = -halfWidth; i <= halfWidth; ++i ) {\n' +
-        '        for ( int j = -halfWidth; j <= halfWidth; ++j ) {\n' +
-        '            float d = length(vec2(i,j));\n' +
-        '            float kernel = exp( -d *d / twoSigma2 );\n' +
-        '            vec3 c = texture2D(src, uv + vec2(i,j) / src_size ).rgb;\n' +
-        '            sum += kernel * c;\n' +
-        '            norm += kernel;\n' +
-        '        }\n' +
-        '    }\n' +
-        '    gl_FragColor = vec4(sum / norm, 1.0);\n' +
-        '}\n',
-    'Gaussian-vert': 'attribute vec3 position;\n' +
-        'attribute vec2 texCoord;\n' +
-        'uniform   mat4 mvpMatrix;\n' +
-        'varying   vec2 vTexCoord;\n\n' +
-        'void main(void){\n' +
-        '	vTexCoord   = texCoord;\n' +
-        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
-        '}\n',
     'gaussianFilter-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
         'uniform bool b_gaussian;\n' +
@@ -1546,6 +1517,38 @@ var Shaders = {
         '    gl_FragColor = vec4(destColor, 1.0);\n' +
         '}\n',
     'gaussianFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'Gaussian_K-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float sigma;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n\n' +
+        '    float twoSigma2 = 2.0 * 2.0 * 2.0;\n' +
+        '    const int halfWidth = 4;//int(ceil( 2.0 * sigma ));\n\n' +
+        '    vec3 sum = vec3(0.0);\n' +
+        '    float norm = 0.0;\n' +
+        '    for ( int i = -halfWidth; i <= halfWidth; ++i ) {\n' +
+        '        for ( int j = -halfWidth; j <= halfWidth; ++j ) {\n' +
+        '            float d = length(vec2(i,j));\n' +
+        '            float kernel = exp( -d *d / twoSigma2 );\n' +
+        '            vec3 c = texture2D(src, uv + vec2(i,j) / src_size ).rgb;\n' +
+        '            sum += kernel * c;\n' +
+        '            norm += kernel;\n' +
+        '        }\n' +
+        '    }\n' +
+        '    gl_FragColor = vec4(sum / norm, 1.0);\n' +
+        '}\n',
+    'Gaussian_K-vert': 'attribute vec3 position;\n' +
         'attribute vec2 texCoord;\n' +
         'uniform   mat4 mvpMatrix;\n' +
         'varying   vec2 vTexCoord;\n\n' +
@@ -3250,13 +3253,8 @@ var EcognitaMathLib;
 var EcognitaWeb3D;
 (function (EcognitaWeb3D) {
     var WebGLEnv = /** @class */ (function () {
-        function WebGLEnv(cvs, shaderlist) {
+        function WebGLEnv(cvs) {
             this.chkWebGLEnv(cvs);
-            this.initGlobalVariables();
-            this.loadAssets();
-            this.loadExtraLibrary();
-            this.loadInternalLibrary(shaderlist);
-            this.initGlobalMatrix();
         }
         WebGLEnv.prototype.loadTexture = function (file_name, isFloat, glType, glInterType, useMipmap, channel) {
             var _this = this;
@@ -3313,18 +3311,8 @@ var EcognitaWeb3D;
             this.loadTexture("./image/test1.jpg", false);
             //this.loadTexture("./image/anim.png", true, gl.CLAMP_TO_EDGE, gl.NEAREST);
         };
-        WebGLEnv.prototype.loadExtraLibrary = function () {
-            this.ui_data = {
-                name: 'Filter Viewer',
-                useTexture: false,
-                f_AnisotropicVisual: false,
-                f_LaplacianFilter: false,
-                f_GaussianFilter: false,
-                f_SobelFilter: true,
-                f_KuwaharaFilter: false,
-                f_GeneralizedKuwaharaFilter: false,
-                f_BloomEffect: false
-            };
+        WebGLEnv.prototype.loadExtraLibrary = function (ui_data) {
+            this.ui_data = ui_data;
             //load extral library
             this.uiUtil = new Utils.FilterViewerUI(this.ui_data);
             this.extHammer = new EcognitaMathLib.Hammer_Utils(this.canvas);
@@ -3336,10 +3324,10 @@ var EcognitaWeb3D;
             //init shaders and uniLocations
             this.shaders = new Utils.HashSet();
             this.uniLocations = new Utils.HashSet();
-            shaderlist.forEach(function (shaderName) {
-                var shader = new EcognitaMathLib.WebGL_Shader(Shaders, shaderName + "-vert", shaderName + "-frag");
-                _this.shaders.set(shaderName, shader);
-                _this.uniLocations.set(shaderName, new Array());
+            shaderlist.forEach(function (s) {
+                var shader = new EcognitaMathLib.WebGL_Shader(Shaders, s.name + "-vert", s.name + "-frag");
+                _this.shaders.set(s.name, shader);
+                _this.uniLocations.set(s.name, new Array());
             });
         };
         return WebGLEnv;
@@ -3361,160 +3349,52 @@ var EcognitaWeb3D;
     var FilterViewer = /** @class */ (function (_super) {
         __extends(FilterViewer, _super);
         function FilterViewer(cvs) {
-            var _this = this;
-            var shaderList = ["SST", "Gaussian", "TFM", "Anisotropic", "AKF", "filterScene", "specCpt", "synth", "laplacianFilter", "sobelFilter", "gaussianFilter", "kuwaharaFilter", "gkuwaharaFilter"];
-            _this = _super.call(this, cvs, shaderList) || this;
-            //init gobal variable
-            _this.filterMvpMatrix = _this.matUtil.identity(_this.matUtil.create());
-            _this.usrPipeLine = EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER;
-            _this.usrFilter = EcognitaWeb3D.Filter.SOBEL;
-            _this.filterShader = _this.shaders.get("sobelFilter");
-            _this.btnStatusList = new Utils.HashSet();
-            _this.btnStatusList.set("f_LaplacianFilter", _this.ui_data.f_LaplacianFilter);
-            _this.btnStatusList.set("f_SobelFilter", _this.ui_data.f_SobelFilter);
-            _this.btnStatusList.set("f_BloomEffect", _this.ui_data.f_BloomEffect);
-            _this.btnStatusList.set("f_GaussianFilter", _this.ui_data.f_GaussianFilter);
-            _this.btnStatusList.set("f_KuwaharaFilter", _this.ui_data.f_KuwaharaFilter);
-            _this.btnStatusList.set("f_GeneralizedKuwaharaFilter", _this.ui_data.f_GeneralizedKuwaharaFilter);
-            _this.btnStatusList.set("f_AnisotropicVisual", _this.ui_data.f_AnisotropicVisual);
-            //gaussian weight
-            var weight = new Array(10);
-            var t = 0.0;
-            var d = 50 * 50 / 100;
-            for (var i = 0; i < weight.length; i++) {
-                var r = 1.0 + 2.0 * i;
-                var w = Math.exp(-0.5 * (r * r) / d);
-                weight[i] = w;
-                if (i > 0) {
-                    w *= 2.0;
-                }
-                t += w;
-            }
-            for (i = 0; i < weight.length; i++) {
-                weight[i] /= t;
-            }
-            //user config param (load params from file is better TODO)
-            _this.usrParams = {
-                laplacianCoef: [1.0, 1.0, 1.0,
-                    1.0, -8.0, 1.0,
-                    1.0, 1.0, 1.0],
-                sobelHorCoef: [1.0, 0.0, -1.0,
-                    2.0, 0.0, -2.0,
-                    1.0, 0.0, -1.0],
-                sobelVerCoef: [1.0, 2.0, 1.0,
-                    0.0, 0.0, 0.0,
-                    -1.0, -2.0, -1.0],
-                gaussianWeight: weight,
-                gkweight: [0.8322, 0.8758, 0.903, 0.9123, 0.903, 0.8758, 0.8322, 0.8758, 0.9216, 0.9503, 0.96, 0.9503, 0.9216, 0.8758, 0.903, 0.9503, 0.9798, 0.9898, 0.9798, 0.9503, 0.903, 0.9123, 0.96, 0.9898, 1.0, 0.9898, 0.96, 0.9123, 0.903, 0.9503, 0.9798, 0.9898, 0.9798, 0.9503, 0.903, 0.8758, 0.9216, 0.9503, 0.96, 0.9503, 0.9216, 0.8758, 0.8322, 0.8758, 0.903, 0.9123, 0.903, 0.8758, 0.8322]
-            };
-            var laplacianFilterArray = new Array();
-            laplacianFilterArray.push("mvpMatrix");
-            laplacianFilterArray.push("texture");
-            laplacianFilterArray.push("coef");
-            laplacianFilterArray.push("cvsHeight");
-            laplacianFilterArray.push("cvsWidth");
-            laplacianFilterArray.push("b_laplacian");
-            _this.settingUniform("laplacianFilter", laplacianFilterArray);
-            var sobelFilterArray = new Array();
-            sobelFilterArray.push("mvpMatrix");
-            sobelFilterArray.push("texture");
-            sobelFilterArray.push("hCoef");
-            sobelFilterArray.push("vCoef");
-            sobelFilterArray.push("cvsHeight");
-            sobelFilterArray.push("cvsWidth");
-            sobelFilterArray.push("b_sobel");
-            _this.settingUniform("sobelFilter", sobelFilterArray);
-            var gaussianFilterArray = new Array();
-            gaussianFilterArray.push("mvpMatrix");
-            gaussianFilterArray.push("texture");
-            gaussianFilterArray.push("weight");
-            gaussianFilterArray.push("horizontal");
-            gaussianFilterArray.push("cvsHeight");
-            gaussianFilterArray.push("cvsWidth");
-            gaussianFilterArray.push("b_gaussian");
-            _this.settingUniform("gaussianFilter", gaussianFilterArray);
-            var kuwaharaFilterArray = new Array();
-            kuwaharaFilterArray.push("mvpMatrix");
-            kuwaharaFilterArray.push("texture");
-            kuwaharaFilterArray.push("cvsHeight");
-            kuwaharaFilterArray.push("cvsWidth");
-            kuwaharaFilterArray.push("b_kuwahara");
-            _this.settingUniform("kuwaharaFilter", kuwaharaFilterArray);
-            var gkuwaharaFilterArray = new Array();
-            gkuwaharaFilterArray.push("mvpMatrix");
-            gkuwaharaFilterArray.push("texture");
-            gkuwaharaFilterArray.push("weight");
-            gkuwaharaFilterArray.push("cvsHeight");
-            gkuwaharaFilterArray.push("cvsWidth");
-            gkuwaharaFilterArray.push("b_gkuwahara");
-            _this.settingUniform("gkuwaharaFilter", gkuwaharaFilterArray);
-            var synthSceneArray = new Array();
-            synthSceneArray.push("mvpMatrix");
-            synthSceneArray.push("texture1");
-            synthSceneArray.push("texture2");
-            synthSceneArray.push("glare");
-            _this.settingUniform("synth", synthSceneArray);
-            //show anistropic
-            var SSTArray = new Array();
-            SSTArray.push("mvpMatrix");
-            SSTArray.push("src");
-            SSTArray.push("cvsHeight");
-            SSTArray.push("cvsWidth");
-            _this.settingUniform("SST", SSTArray);
-            var GaussianArray = new Array();
-            GaussianArray.push("mvpMatrix");
-            GaussianArray.push("src");
-            GaussianArray.push("sigma");
-            GaussianArray.push("cvsHeight");
-            GaussianArray.push("cvsWidth");
-            _this.settingUniform("Gaussian", GaussianArray);
-            var TFMArray = new Array();
-            TFMArray.push("mvpMatrix");
-            TFMArray.push("src");
-            TFMArray.push("cvsHeight");
-            TFMArray.push("cvsWidth");
-            _this.settingUniform("TFM", TFMArray);
-            var AnisotropicArray = new Array();
-            AnisotropicArray.push("mvpMatrix");
-            AnisotropicArray.push("src");
-            AnisotropicArray.push("visual");
-            AnisotropicArray.push("cvsHeight");
-            AnisotropicArray.push("cvsWidth");
-            AnisotropicArray.push("anisotropic");
-            _this.settingUniform("Anisotropic", AnisotropicArray);
-            var AnisotropicKuwaharaArray = new Array();
-            AnisotropicKuwaharaArray.push("mvpMatrix");
-            AnisotropicKuwaharaArray.push("tfm");
-            AnisotropicKuwaharaArray.push("src");
-            AnisotropicKuwaharaArray.push("k0");
-            AnisotropicKuwaharaArray.push("radius");
-            AnisotropicKuwaharaArray.push("q");
-            AnisotropicKuwaharaArray.push("alpha");
-            AnisotropicKuwaharaArray.push("cvsHeight");
-            AnisotropicKuwaharaArray.push("cvsWidth");
-            AnisotropicKuwaharaArray.push("anisotropic");
-            _this.settingUniform("AKF", AnisotropicKuwaharaArray);
-            //init System
-            _this.initModel();
-            var filterSceneArray = new Array();
-            filterSceneArray.push("mvpMatrix");
-            filterSceneArray.push("invMatrix");
-            filterSceneArray.push("lightDirection");
-            filterSceneArray.push("eyeDirection");
-            filterSceneArray.push("ambientColor");
-            _this.settingUniform("filterScene", filterSceneArray);
-            var specSceneArray = new Array();
-            specSceneArray.push("mvpMatrix");
-            specSceneArray.push("invMatrix");
-            specSceneArray.push("lightDirection");
-            specSceneArray.push("eyeDirection");
-            _this.settingUniform("specCpt", specSceneArray);
-            _this.regisEvent();
-            _this.regisUIEvent();
-            _this.settingRenderPipeline();
-            _this.regisAnimeFunc();
-            return _this;
+            return _super.call(this, cvs) || this;
         }
+        FilterViewer.prototype.regisButton = function (btn_data) {
+            var _this = this;
+            this.btnStatusList = new Utils.HashSet();
+            //init button
+            btn_data.forEach(function (btn) {
+                _this.btnStatusList.set(btn.name, _this.ui_data[btn.name]);
+                //register button event
+                _this.uiUtil.uiController.get(btn.name).onChange(function (val) {
+                    _this.usrSelectChange(btn.name, val, EcognitaWeb3D.RenderPipeLine[btn.pipline], EcognitaWeb3D.Filter[btn.filter], btn.shader);
+                });
+            });
+        };
+        FilterViewer.prototype.regisUniforms = function (shader_data) {
+            var _this = this;
+            shader_data.forEach(function (shader) {
+                var uniform_array = new Array();
+                var shaderUniforms = shader.uniforms;
+                shaderUniforms.forEach(function (uniform) {
+                    uniform_array.push(uniform);
+                });
+                _this.settingUniform(shader.name, uniform_array);
+            });
+        };
+        FilterViewer.prototype.regisUserParam = function (user_config) {
+            this.filterMvpMatrix = this.matUtil.identity(this.matUtil.create());
+            this.usrPipeLine = EcognitaWeb3D.RenderPipeLine[user_config.default_pipline];
+            this.usrFilter = EcognitaWeb3D.Filter[user_config.default_filter];
+            this.filterShader = this.shaders.get(user_config.default_shader);
+            this.usrParams = user_config.user_params;
+        };
+        FilterViewer.prototype.initialize = function (ui_data, shader_data, button_data, user_config) {
+            this.initGlobalVariables();
+            this.loadAssets();
+            this.loadExtraLibrary(ui_data);
+            this.loadInternalLibrary(shader_data.shaderList);
+            this.initGlobalMatrix();
+            this.regisButton(button_data.buttonList);
+            this.regisUniforms(shader_data.shaderList);
+            this.regisUserParam(user_config);
+            this.initModel();
+            this.regisEvent();
+            this.settingRenderPipeline();
+            this.regisAnimeFunc();
+        };
         FilterViewer.prototype.initModel = function () {
             //scene model : torus
             var torusData = new EcognitaMathLib.TorusModel(64, 64, 1.0, 2.0, [1.0, 1.0, 1.0, 1.0], true, false);
@@ -3604,7 +3484,7 @@ var EcognitaWeb3D;
                 // gl.uniform1i(AnisotropicFilterUniformLoc[2], 1);
                 // gl.uniform1f(AnisotropicFilterUniformLoc[3], this.canvas.height);
                 // gl.uniform1f(AnisotropicFilterUniformLoc[4], this.canvas.width);
-                // gl.uniform1i(AnisotropicFilterUniformLoc[5], this.btnStatusList.get("f_AnisotropicVisual"));
+                // gl.uniform1i(AnisotropicFilterUniformLoc[5], this.btnStatusList.get("f_AnisotropicKuwahara"));
                 var AKFUniformLoc = this.uniLocations.get("AKF");
                 gl.uniformMatrix4fv(AKFUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(AKFUniformLoc[1], 0);
@@ -3615,7 +3495,7 @@ var EcognitaWeb3D;
                 gl.uniform1f(AKFUniformLoc[6], 1.0);
                 gl.uniform1f(AKFUniformLoc[7], this.canvas.height);
                 gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
-                gl.uniform1i(AKFUniformLoc[9], this.btnStatusList.get("f_AnisotropicVisual"));
+                gl.uniform1i(AKFUniformLoc[9], this.btnStatusList.get("f_AnisotropicKuwahara"));
             }
         };
         FilterViewer.prototype.settingFrameBuffer = function (frameBufferName) {
@@ -3659,31 +3539,6 @@ var EcognitaWeb3D;
                     }
                 }
             }
-        };
-        FilterViewer.prototype.regisUIEvent = function () {
-            var _this = this;
-            this.uiUtil.uiController.get("f_LaplacianFilter").onChange(function (val) {
-                _this.usrSelectChange("f_LaplacianFilter", val, EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER, EcognitaWeb3D.Filter.LAPLACIAN, "laplacianFilter");
-            });
-            this.uiUtil.uiController.get("f_SobelFilter").onChange(function (val) {
-                _this.usrSelectChange("f_SobelFilter", val, EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER, EcognitaWeb3D.Filter.SOBEL, "sobelFilter");
-            });
-            this.uiUtil.uiController.get("f_KuwaharaFilter").onChange(function (val) {
-                _this.usrSelectChange("f_KuwaharaFilter", val, EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER, EcognitaWeb3D.Filter.KUWAHARA, "kuwaharaFilter");
-            });
-            this.uiUtil.uiController.get("f_GeneralizedKuwaharaFilter").onChange(function (val) {
-                _this.usrSelectChange("f_GeneralizedKuwaharaFilter", val, EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER, EcognitaWeb3D.Filter.GKUWAHARA, "gkuwaharaFilter");
-            });
-            this.uiUtil.uiController.get("f_BloomEffect").onChange(function (val) {
-                _this.usrSelectChange("f_BloomEffect", val, EcognitaWeb3D.RenderPipeLine.BLOOM_EFFECT, EcognitaWeb3D.Filter.GAUSSIAN, "gaussianFilter");
-            });
-            this.uiUtil.uiController.get("f_GaussianFilter").onChange(function (val) {
-                _this.usrSelectChange("f_GaussianFilter", val, EcognitaWeb3D.RenderPipeLine.CONVOLUTION_TWICE, EcognitaWeb3D.Filter.GAUSSIAN, "gaussianFilter");
-            });
-            this.uiUtil.uiController.get("f_AnisotropicVisual").onChange(function (val) {
-                //this.usrSelectChange("f_AnisotropicVisual",val,RenderPipeLine.ANISTROPIC,Filter.ANISTROPIC,"Anisotropic");
-                _this.usrSelectChange("f_AnisotropicVisual", val, EcognitaWeb3D.RenderPipeLine.ANISTROPIC, EcognitaWeb3D.Filter.ANISTROPIC, "AKF");
-            });
         };
         FilterViewer.prototype.regisEvent = function () {
             var _this = this;
@@ -3749,8 +3604,8 @@ var EcognitaWeb3D;
             //anisotropic
             var SSTShader = this.shaders.get("SST");
             var uniLocation_SST = this.uniLocations.get("SST");
-            var GAUShader = this.shaders.get("Gaussian");
-            var uniLocation_GAU = this.uniLocations.get("Gaussian");
+            var GAUShader = this.shaders.get("Gaussian_K");
+            var uniLocation_GAU = this.uniLocations.get("Gaussian_K");
             var TFMShader = this.shaders.get("TFM");
             var uniLocation_TFM = this.uniLocations.get("TFM");
             //-----------------------------------------------
@@ -3856,9 +3711,6 @@ var EcognitaWeb3D;
                     RenderSimpleScene();
                     gl.activeTexture(gl.TEXTURE0);
                     if (inTex != undefined && _this.ui_data.useTexture) {
-                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                         inTex.bind(inTex.texture);
                     }
                     else {
@@ -3896,16 +3748,22 @@ var EcognitaWeb3D;
                     ibo_board.draw(gl.TRIANGLES);
                 }
                 else if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.ANISTROPIC) {
+                    //save k0 texture to tex2
+                    var k0Tex = _this.Texture.get("./image/k0.png");
+                    if (k0Tex != undefined) {
+                        gl.activeTexture(gl.TEXTURE2);
+                        k0Tex.bind(k0Tex.texture);
+                    }
                     //render SRC
                     frameBuffer1.bindFrameBuffer();
                     RenderSimpleScene();
+                    //render anisotropic save to tex0
                     gl.activeTexture(gl.TEXTURE0);
-                    var inTex_afk = _this.Texture.get("./image/anim.png");
                     if (inTex != undefined && _this.ui_data.useTexture) {
                         inTex.bind(inTex.texture);
                     }
                     else {
-                        //gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
                     }
                     //render SST
                     SSTShader.bind();
@@ -3950,6 +3808,21 @@ var EcognitaWeb3D;
                     gl.uniform1f(uniLocation_TFM[3], _this.canvas.width);
                     ibo_board.draw(gl.TRIANGLES);
                     gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+                    // gl.activeTexture(gl.TEXTURE1);
+                    // var visTex = this.Texture.get("./image/visual_rgb.png");
+                    // if(visTex != undefined && this.ui_data.useTexture){  
+                    //     visTex.bind(visTex.texture);
+                    // }
+                    frameBuffer1.bindFrameBuffer();
+                    RenderSimpleScene();
+                    //save original texture to tex1
+                    gl.activeTexture(gl.TEXTURE1);
+                    if (inTex != undefined && _this.ui_data.useTexture) {
+                        inTex.bind(inTex.texture);
+                    }
+                    else {
+                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    }
                     //render Anisotropic
                     _this.filterShader.bind();
                     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -3958,20 +3831,6 @@ var EcognitaWeb3D;
                     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                     vbo_board.bind(_this.filterShader);
                     ibo_board.bind();
-                    // gl.activeTexture(gl.TEXTURE1);
-                    // var visTex = this.Texture.get("./image/visual_rgb.png");
-                    // if(visTex != undefined && this.ui_data.useTexture){  
-                    //     visTex.bind(visTex.texture);
-                    // }
-                    if (inTex != undefined && _this.ui_data.useTexture) {
-                        gl.activeTexture(gl.TEXTURE1);
-                        inTex.bind(inTex.texture);
-                    }
-                    var k0Tex = _this.Texture.get("./image/k0.png");
-                    if (k0Tex != undefined && _this.ui_data.useTexture) {
-                        gl.activeTexture(gl.TEXTURE2);
-                        k0Tex.bind(k0Tex.texture);
-                    }
                     _this.renderFilter();
                     ibo_board.draw(gl.TRIANGLES);
                 }
@@ -4032,17 +3891,22 @@ var EcognitaWeb3D;
     }(EcognitaWeb3D.WebGLEnv));
     EcognitaWeb3D.FilterViewer = FilterViewer;
 })(EcognitaWeb3D || (EcognitaWeb3D = {}));
-/* =========================================================================
- *
- *  FilterViewer.ts
- *  tool for test filter in WebGL
- *  filter viewer
- *
- * ========================================================================= */
 /// <reference path="../ts_scripts/package/pkg_FilterViewHub.ts" />
-var viewer = document.createElement('canvas');
-document.body.appendChild(viewer);
-viewer.id = "canvas_viewer";
-viewer.width = window.innerWidth;
-viewer.height = window.innerHeight;
-var filterViewer = new EcognitaWeb3D.FilterViewer(viewer);
+var viewer = document.getElementById("canvas_viewer");
+viewer.width = 512;
+viewer.height = 512;
+//load data
+$.getJSON("./config/ui.json", function (ui_data) {
+    //console.log( "loaded UI data");
+    $.getJSON("./config/shader.json", function (shader_data) {
+        //console.log( "loaded shader data");
+        $.getJSON("./config/button.json", function (button_data) {
+            //console.log( "loaded button data");
+            $.getJSON("./config/user_config.json", function (user_config) {
+                //console.log( "loaded user config data");
+                var filterViewer = new EcognitaWeb3D.FilterViewer(viewer);
+                filterViewer.initialize(ui_data, shader_data, button_data, user_config);
+            });
+        });
+    });
+});

@@ -1,0 +1,46 @@
+{
+    "buttonList": [
+      {
+        "name": "f_LaplacianFilter",
+        "pipline": "CONVOLUTION_FILTER",
+        "filter": "LAPLACIAN",
+        "shader": "laplacianFilter"
+      },
+      {
+        "name": "f_SobelFilter",
+        "pipline": "CONVOLUTION_FILTER",
+        "filter": "SOBEL",
+        "shader": "sobelFilter"
+      },
+      {
+        "name": "f_BloomEffect",
+        "pipline": "BLOOM_EFFECT",
+        "filter": "GAUSSIAN",
+        "shader": "gaussianFilter"
+      },
+      {
+        "name": "f_GaussianFilter",
+        "pipline": "CONVOLUTION_TWICE",
+        "filter": "GAUSSIAN",
+        "shader": "gaussianFilter"
+      },
+      {
+        "name": "f_KuwaharaFilter",
+        "pipline": "CONVOLUTION_FILTER",
+        "filter": "KUWAHARA",
+        "shader": "kuwaharaFilter"
+      },
+      {
+        "name": "f_GeneralizedKuwaharaFilter",
+        "pipline": "CONVOLUTION_FILTER",
+        "filter": "GKUWAHARA",
+        "shader": "gkuwaharaFilter"
+      },
+      {
+        "name": "f_AnisotropicKuwahara",
+        "pipline": "ANISTROPIC",
+        "filter": "ANISTROPIC",
+        "shader": "AKF"
+      }
+    ]
+  }

@@ -64,13 +64,8 @@ module EcognitaWeb3D {
             }
         }
 
-        constructor(cvs: any, shaderlist: Array<string>) {
+        constructor(cvs: any) {
             this.chkWebGLEnv(cvs);
-            this.initGlobalVariables();
-            this.loadAssets();
-            this.loadExtraLibrary();
-            this.loadInternalLibrary(shaderlist);
-            this.initGlobalMatrix();
         }
 
         initGlobalVariables() {
@@ -102,19 +97,8 @@ module EcognitaWeb3D {
 
         }
 
-        loadExtraLibrary() {
-            this.ui_data = {
-                name: 'Filter Viewer',
-                useTexture: false,
-                f_AnisotropicVisual: false,
-                f_LaplacianFilter: false,
-                f_GaussianFilter: false,
-                f_SobelFilter: true,
-                f_KuwaharaFilter: false,
-                f_GeneralizedKuwaharaFilter: false,
-                f_BloomEffect: false
-            };
-
+        loadExtraLibrary(ui_data:any) {
+            this.ui_data = ui_data;
             //load extral library
             this.uiUtil = new Utils.FilterViewerUI(this.ui_data);
             this.extHammer = new EcognitaMathLib.Hammer_Utils(this.canvas);
@@ -127,10 +111,10 @@ module EcognitaWeb3D {
             //init shaders and uniLocations
             this.shaders = new Utils.HashSet<EcognitaMathLib.WebGL_Shader>();
             this.uniLocations = new Utils.HashSet<Array<any>>();
-            shaderlist.forEach(shaderName => {
-                var shader = new EcognitaMathLib.WebGL_Shader(Shaders, shaderName + "-vert", shaderName + "-frag");
-                this.shaders.set(shaderName, shader);
-                this.uniLocations.set(shaderName, new Array<any>());
+            shaderlist.forEach( s => {
+                var shader = new EcognitaMathLib.WebGL_Shader(Shaders, s.name + "-vert", s.name + "-frag");
+                this.shaders.set(s.name, shader);
+                this.uniLocations.set(s.name, new Array<any>());
             });
         }
     }

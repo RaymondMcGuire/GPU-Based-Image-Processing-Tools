@@ -1,0 +1,142 @@
+{                
+    "shaderList": [
+        {
+            "name": "SST",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "cvsHeight",
+                "cvsWidth"
+            ]
+        },
+        {
+            "name": "Gaussian_K",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "sigma",
+                "cvsHeight",
+                "cvsWidth"
+            ]
+        },
+        {
+            "name": "TFM",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "cvsHeight",
+                "cvsWidth"
+            ]
+        },
+        {
+            "name": "Anisotropic",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "visual",
+                "cvsHeight",
+                "cvsWidth",
+                "anisotropic"
+            ]
+        },
+        {
+            "name": "AKF",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "k0",
+                "radius",
+                "q",
+                "alpha",
+                "cvsHeight",
+                "cvsWidth",
+                "anisotropic"
+            ]
+        },
+        {
+            "name": "filterScene",
+            "uniforms": [
+                "mvpMatrix",
+                "invMatrix",
+                "lightDirection",
+                "eyeDirection",
+                "ambientColor"
+            ]
+        },
+        {
+            "name": "specCpt",
+            "uniforms": [
+                "mvpMatrix",
+                "invMatrix",
+                "lightDirection",
+                "eyeDirection"
+            ]
+        },
+        {
+            "name": "synth",
+            "uniforms": [
+                "mvpMatrix",
+                "texture1",
+                "texture2",
+                "glare"
+            ]
+        },
+        {
+            "name": "laplacianFilter",
+            "uniforms": [
+                "mvpMatrix",
+                "texture",
+                "coef",
+                "cvsHeight",
+                "cvsWidth",
+                "b_laplacian"
+            ]
+        },
+        {
+            "name": "sobelFilter",
+            "uniforms": [
+                "mvpMatrix",
+                "texture",
+                "hCoef",
+                "vCoef",
+                "cvsHeight",
+                "cvsWidth",
+                "b_sobel"
+            ]
+        },
+        {
+            "name": "gaussianFilter",
+            "uniforms": [
+                "mvpMatrix",
+                "texture",
+                "weight",
+                "horizontal",
+                "cvsHeight",
+                "cvsWidth",
+                "b_gaussian"
+            ]
+        },
+        {
+            "name": "kuwaharaFilter",
+            "uniforms": [
+                "mvpMatrix",
+                "texture",
+                "cvsHeight",
+                "cvsWidth",
+                "b_kuwahara"
+            ]
+        },
+        {
+            "name": "gkuwaharaFilter",
+            "uniforms": [
+                "mvpMatrix",
+                "texture",
+                "weight",
+                "cvsHeight",
+                "cvsWidth",
+                "b_gkuwahara"
+            ]
+        }
+    ]
+}

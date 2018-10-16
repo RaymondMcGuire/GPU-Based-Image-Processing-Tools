@@ -1,0 +1,11 @@
+{                
+    "name": "Filter Viewer",
+    "useTexture": false,
+    "f_LaplacianFilter": false,
+    "f_GaussianFilter": false,
+    "f_SobelFilter": true,
+    "f_KuwaharaFilter": false,
+    "f_GeneralizedKuwaharaFilter": false,
+    "f_AnisotropicKuwahara": false,
+    "f_BloomEffect": false
+}

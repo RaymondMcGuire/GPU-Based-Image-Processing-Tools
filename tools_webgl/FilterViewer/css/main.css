@@ -1,0 +1,21 @@
+html {
+  position: relative;
+  min-height: 100%;
+}
+body {
+  margin-bottom: 60px; /* Margin bottom by footer height */
+  background-image: url("../image/back.png")
+}
+
+#canvas_viewer {
+  box-shadow: 0 15px 30px 0 rgba(0, 0, 0, 0.8), 0 15px 30px 0 rgba(0, 0, 0, 0.7);
+  text-align: center;
+}
+
+.container {
+  position: relative;
+  top:30%;
+  width: auto;
+  max-width: 512px;
+  padding: 0 15px;
+}
