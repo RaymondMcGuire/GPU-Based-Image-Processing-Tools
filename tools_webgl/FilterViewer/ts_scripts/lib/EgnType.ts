@@ -11,11 +11,13 @@ module EcognitaWeb3D {
         SOBEL,
         GAUSSIAN,
         KUWAHARA,
-        GKUWAHARA
+        GKUWAHARA,
+        ANISTROPIC
     }
 
     export enum RenderPipeLine{
         CONVOLUTION_FILTER,
+        ANISTROPIC,
         BLOOM_EFFECT,
         CONVOLUTION_TWICE
     }

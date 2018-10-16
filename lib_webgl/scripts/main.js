@@ -511,16 +511,20 @@ var EcognitaMathLib;
     }
     EcognitaMathLib.GetGLTypeSize = GetGLTypeSize;
     var WebGL_Texture = /** @class */ (function () {
-        function WebGL_Texture(channels, isFloat, texels, texType) {
+        function WebGL_Texture(channels, isFloat, texels, texType, texInterpolation, useMipmap) {
             if (texType === void 0) { texType = gl.REPEAT; }
+            if (texInterpolation === void 0) { texInterpolation = gl.LINEAR; }
+            if (useMipmap === void 0) { useMipmap = true; }
             this.type = isFloat ? gl.FLOAT : gl.UNSIGNED_BYTE;
             this.format = [gl.LUMINANCE, gl.RG, gl.RGB, gl.RGBA][channels - 1];
             this.glName = gl.createTexture();
             this.bind(this.glName);
             gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, texels);
-            gl.generateMipmap(gl.TEXTURE_2D);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            if (useMipmap) {
+                gl.generateMipmap(gl.TEXTURE_2D);
+            }
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, texInterpolation);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, texInterpolation);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, texType);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, texType);
             this.texture = this.glName;
@@ -788,6 +792,18 @@ var EcognitaMathLib;
             //attach framebuff to texture
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
         };
+        WebGL_FrameBuffer.prototype.renderToFloatTexure = function () {
+            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+            //make sure we have enought memory to render the width x height size texture
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.FLOAT, null);
+            //texture settings
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            //attach framebuff to texture
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
+        };
         WebGL_FrameBuffer.prototype.renderToCubeTexture = function (cubeTarget) {
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.targetTexture);
             for (var i = 0; i < cubeTarget.length; i++) {
@@ -813,6 +829,128 @@ var EcognitaMathLib;
     EcognitaMathLib.WebGL_FrameBuffer = WebGL_FrameBuffer;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 var Shaders = {
+    'AKF-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform sampler2D k0;\n' +
+        'uniform sampler2D tfm;\n' +
+        'uniform float radius;\n' +
+        'uniform float q;\n' +
+        'uniform float alpha;\n\n' +
+        'uniform bool anisotropic;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'const float PI = 3.14159265358979323846;\n' +
+        'const int N = 8;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n' +
+        '	vec2 src_uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) /' +
+        ' src_size.y);\n\n' +
+        '    if(anisotropic){\n' +
+        '        vec4 m[8];\n' +
+        '        vec3 s[8];\n' +
+        '        for (int k = 0; k < N; ++k) {\n' +
+        '            m[k] = vec4(0.0);\n' +
+        '            s[k] = vec3(0.0);\n' +
+        '        }\n\n' +
+        '        float piN = 2.0 * PI / float(N);\n' +
+        '        mat2 X = mat2(cos(piN), sin(piN), -sin(piN), cos(piN));\n\n' +
+        '        vec4 t = texture2D(tfm, uv);\n' +
+        '        float a = radius * clamp((alpha + t.w) / alpha, 0.1, 2.0); \n' +
+        '        float b = radius * clamp(alpha / (alpha + t.w), 0.1, 2.0);\n\n' +
+        '        float cos_phi = cos(t.z);\n' +
+        '        float sin_phi = sin(t.z);\n\n' +
+        '        mat2 R = mat2(cos_phi, -sin_phi, sin_phi, cos_phi);\n' +
+        '        mat2 S = mat2(0.5/a, 0.0, 0.0, 0.5/b);\n' +
+        '        mat2 SR = S * R;\n\n' +
+        '        // int max_x = int(sqrt(a*a * cos_phi*cos_phi +\n' +
+        '        //                     b*b * sin_phi*sin_phi));\n' +
+        '        // int max_y = int(sqrt(a*a * sin_phi*sin_phi +\n' +
+        '        //                     b*b * cos_phi*cos_phi));\n\n' +
+        '        // const int MAX_ITERATIONS = 100;\n' +
+        '        // int numBreak = (2*max_x+1) * (2*max_y+1);\n\n' +
+        '        // for (int i = 0; i <= MAX_ITERATIONS; i += 1) {\n' +
+        '        //     if(i>=numBreak){break;}\n\n' +
+        '        //     int i_idx = (i - (int(i / (max_x*2+1)))*(max_x*2+1)) - max_x;\n' +
+        '        //     int j_idx = (int(i / (max_x*2+1))) - max_y;\n' +
+        '        //     vec2 v = SR * vec2(i_idx,j_idx);\n\n' +
+        '        //     float lim = 0.25*255.0;\n' +
+        '        //     if (dot(v,v) <= lim) {\n' +
+        '        //     vec4 c_fix = texture2D(src, src_uv + vec2(i_idx,j_idx) / src_size' +
+        ');\n' +
+        '        //     vec3 c = c_fix.rgb;\n' +
+        '        //     for (int k = 0; k < N; ++k) {\n' +
+        '        //         float w = texture2D(k0, vec2(0.5, 0.5) + v).x;\n\n' +
+        '        //         m[k] += vec4(c * w, w);\n' +
+        '        //         s[k] += c * c * w;\n\n' +
+        '        //         v *= X;\n' +
+        '        //         }\n' +
+        '        //     }\n' +
+        '        // }\n\n' +
+        '        const int max_x = 8;\n' +
+        '        const int max_y = 8;\n\n' +
+        '        for (int j = -max_y; j <= max_y; ++j) {\n' +
+        '            for (int i = -max_x; i <= max_x; ++i) {\n' +
+        '                vec2 v = SR * vec2(i,j);\n' +
+        '                if (dot(v,v) <= 0.25) {\n' +
+        '                vec4 c_fix = texture2D(src, src_uv + vec2(i,j) / src_size);\n' +
+        '                vec3 c = c_fix.rgb;\n' +
+        '                for (int k = 0; k < N; ++k) {\n' +
+        '                    float w = texture2D(k0, vec2(0.5, 0.5) + v).x;\n\n' +
+        '                    m[k] += vec4(c * w, w);\n' +
+        '                    s[k] += c * c * w;\n\n' +
+        '                    v *= X;\n' +
+        '                    }\n' +
+        '                }\n' +
+        '            }\n' +
+        '        }\n\n' +
+        '        vec4 o = vec4(0.0);\n' +
+        '        for (int k = 0; k < N; ++k) {\n' +
+        '            m[k].rgb /= m[k].w;\n' +
+        '            s[k] = abs(s[k] / m[k].w - m[k].rgb * m[k].rgb);\n\n' +
+        '            float sigma2 = s[k].r + s[k].g + s[k].b;\n' +
+        '            float w = 1.0 / (1.0 + pow(255.0 * sigma2, 0.5 * q));\n\n' +
+        '            o += vec4(m[k].rgb * w, w);\n' +
+        '        }\n\n' +
+        '        gl_FragColor = vec4(o.rgb / o.w, 1.0);\n' +
+        '    }else{\n' +
+        '        gl_FragColor = texture2D(src, src_uv);\n' +
+        '    }\n\n' +
+        '}\n',
+    'AKF-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'Anisotropic-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform sampler2D visual;\n' +
+        'uniform bool anisotropic;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'void main (void) {\n' +
+        '	vec2 uv = gl_FragCoord.xy /  vec2(cvsWidth, cvsHeight);\n' +
+        '	vec4 t = texture2D( src, uv );\n\n' +
+        '	if(anisotropic){\n' +
+        '		gl_FragColor = texture2D(visual, vec2(t.w,0.5));\n' +
+        '	}else{\n' +
+        '		gl_FragColor = texture2D(src, vTexCoord);\n' +
+        '	}\n' +
+        '}\n',
+    'Anisotropic-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'blurEffect-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
         'varying vec4      vColor;\n\n' +
@@ -1127,6 +1265,38 @@ var Shaders = {
         '	}\n' +
         '	vTextureCoord  = textureCoord;\n' +
         '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'Gaussian-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float sigma;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n\n' +
+        '    float twoSigma2 = 2.0 * 2.0 * 2.0;\n' +
+        '    const int halfWidth = 4;//int(ceil( 2.0 * sigma ));\n\n' +
+        '    vec3 sum = vec3(0.0);\n' +
+        '    float norm = 0.0;\n' +
+        '    for ( int i = -halfWidth; i <= halfWidth; ++i ) {\n' +
+        '        for ( int j = -halfWidth; j <= halfWidth; ++j ) {\n' +
+        '            float d = length(vec2(i,j));\n' +
+        '            float kernel = exp( -d *d / twoSigma2 );\n' +
+        '            vec3 c = texture2D(src, uv + vec2(i,j) / src_size ).rgb;\n' +
+        '            sum += kernel * c;\n' +
+        '            norm += kernel;\n' +
+        '        }\n' +
+        '    }\n' +
+        '    gl_FragColor = vec4(sum / norm, 1.0);\n' +
+        '}\n',
+    'Gaussian-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'gaussianFilter-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
@@ -2479,6 +2649,47 @@ var Shaders = {
         '    vColor = light + ambientColor;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'SST-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'const float redScale   = 0.298912;\n' +
+        'const float greenScale = 0.586611;\n' +
+        'const float blueScale  = 0.114478;\n' +
+        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / ' +
+        'src_size.y);\n' +
+        '    vec2 d = 1.0 / src_size;\n' +
+        '    vec3 c = texture2D(src, uv).xyz;\n\n' +
+        '    vec3 u = (\n' +
+        '        -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz +\n' +
+        '        -2.0 * texture2D(src, uv + vec2(-d.x,  0.0)).xyz + \n' +
+        '        -1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +\n' +
+        '        +1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +\n' +
+        '        +2.0 * texture2D(src, uv + vec2( d.x,  0.0)).xyz + \n' +
+        '        +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz\n' +
+        '        ) / 4.0;\n\n' +
+        '    vec3 v = (\n' +
+        '           -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz + \n' +
+        '           -2.0 * texture2D(src, uv + vec2( 0.0, -d.y)).xyz + \n' +
+        '           -1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +\n' +
+        '           +1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +\n' +
+        '           +2.0 * texture2D(src, uv + vec2( 0.0,  d.y)).xyz + \n' +
+        '           +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz\n' +
+        '           ) / 4.0;\n\n' +
+        '    gl_FragColor = vec4(dot(u, u), dot(v, v), dot(u, v), 1.0);\n' +
+        '}\n',
+    'SST-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'stencilBufferOutline-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
         'uniform bool      useTexture;\n' +
@@ -2556,6 +2767,38 @@ var Shaders = {
         '    vColor        = color;\n' +
         '    vTextureCoord = textureCoord;\n' +
         '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'TFM-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 uv = gl_FragCoord.xy / vec2(cvsWidth, cvsHeight);\n' +
+        '    vec3 g = texture2D(src, uv).xyz;\n\n' +
+        '    float lambda1 = 0.5 * (g.y + g.x + sqrt(g.y*g.y - 2.0*g.x*g.y + g.x*g.x + 4.' +
+        '0*g.z*g.z));\n' +
+        '    float lambda2 = 0.5 * (g.y + g.x - sqrt(g.y*g.y - 2.0*g.x*g.y + g.x*g.x + 4.' +
+        '0*g.z*g.z));\n\n' +
+        '    vec2 v = vec2(lambda1 - g.x, -g.z);\n' +
+        '    vec2 t;\n' +
+        '    if (length(v) > 0.0) { \n' +
+        '        t = normalize(v);\n' +
+        '    } else {\n' +
+        '        t = vec2(0.0, 1.0);\n' +
+        '    }\n\n' +
+        '    float phi = atan(t.y, t.x);\n\n' +
+        '    float A = (lambda1 + lambda2 > 0.0)?(lambda1 - lambda2) / (lambda1 + lambda2' +
+        ') : 0.0;\n' +
+        '    gl_FragColor = vec4(t, phi, A);\n' +
+        '}\n',
+    'TFM-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'toonShading-frag': 'precision mediump float;\n\n' +
         'uniform mat4      invMatrix;\n' +

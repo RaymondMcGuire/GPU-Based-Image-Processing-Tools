@@ -30,17 +30,21 @@ module EcognitaMathLib {
         format:any;
         glName:any;
         texture:any;
-        constructor( channels:number, isFloat:boolean, texels:any,texType:any=gl.REPEAT) {
+        constructor( channels:number, isFloat:boolean, texels:any,texType:any=gl.REPEAT,texInterpolation:any=gl.LINEAR,useMipmap:boolean=true) {
             this.type     = isFloat   ? gl.FLOAT         : gl.UNSIGNED_BYTE;
             this.format   = [gl.LUMINANCE, gl.RG, gl.RGB, gl.RGBA][channels - 1];
 
             this.glName = gl.createTexture();
             this.bind(this.glName);
             gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, texels);
-            gl.generateMipmap(gl.TEXTURE_2D);
 
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            if(useMipmap){
+                gl.generateMipmap(gl.TEXTURE_2D);
+            }
+            
+
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, texInterpolation);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, texInterpolation);
 			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, texType);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, texType);
             this.texture = this.glName;
@@ -384,6 +388,25 @@ module EcognitaMathLib {
             //texture settings
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    
+            //attach framebuff to texture
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
+    
+        }
+
+
+        renderToFloatTexure(){
+
+            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+    
+            //make sure we have enought memory to render the width x height size texture
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.FLOAT, null);
+    
+            //texture settings
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     

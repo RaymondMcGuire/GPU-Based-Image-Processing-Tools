@@ -47,7 +47,7 @@ class Gaussian:
                     gaussian_image[j,i,2]  = sumA[2]/w
         return gaussian_image
     
-    def sector_calc(self,kernel_size=32,smoothing=0.3333,N=8):
+    def sector_calc(self,kernel_size=32,smoothing=0.33333,N=8):
         sigma = 0.25 * (kernel_size - 1)
         sigma_r = sigma
         sigma_s = smoothing * sigma
@@ -86,5 +86,6 @@ class Gaussian:
         for j in range(kernel_size):
             for i in range(kernel_size):
                 g[j,i] /=mx
+                #g[j,i]*=255
         print("init gaussian function finished!")
         return g

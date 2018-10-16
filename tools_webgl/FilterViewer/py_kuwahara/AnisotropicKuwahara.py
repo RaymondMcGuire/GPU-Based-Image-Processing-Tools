@@ -10,7 +10,7 @@ import Gaussian as ga
 import cv2 as cv
 
 class AnisotropicKuwahara:
-    def __init__(self,image,sst,kernel_size=6,div_num=8,q=8.0,alpha=1.0):
+    def __init__(self,image,sst,kernel_size=7,div_num=8,q=8.0,alpha=1.0):
         self.sst = sst
         self.kernel_size = kernel_size
         self.image = image
@@ -43,12 +43,12 @@ class AnisotropicKuwahara:
                 else:
                     A[j,i] = (lambda1 - lambda2)/(lambda1 + lambda2)
                 
+                A[j,i] = 1
                 #visualization Anisotropic
                 anisotropic_image[j,i,0] = visual_image[0,int(255*A[j,i]),0]
                 anisotropic_image[j,i,1] = visual_image[0,int(255*A[j,i]),1]
                 anisotropic_image[j,i,2] = visual_image[0,int(255*A[j,i]),2]
-                
-            
+                     
                 PHI[j,i] = np.arctan2(-F, lambda1 - E)
 
         self.A = A
@@ -146,9 +146,9 @@ class AnisotropicKuwahara:
                     else:
                         v_var[d,2] = EPS
                         
-                    w0 = np.power(v_var[d,0],-self.q)
-                    w1 = np.power(v_var[d,1],-self.q)
-                    w2 = np.power(v_var[d,2],-self.q)
+                    w0 = 1/(1 + np.power(v_var[d,0],self.q))
+                    w1 = 1/(1 + np.power(v_var[d,1],self.q))
+                    w2 = 1/(1 + np.power(v_var[d,2],self.q))
                     
                     de[0] += w0 * v_sum[d,0]
                     de[1] += w1 * v_sum[d,1]
@@ -158,19 +158,21 @@ class AnisotropicKuwahara:
                     nu[1] += w1
                     nu[2] += w2
                     
+                    
                 if nu[0] > EPS:
                     valB = de[0]/nu[0]
                 else:
-                    valB = 0
+                    valB = self.image[j,i,0]
                 
                 if nu[1] > EPS:
                     valG = de[1]/nu[1]
                 else:
-                    valG = 0
+                    valG = self.image[j,i,1]
+                    
                 if nu[2] > EPS:
                     valR = de[2]/nu[2]
                 else:
-                    valR = 0
+                    valR = self.image[j,i,2]
                 
                 anisotropic_kuwahara_image[j,i,0] = int(valB)
                 anisotropic_kuwahara_image[j,i,1] = int(valG)
@@ -183,10 +185,10 @@ class AnisotropicKuwahara:
 #sst_func = SST.SST(img,SST.SST_TYPE.CLASSIC)
 #sst_image = sst_func.cal(9)
 
-#gaussian_func = ga.Gaussian()
-#gfilter = gaussian_func.sector_calc(32)
-
-aniso_kuwahara_func = AnisotropicKuwahara(img,sst_image)
-aniso_kuwahara_image = aniso_kuwahara_func.calc()
-cv.imwrite("./img/aniso_kuwahara_image.png",aniso_kuwahara_image)         
+gaussian_func = ga.Gaussian()
+gfilter = gaussian_func.sector_calc(32)
+cv.imwrite("./img/k0.png",gfilter)         
+#aniso_kuwahara_func = AnisotropicKuwahara(img,sst_image)
+#aniso_kuwahara_image = aniso_kuwahara_func.calc()
+#cv.imwrite("./img/aniso_kuwahara_image.png",aniso_kuwahara_image)         
 
