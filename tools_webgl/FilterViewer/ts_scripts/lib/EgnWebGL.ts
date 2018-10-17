@@ -38,7 +38,7 @@ module EcognitaWeb3D {
         ibo: Array<any>;
         MATRIX: Utils.HashSet<any>;
 
-        loadTexture(file_name: string, isFloat: boolean = false, glType: any = gl.CLAMP_TO_EDGE, glInterType: any = gl.LINEAR, useMipmap: boolean = true, channel:number=4) {
+        loadTexture(file_name: string, isFloat: boolean = false, glType: any = gl.CLAMP_TO_EDGE, glInterType: any = gl.LINEAR, useMipmap: boolean = true, channel: number = 4) {
             var tex = null;
             var image = EcognitaMathLib.imread(file_name);
             image.onload = (() => {
@@ -59,7 +59,7 @@ module EcognitaWeb3D {
 
             //check extension
             var ext = gl.getExtension('OES_texture_float');
-            if(ext == null){
+            if (ext == null) {
                 throw new Error("float texture not supported");
             }
         }
@@ -89,15 +89,15 @@ module EcognitaWeb3D {
 
         loadAssets() {
             //load demo texture
-            this.loadTexture("./image/k0.png", true, gl.CLAMP_TO_BORDER,gl.NEAREST,false);
+            this.loadTexture("./image/k0.png", true, gl.CLAMP_TO_BORDER, gl.NEAREST, false);
             this.loadTexture("./image/visual_rgb.png");
             //this.loadTexture("./image/cat.jpg", true, gl.CLAMP_TO_EDGE,gl.NEAREST);
-            this.loadTexture("./image/test1.jpg", false);
+            this.loadTexture("./image/lion.png", false);
             //this.loadTexture("./image/anim.png", true, gl.CLAMP_TO_EDGE, gl.NEAREST);
 
         }
 
-        loadExtraLibrary(ui_data:any) {
+        loadExtraLibrary(ui_data: any) {
             this.ui_data = ui_data;
             //load extral library
             this.uiUtil = new Utils.FilterViewerUI(this.ui_data);
@@ -111,7 +111,7 @@ module EcognitaWeb3D {
             //init shaders and uniLocations
             this.shaders = new Utils.HashSet<EcognitaMathLib.WebGL_Shader>();
             this.uniLocations = new Utils.HashSet<Array<any>>();
-            shaderlist.forEach( s => {
+            shaderlist.forEach(s => {
                 var shader = new EcognitaMathLib.WebGL_Shader(Shaders, s.name + "-vert", s.name + "-frag");
                 this.shaders.set(s.name, shader);
                 this.uniLocations.set(s.name, new Array<any>());

@@ -1,4 +1,4 @@
-{                
+{
     "shaderList": [
         {
             "name": "SST",
@@ -32,6 +32,7 @@
             "name": "Anisotropic",
             "uniforms": [
                 "mvpMatrix",
+                "tfm",
                 "src",
                 "visual",
                 "cvsHeight",

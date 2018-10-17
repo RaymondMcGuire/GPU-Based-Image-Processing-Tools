@@ -6,16 +6,17 @@
  *  
  * ========================================================================= */
 module EcognitaWeb3D {
-    export enum Filter{
+    export enum Filter {
         LAPLACIAN,
         SOBEL,
         GAUSSIAN,
         KUWAHARA,
         GKUWAHARA,
+        AKUWAHARA,
         ANISTROPIC
     }
 
-    export enum RenderPipeLine{
+    export enum RenderPipeLine {
         CONVOLUTION_FILTER,
         ANISTROPIC,
         BLOOM_EFFECT,

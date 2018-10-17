@@ -25,12 +25,12 @@ module EcognitaWeb3D {
         btnStatusList: Utils.HashSet<any>;
 
         constructor(cvs: any) {
-            
+
             super(cvs);
 
         }
 
-        regisButton(btn_data:any){
+        regisButton(btn_data: any) {
             this.btnStatusList = new Utils.HashSet<any>();
 
             //init button
@@ -45,19 +45,19 @@ module EcognitaWeb3D {
 
         }
 
-        regisUniforms(shader_data:any){
+        regisUniforms(shader_data: any) {
             shader_data.forEach(shader => {
                 var uniform_array = new Array<string>();
                 var shaderUniforms = shader.uniforms;
-                shaderUniforms.forEach( uniform => {
+                shaderUniforms.forEach(uniform => {
                     uniform_array.push(uniform);
                 });
                 this.settingUniform(shader.name, uniform_array);
             });
-            
+
         }
 
-        regisUserParam(user_config:any){
+        regisUserParam(user_config: any) {
             this.filterMvpMatrix = this.matUtil.identity(this.matUtil.create());
             this.usrPipeLine = RenderPipeLine[user_config.default_pipline];
             this.usrFilter = Filter[user_config.default_filter];
@@ -65,7 +65,7 @@ module EcognitaWeb3D {
             this.usrParams = user_config.user_params;
         }
 
-        initialize(ui_data:any,shader_data:any,button_data:any,user_config:any){
+        initialize(ui_data: any, shader_data: any, button_data: any, user_config: any) {
 
             this.initGlobalVariables();
             this.loadAssets();
@@ -170,14 +170,16 @@ module EcognitaWeb3D {
                 gl.uniform1f(GKuwaharaFilterUniformLoc[4], this.canvas.width);
                 gl.uniform1i(GKuwaharaFilterUniformLoc[5], this.btnStatusList.get("f_GeneralizedKuwaharaFilter"));
             } else if (this.usrFilter == Filter.ANISTROPIC) {
-                // var AnisotropicFilterUniformLoc = this.uniLocations.get("Anisotropic");
-                // gl.uniformMatrix4fv(AnisotropicFilterUniformLoc[0], false, this.filterMvpMatrix);
-                // gl.uniform1i(AnisotropicFilterUniformLoc[1], 0);
-                // gl.uniform1i(AnisotropicFilterUniformLoc[2], 1);
-                // gl.uniform1f(AnisotropicFilterUniformLoc[3], this.canvas.height);
-                // gl.uniform1f(AnisotropicFilterUniformLoc[4], this.canvas.width);
-                // gl.uniform1i(AnisotropicFilterUniformLoc[5], this.btnStatusList.get("f_AnisotropicKuwahara"));
+                var AnisotropicFilterUniformLoc = this.uniLocations.get("Anisotropic");
+                gl.uniformMatrix4fv(AnisotropicFilterUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(AnisotropicFilterUniformLoc[1], 0);
+                gl.uniform1i(AnisotropicFilterUniformLoc[2], 1);
+                gl.uniform1i(AnisotropicFilterUniformLoc[3], 2);
+                gl.uniform1f(AnisotropicFilterUniformLoc[4], this.canvas.height);
+                gl.uniform1f(AnisotropicFilterUniformLoc[5], this.canvas.width);
+                gl.uniform1i(AnisotropicFilterUniformLoc[6], this.btnStatusList.get("f_VisualAnisotropic"));
 
+            } else if (this.usrFilter == Filter.AKUWAHARA) {
                 var AKFUniformLoc = this.uniLocations.get("AKF");
                 gl.uniformMatrix4fv(AKFUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(AKFUniformLoc[1], 0);
@@ -360,7 +362,7 @@ module EcognitaWeb3D {
 
                 //rendering parts----------------------------------------------------------------------------------
 
-                var inTex = this.Texture.get("./image/test1.jpg");
+                var inTex = this.Texture.get("./image/lion.png");
 
                 if (this.usrPipeLine == RenderPipeLine.CONVOLUTION_FILTER) {
                     //---------------------using framebuffer1 to render scene and save result to texture0
@@ -485,13 +487,24 @@ module EcognitaWeb3D {
 
                 } else if (this.usrPipeLine == RenderPipeLine.ANISTROPIC) {
 
-                    //save k0 texture to tex2
-                    var k0Tex = this.Texture.get("./image/k0.png");
-                    if (k0Tex != undefined) {
-                        gl.activeTexture(gl.TEXTURE2);
-                        k0Tex.bind(k0Tex.texture);
+
+                    if (this.usrFilter == Filter.ANISTROPIC) {
+                        var visTex = this.Texture.get("./image/visual_rgb.png");
+                        if (visTex != undefined) {
+                            gl.activeTexture(gl.TEXTURE2);
+                            visTex.bind(visTex.texture);
+                        }
+                    } else if (this.usrFilter == Filter.AKUWAHARA) {
+                        //save k0 texture to tex2
+                        var k0Tex = this.Texture.get("./image/k0.png");
+                        if (k0Tex != undefined) {
+                            gl.activeTexture(gl.TEXTURE2);
+                            k0Tex.bind(k0Tex.texture);
+                        }
                     }
-                    
+
+
+
                     //render SRC
                     frameBuffer1.bindFrameBuffer();
                     RenderSimpleScene();
@@ -556,20 +569,16 @@ module EcognitaWeb3D {
 
                     gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
 
-                    // gl.activeTexture(gl.TEXTURE1);
-                    // var visTex = this.Texture.get("./image/visual_rgb.png");
-                    // if(visTex != undefined && this.ui_data.useTexture){  
-                    //     visTex.bind(visTex.texture);
-                    // }
                     frameBuffer1.bindFrameBuffer();
                     RenderSimpleScene();
                     //save original texture to tex1
                     gl.activeTexture(gl.TEXTURE1);
                     if (inTex != undefined && this.ui_data.useTexture) {
                         inTex.bind(inTex.texture);
-                    }else{
+                    } else {
                         gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
                     }
+
 
                     //render Anisotropic
                     this.filterShader.bind();
