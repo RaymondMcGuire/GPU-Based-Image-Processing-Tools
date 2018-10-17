@@ -548,47 +548,6 @@ var Shaders = {
         '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n'                       +
         '}\n',
 
-    'Gaussian-frag':
-        '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n'                     +
-        'precision mediump float;\n\n'                                           +
-
-        'uniform sampler2D src;\n'                                               +
-        'uniform float sigma;\n'                                                 +
-        'uniform float cvsHeight;\n'                                             +
-        'uniform float cvsWidth;\n\n'                                            +
-
-        'void main (void) {\n'                                                   +
-        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n'                       +
-        '    vec2 uv = gl_FragCoord.xy / src_size;\n\n'                          +
-
-        '    float twoSigma2 = 2.0 * 2.0 * 2.0;\n'                               +
-        '    const int halfWidth = 4;//int(ceil( 2.0 * sigma ));\n\n'            +
-
-        '    vec3 sum = vec3(0.0);\n'                                            +
-        '    float norm = 0.0;\n'                                                +
-        '    for ( int i = -halfWidth; i <= halfWidth; ++i ) {\n'                +
-        '        for ( int j = -halfWidth; j <= halfWidth; ++j ) {\n'            +
-        '            float d = length(vec2(i,j));\n'                             +
-        '            float kernel = exp( -d *d / twoSigma2 );\n'                 +
-        '            vec3 c = texture2D(src, uv + vec2(i,j) / src_size ).rgb;\n' +
-        '            sum += kernel * c;\n'                                       +
-        '            norm += kernel;\n'                                          +
-        '        }\n'                                                            +
-        '    }\n'                                                                +
-        '    gl_FragColor = vec4(sum / norm, 1.0);\n'                            +
-        '}\n',
-
-    'Gaussian-vert':
-        'attribute vec3 position;\n'                        +
-        'attribute vec2 texCoord;\n'                        +
-        'uniform   mat4 mvpMatrix;\n'                       +
-        'varying   vec2 vTexCoord;\n\n'                     +
-
-        'void main(void){\n'                                +
-        '	vTexCoord   = texCoord;\n'                        +
-        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
-        '}\n',
-
     'gaussianFilter-frag':
         'precision mediump float;\n\n'                                                     +
 
@@ -695,6 +654,47 @@ var Shaders = {
         '}\n',
 
     'gaussianFilter-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
+    'Gaussian_K-frag':
+        '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n'                     +
+        'precision mediump float;\n\n'                                           +
+
+        'uniform sampler2D src;\n'                                               +
+        'uniform float sigma;\n'                                                 +
+        'uniform float cvsHeight;\n'                                             +
+        'uniform float cvsWidth;\n\n'                                            +
+
+        'void main (void) {\n'                                                   +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n'                       +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n\n'                          +
+
+        '    float twoSigma2 = 2.0 * 2.0 * 2.0;\n'                               +
+        '    const int halfWidth = 4;//int(ceil( 2.0 * sigma ));\n\n'            +
+
+        '    vec3 sum = vec3(0.0);\n'                                            +
+        '    float norm = 0.0;\n'                                                +
+        '    for ( int i = -halfWidth; i <= halfWidth; ++i ) {\n'                +
+        '        for ( int j = -halfWidth; j <= halfWidth; ++j ) {\n'            +
+        '            float d = length(vec2(i,j));\n'                             +
+        '            float kernel = exp( -d *d / twoSigma2 );\n'                 +
+        '            vec3 c = texture2D(src, uv + vec2(i,j) / src_size ).rgb;\n' +
+        '            sum += kernel * c;\n'                                       +
+        '            norm += kernel;\n'                                          +
+        '        }\n'                                                            +
+        '    }\n'                                                                +
+        '    gl_FragColor = vec4(sum / norm, 1.0);\n'                            +
+        '}\n',
+
+    'Gaussian_K-vert':
         'attribute vec3 position;\n'                        +
         'attribute vec2 texCoord;\n'                        +
         'uniform   mat4 mvpMatrix;\n'                       +
