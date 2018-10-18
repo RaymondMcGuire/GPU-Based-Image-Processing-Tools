@@ -1,10 +1,7 @@
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    }
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -103,7 +100,8 @@ var EcognitaWeb3D;
         Filter[Filter["GAUSSIAN"] = 2] = "GAUSSIAN";
         Filter[Filter["KUWAHARA"] = 3] = "KUWAHARA";
         Filter[Filter["GKUWAHARA"] = 4] = "GKUWAHARA";
-        Filter[Filter["ANISTROPIC"] = 5] = "ANISTROPIC";
+        Filter[Filter["AKUWAHARA"] = 5] = "AKUWAHARA";
+        Filter[Filter["ANISTROPIC"] = 6] = "ANISTROPIC";
     })(Filter = EcognitaWeb3D.Filter || (EcognitaWeb3D.Filter = {}));
     var RenderPipeLine;
     (function (RenderPipeLine) {
@@ -1013,32 +1011,8 @@ var Shaders = {
         '        mat2 R = mat2(cos_phi, -sin_phi, sin_phi, cos_phi);\n' +
         '        mat2 S = mat2(0.5/a, 0.0, 0.0, 0.5/b);\n' +
         '        mat2 SR = S * R;\n\n' +
-        '        // int max_x = int(sqrt(a*a * cos_phi*cos_phi +\n' +
-        '        //                     b*b * sin_phi*sin_phi));\n' +
-        '        // int max_y = int(sqrt(a*a * sin_phi*sin_phi +\n' +
-        '        //                     b*b * cos_phi*cos_phi));\n\n' +
-        '        // const int MAX_ITERATIONS = 100;\n' +
-        '        // int numBreak = (2*max_x+1) * (2*max_y+1);\n\n' +
-        '        // for (int i = 0; i <= MAX_ITERATIONS; i += 1) {\n' +
-        '        //     if(i>=numBreak){break;}\n\n' +
-        '        //     int i_idx = (i - (int(i / (max_x*2+1)))*(max_x*2+1)) - max_x;\n' +
-        '        //     int j_idx = (int(i / (max_x*2+1))) - max_y;\n' +
-        '        //     vec2 v = SR * vec2(i_idx,j_idx);\n\n' +
-        '        //     float lim = 0.25*255.0;\n' +
-        '        //     if (dot(v,v) <= lim) {\n' +
-        '        //     vec4 c_fix = texture2D(src, src_uv + vec2(i_idx,j_idx) / src_size' +
-        ');\n' +
-        '        //     vec3 c = c_fix.rgb;\n' +
-        '        //     for (int k = 0; k < N; ++k) {\n' +
-        '        //         float w = texture2D(k0, vec2(0.5, 0.5) + v).x;\n\n' +
-        '        //         m[k] += vec4(c * w, w);\n' +
-        '        //         s[k] += c * c * w;\n\n' +
-        '        //         v *= X;\n' +
-        '        //         }\n' +
-        '        //     }\n' +
-        '        // }\n\n' +
-        '        const int max_x = 8;\n' +
-        '        const int max_y = 8;\n\n' +
+        '        const int max_x = 6;\n' +
+        '        const int max_y = 6;\n\n' +
         '        for (int j = -max_y; j <= max_y; ++j) {\n' +
         '            for (int i = -max_x; i <= max_x; ++i) {\n' +
         '                vec2 v = SR * vec2(i,j);\n' +
@@ -1078,18 +1052,22 @@ var Shaders = {
     'Anisotropic-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
         'precision mediump float;\n\n' +
         'uniform sampler2D src;\n' +
+        'uniform sampler2D tfm;\n' +
         'uniform sampler2D visual;\n' +
         'uniform bool anisotropic;\n' +
         'uniform float cvsHeight;\n' +
         'uniform float cvsWidth;\n' +
         'varying vec2 vTexCoord;\n\n' +
         'void main (void) {\n' +
-        '	vec2 uv = gl_FragCoord.xy /  vec2(cvsWidth, cvsHeight);\n' +
-        '	vec4 t = texture2D( src, uv );\n\n' +
+        '	vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '	vec2 uv = gl_FragCoord.xy /  src_size;\n' +
+        '	vec4 t = texture2D( tfm, uv );\n' +
+        '	vec2 src_uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) /' +
+        ' src_size.y);\n' +
         '	if(anisotropic){\n' +
         '		gl_FragColor = texture2D(visual, vec2(t.w,0.5));\n' +
         '	}else{\n' +
-        '		gl_FragColor = texture2D(src, vTexCoord);\n' +
+        '		gl_FragColor = texture2D(src, src_uv);\n' +
         '	}\n' +
         '}\n',
     'Anisotropic-vert': 'attribute vec3 position;\n' +
@@ -3308,7 +3286,7 @@ var EcognitaWeb3D;
             this.loadTexture("./image/k0.png", true, gl.CLAMP_TO_BORDER, gl.NEAREST, false);
             this.loadTexture("./image/visual_rgb.png");
             //this.loadTexture("./image/cat.jpg", true, gl.CLAMP_TO_EDGE,gl.NEAREST);
-            this.loadTexture("./image/test1.jpg", false);
+            this.loadTexture("./image/lion.png", false);
             //this.loadTexture("./image/anim.png", true, gl.CLAMP_TO_EDGE, gl.NEAREST);
         };
         WebGLEnv.prototype.loadExtraLibrary = function (ui_data) {
@@ -3478,13 +3456,16 @@ var EcognitaWeb3D;
                 gl.uniform1i(GKuwaharaFilterUniformLoc[5], this.btnStatusList.get("f_GeneralizedKuwaharaFilter"));
             }
             else if (this.usrFilter == EcognitaWeb3D.Filter.ANISTROPIC) {
-                // var AnisotropicFilterUniformLoc = this.uniLocations.get("Anisotropic");
-                // gl.uniformMatrix4fv(AnisotropicFilterUniformLoc[0], false, this.filterMvpMatrix);
-                // gl.uniform1i(AnisotropicFilterUniformLoc[1], 0);
-                // gl.uniform1i(AnisotropicFilterUniformLoc[2], 1);
-                // gl.uniform1f(AnisotropicFilterUniformLoc[3], this.canvas.height);
-                // gl.uniform1f(AnisotropicFilterUniformLoc[4], this.canvas.width);
-                // gl.uniform1i(AnisotropicFilterUniformLoc[5], this.btnStatusList.get("f_AnisotropicKuwahara"));
+                var AnisotropicFilterUniformLoc = this.uniLocations.get("Anisotropic");
+                gl.uniformMatrix4fv(AnisotropicFilterUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(AnisotropicFilterUniformLoc[1], 0);
+                gl.uniform1i(AnisotropicFilterUniformLoc[2], 1);
+                gl.uniform1i(AnisotropicFilterUniformLoc[3], 2);
+                gl.uniform1f(AnisotropicFilterUniformLoc[4], this.canvas.height);
+                gl.uniform1f(AnisotropicFilterUniformLoc[5], this.canvas.width);
+                gl.uniform1i(AnisotropicFilterUniformLoc[6], this.btnStatusList.get("f_VisualAnisotropic"));
+            }
+            else if (this.usrFilter == EcognitaWeb3D.Filter.AKUWAHARA) {
                 var AKFUniformLoc = this.uniLocations.get("AKF");
                 gl.uniformMatrix4fv(AKFUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(AKFUniformLoc[1], 0);
@@ -3635,7 +3616,7 @@ var EcognitaWeb3D;
                 _this.filterMvpMatrix = m.multiply(pMatrix, vMatrix);
                 //--------------------------------------animation global variables
                 //rendering parts----------------------------------------------------------------------------------
-                var inTex = _this.Texture.get("./image/test1.jpg");
+                var inTex = _this.Texture.get("./image/lion.png");
                 if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER) {
                     //---------------------using framebuffer1 to render scene and save result to texture0
                     frameBuffer1.bindFrameBuffer();
@@ -3748,11 +3729,20 @@ var EcognitaWeb3D;
                     ibo_board.draw(gl.TRIANGLES);
                 }
                 else if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.ANISTROPIC) {
-                    //save k0 texture to tex2
-                    var k0Tex = _this.Texture.get("./image/k0.png");
-                    if (k0Tex != undefined) {
-                        gl.activeTexture(gl.TEXTURE2);
-                        k0Tex.bind(k0Tex.texture);
+                    if (_this.usrFilter == EcognitaWeb3D.Filter.ANISTROPIC) {
+                        var visTex = _this.Texture.get("./image/visual_rgb.png");
+                        if (visTex != undefined) {
+                            gl.activeTexture(gl.TEXTURE2);
+                            visTex.bind(visTex.texture);
+                        }
+                    }
+                    else if (_this.usrFilter == EcognitaWeb3D.Filter.AKUWAHARA) {
+                        //save k0 texture to tex2
+                        var k0Tex = _this.Texture.get("./image/k0.png");
+                        if (k0Tex != undefined) {
+                            gl.activeTexture(gl.TEXTURE2);
+                            k0Tex.bind(k0Tex.texture);
+                        }
                     }
                     //render SRC
                     frameBuffer1.bindFrameBuffer();
@@ -3808,11 +3798,6 @@ var EcognitaWeb3D;
                     gl.uniform1f(uniLocation_TFM[3], _this.canvas.width);
                     ibo_board.draw(gl.TRIANGLES);
                     gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
-                    // gl.activeTexture(gl.TEXTURE1);
-                    // var visTex = this.Texture.get("./image/visual_rgb.png");
-                    // if(visTex != undefined && this.ui_data.useTexture){  
-                    //     visTex.bind(visTex.texture);
-                    // }
                     frameBuffer1.bindFrameBuffer();
                     RenderSimpleScene();
                     //save original texture to tex1

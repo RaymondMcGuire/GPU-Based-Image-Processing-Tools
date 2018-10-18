@@ -864,32 +864,8 @@ var Shaders = {
         '        mat2 R = mat2(cos_phi, -sin_phi, sin_phi, cos_phi);\n' +
         '        mat2 S = mat2(0.5/a, 0.0, 0.0, 0.5/b);\n' +
         '        mat2 SR = S * R;\n\n' +
-        '        // int max_x = int(sqrt(a*a * cos_phi*cos_phi +\n' +
-        '        //                     b*b * sin_phi*sin_phi));\n' +
-        '        // int max_y = int(sqrt(a*a * sin_phi*sin_phi +\n' +
-        '        //                     b*b * cos_phi*cos_phi));\n\n' +
-        '        // const int MAX_ITERATIONS = 100;\n' +
-        '        // int numBreak = (2*max_x+1) * (2*max_y+1);\n\n' +
-        '        // for (int i = 0; i <= MAX_ITERATIONS; i += 1) {\n' +
-        '        //     if(i>=numBreak){break;}\n\n' +
-        '        //     int i_idx = (i - (int(i / (max_x*2+1)))*(max_x*2+1)) - max_x;\n' +
-        '        //     int j_idx = (int(i / (max_x*2+1))) - max_y;\n' +
-        '        //     vec2 v = SR * vec2(i_idx,j_idx);\n\n' +
-        '        //     float lim = 0.25*255.0;\n' +
-        '        //     if (dot(v,v) <= lim) {\n' +
-        '        //     vec4 c_fix = texture2D(src, src_uv + vec2(i_idx,j_idx) / src_size' +
-        ');\n' +
-        '        //     vec3 c = c_fix.rgb;\n' +
-        '        //     for (int k = 0; k < N; ++k) {\n' +
-        '        //         float w = texture2D(k0, vec2(0.5, 0.5) + v).x;\n\n' +
-        '        //         m[k] += vec4(c * w, w);\n' +
-        '        //         s[k] += c * c * w;\n\n' +
-        '        //         v *= X;\n' +
-        '        //         }\n' +
-        '        //     }\n' +
-        '        // }\n\n' +
-        '        const int max_x = 8;\n' +
-        '        const int max_y = 8;\n\n' +
+        '        const int max_x = 6;\n' +
+        '        const int max_y = 6;\n\n' +
         '        for (int j = -max_y; j <= max_y; ++j) {\n' +
         '            for (int i = -max_x; i <= max_x; ++i) {\n' +
         '                vec2 v = SR * vec2(i,j);\n' +
@@ -929,18 +905,22 @@ var Shaders = {
     'Anisotropic-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
         'precision mediump float;\n\n' +
         'uniform sampler2D src;\n' +
+        'uniform sampler2D tfm;\n' +
         'uniform sampler2D visual;\n' +
         'uniform bool anisotropic;\n' +
         'uniform float cvsHeight;\n' +
         'uniform float cvsWidth;\n' +
         'varying vec2 vTexCoord;\n\n' +
         'void main (void) {\n' +
-        '	vec2 uv = gl_FragCoord.xy /  vec2(cvsWidth, cvsHeight);\n' +
-        '	vec4 t = texture2D( src, uv );\n\n' +
+        '	vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '	vec2 uv = gl_FragCoord.xy /  src_size;\n' +
+        '	vec4 t = texture2D( tfm, uv );\n' +
+        '	vec2 src_uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) /' +
+        ' src_size.y);\n' +
         '	if(anisotropic){\n' +
         '		gl_FragColor = texture2D(visual, vec2(t.w,0.5));\n' +
         '	}else{\n' +
-        '		gl_FragColor = texture2D(src, vTexCoord);\n' +
+        '		gl_FragColor = texture2D(src, src_uv);\n' +
         '	}\n' +
         '}\n',
     'Anisotropic-vert': 'attribute vec3 position;\n' +

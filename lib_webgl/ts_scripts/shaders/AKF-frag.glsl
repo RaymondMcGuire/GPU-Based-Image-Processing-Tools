@@ -42,38 +42,8 @@ void main (void) {
         mat2 S = mat2(0.5/a, 0.0, 0.0, 0.5/b);
         mat2 SR = S * R;
 
-        // int max_x = int(sqrt(a*a * cos_phi*cos_phi +
-        //                     b*b * sin_phi*sin_phi));
-        // int max_y = int(sqrt(a*a * sin_phi*sin_phi +
-        //                     b*b * cos_phi*cos_phi));
-
-        // const int MAX_ITERATIONS = 100;
-        // int numBreak = (2*max_x+1) * (2*max_y+1);
-
-        // for (int i = 0; i <= MAX_ITERATIONS; i += 1) {
-        //     if(i>=numBreak){break;}
-
-        //     int i_idx = (i - (int(i / (max_x*2+1)))*(max_x*2+1)) - max_x;
-        //     int j_idx = (int(i / (max_x*2+1))) - max_y;
-        //     vec2 v = SR * vec2(i_idx,j_idx);
-
-        //     float lim = 0.25*255.0;
-        //     if (dot(v,v) <= lim) {
-        //     vec4 c_fix = texture2D(src, src_uv + vec2(i_idx,j_idx) / src_size);
-        //     vec3 c = c_fix.rgb;
-        //     for (int k = 0; k < N; ++k) {
-        //         float w = texture2D(k0, vec2(0.5, 0.5) + v).x;
-
-        //         m[k] += vec4(c * w, w);
-        //         s[k] += c * c * w;
-
-        //         v *= X;
-        //         }
-        //     }
-        // }
-
-        const int max_x = 8;
-        const int max_y = 8;
+        const int max_x = 6;
+        const int max_y = 6;
 
         for (int j = -max_y; j <= max_y; ++j) {
             for (int i = -max_x; i <= max_x; ++i) {
