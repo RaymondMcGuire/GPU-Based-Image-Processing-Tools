@@ -9,31 +9,30 @@
     <link rel="shortcut icon" href="./image/encognita.ico">
     <title>FilterViewer</title>
 
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO"
-        crossorigin="anonymous">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
     <link href="./css/image-picker.css" rel="stylesheet">
     <link href="./css/main.css" rel="stylesheet">
 </head>
 
 <body>
 
-    <main role="main" class="container">
+
+
+
+    <div class="container">
+        <div id="select_gallery">
+            <select class="image-picker">
+                    <option data-img-src="./image/lion.png" data-img-class="first" value="./image/lion.png" ></option>
+                    <option data-img-src="./image/anim.png"  value="./image/anim.png" ></option>
+                    <option data-img-src="./image/cat.jpg"  data-img-class="last" value="./image/cat.jpg" ></option>
+            </select>
+        </div>
         <canvas id="canvas_viewer"></canvas>
-        <select class="image-picker">
-            <option data-img-src="./image/anim.png" data-img-class="first" data-img-alt="Page 1" value="1">  Page 1  </option>
-            <option data-img-src="./image/anim.png" data-img-alt="Page 2" value="2">  Page 2  </option>
-            <option data-img-src="./image/anim.png" data-img-alt="Page 3" value="3">  Page 3  </option>
-            <option data-img-src="./image/anim.png" data-img-alt="Page 4" value="4">  Page 4  </option>
-            <option data-img-src="./image/anim.png" data-img-alt="Page 5" value="5">  Page 5  </option>
-            <option data-img-src="./image/anim.png" data-img-alt="Page 6" value="6">  Page 6  </option>
-            <option data-img-src="./image/anim.png" data-img-alt="Page 7" value="7">  Page 7  </option>
-            <option data-img-src="./image/anim.png" data-img-alt="Page 8" value="8">  Page 8  </option>
-            <option data-img-src="./image/anim.png" data-img-alt="Page 9" value="9">  Page 9  </option>
-            <option data-img-src="./image/anim.png" data-img-alt="Page 10" value="10"> Page 10 </option>
-            <option data-img-src="./image/anim.png" data-img-alt="Page 11" value="11"> Page 11 </option>
-            <option data-img-src="./image/anim.png" data-img-alt="Page 12" data-img-class="last" value="12"> Page 12 </option>
-          </select>
-    </main>
+    </div>
+    <!-- 
+    <div class="row">
+
+    </div> -->
 
 
     <!-- extra library -->
@@ -43,18 +42,13 @@
     <script src="./scripts/extlib/jquery-3.3.1.min.js" type="text/javascript"></script>
     <script src="./scripts/extlib/image-picker.min.js" type="text/javascript"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
-        crossorigin="anonymous"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
-        crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js" integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous"></script>
 
     <!-- filter viewer -->
     <script src="./scripts/FilterViewer.min.js" type="text/javascript"></script>
     <!-- <script src="./scripts/main.js" type="text/javascript"></script> -->
 
-    <script>
-        $("select").imagepicker()
-    </script>
 </body>
 
 </html>

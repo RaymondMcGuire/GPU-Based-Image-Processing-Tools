@@ -1,10 +1,7 @@
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    }
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -3438,6 +3435,8 @@ var EcognitaWeb3D;
             this.loadTexture("./image/k0.png", true, gl.CLAMP_TO_BORDER, gl.NEAREST, false);
             this.loadTexture("./image/visual_rgb.png");
             this.loadTexture("./image/lion.png", false);
+            this.loadTexture("./image/anim.png", false);
+            this.loadTexture("./image/cat.jpg", false);
             this.loadTexture("./image/noise.png", false);
         };
         WebGLEnv.prototype.loadExtraLibrary = function (ui_data) {
@@ -3521,6 +3520,7 @@ var EcognitaWeb3D;
         FilterViewer.prototype.regisUserParam = function (user_config) {
             this.filterMvpMatrix = this.matUtil.identity(this.matUtil.create());
             this.usrParams = user_config.user_params;
+            this.usrSelected = user_config.user_selected;
             var default_btn_name = user_config.default_btn;
             var params = this.getReqQuery();
             if (params.p == null || params.f == null || params.s == null || params.b == null) {
@@ -3716,6 +3716,15 @@ var EcognitaWeb3D;
         };
         FilterViewer.prototype.regisEvent = function () {
             var _this = this;
+            //select event
+            $("select").imagepicker({
+                hide_select: true,
+                show_label: false,
+                selected: function () {
+                    _this.usrSelected = $("select").val();
+                }
+            });
+            //touch event
             var lastPosX = 0;
             var lastPosY = 0;
             var isDragging = false;
@@ -3809,7 +3818,7 @@ var EcognitaWeb3D;
                 _this.filterMvpMatrix = m.multiply(pMatrix, vMatrix);
                 //--------------------------------------animation global variables
                 //rendering parts----------------------------------------------------------------------------------
-                var inTex = _this.Texture.get("./image/lion.png");
+                var inTex = _this.Texture.get(_this.usrSelected);
                 if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER) {
                     //---------------------using framebuffer1 to render scene and save result to texture0
                     frameBuffer1.bindFrameBuffer();

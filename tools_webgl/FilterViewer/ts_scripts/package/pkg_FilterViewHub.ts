@@ -10,6 +10,7 @@
 
 module EcognitaWeb3D {
     declare var gl: any;
+    declare var $:any;
 
     export class FilterViewer extends WebGLEnv {
         usrFilter: any;
@@ -17,6 +18,7 @@ module EcognitaWeb3D {
 
         usrQuaternion: any;
         usrParams: any;
+        usrSelected:any;
         uiData:any;
 
         filterMvpMatrix: any;
@@ -79,6 +81,7 @@ module EcognitaWeb3D {
         regisUserParam(user_config: any) {
             this.filterMvpMatrix = this.matUtil.identity(this.matUtil.create());
             this.usrParams = user_config.user_params;
+            this.usrSelected = user_config.user_selected;
             var default_btn_name = user_config.default_btn;
 
             var params = <any>this.getReqQuery();
@@ -289,7 +292,17 @@ module EcognitaWeb3D {
             }
         }
 
-        regisEvent() {
+        regisEvent() {  
+            //select event
+            $("select").imagepicker({
+                hide_select: true,
+                show_label: false,
+                selected: ()=> {
+                    this.usrSelected = $("select").val();
+                }
+            })
+
+            //touch event
             var lastPosX = 0;
             var lastPosY = 0;
             var isDragging = false;
@@ -408,8 +421,7 @@ module EcognitaWeb3D {
 
                 //rendering parts----------------------------------------------------------------------------------
 
-                var inTex = this.Texture.get("./image/lion.png");
-
+                var inTex = this.Texture.get(this.usrSelected);
                 if (this.usrPipeLine == RenderPipeLine.CONVOLUTION_FILTER) {
                     //---------------------using framebuffer1 to render scene and save result to texture0
                     frameBuffer1.bindFrameBuffer();
