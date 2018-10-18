@@ -635,8 +635,6 @@ module EcognitaWeb3D {
                     }
 
 
-
-
                     //render Anisotropic
                     this.filterShader.bind();
                     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
