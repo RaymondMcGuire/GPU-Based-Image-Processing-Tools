@@ -19,3 +19,8 @@ body {
   max-width: 512px;
   padding: 0 15px;
 }
+
+.image_picker_selector img{
+  height:125px;
+  width:125px;
+}

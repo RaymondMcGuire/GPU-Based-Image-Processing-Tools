@@ -10,6 +10,24 @@
             ]
         },
         {
+            "name": "ETF",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "cvsHeight",
+                "cvsWidth"
+            ]
+        },
+        {
+            "name": "TF",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "cvsHeight",
+                "cvsWidth"
+            ]
+        },
+        {
             "name": "Gaussian_K",
             "uniforms": [
                 "mvpMatrix",
@@ -137,6 +155,18 @@
                 "cvsHeight",
                 "cvsWidth",
                 "b_gkuwahara"
+            ]
+        },
+        {
+            "name": "LIC",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "sigma",
+                "cvsHeight",
+                "cvsWidth",
+                "b_lic"
             ]
         }
     ]

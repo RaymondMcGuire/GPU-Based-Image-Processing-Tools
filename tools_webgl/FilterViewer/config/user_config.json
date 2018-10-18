@@ -2,6 +2,7 @@
     "default_pipline":"CONVOLUTION_FILTER",
     "default_filter" :"SOBEL",
     "default_shader" :"sobelFilter",
+    "default_btn" :"f_SobelFilter",
     "user_params" : {
         "laplacianCoef": 
             [1.0,  1.0, 1.0,

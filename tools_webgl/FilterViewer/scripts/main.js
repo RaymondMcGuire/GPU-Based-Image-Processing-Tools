@@ -1,89 +1,16 @@
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var Utils;
-(function (Utils) {
-    ;
-    var HashSet = /** @class */ (function () {
-        function HashSet() {
-            this.items = {};
-        }
-        HashSet.prototype.set = function (key, value) {
-            this.items[key] = value;
-        };
-        HashSet.prototype["delete"] = function (key) {
-            return delete this.items[key];
-        };
-        HashSet.prototype.has = function (key) {
-            return key in this.items;
-        };
-        HashSet.prototype.get = function (key) {
-            return this.items[key];
-        };
-        HashSet.prototype.len = function () {
-            return Object.keys(this.items).length;
-        };
-        HashSet.prototype.forEach = function (f) {
-            for (var k in this.items) {
-                f(k, this.items[k]);
-            }
-        };
-        return HashSet;
-    }());
-    Utils.HashSet = HashSet;
-})(Utils || (Utils = {}));
-/// <reference path="../lib/HashSet.ts" />
-var Utils;
-(function (Utils) {
-    var FilterViewerUI = /** @class */ (function () {
-        function FilterViewerUI(data) {
-            var _this = this;
-            this.gui = new dat.gui.GUI();
-            this.data = data;
-            this.gui.remember(data);
-            this.uiController = new Utils.HashSet();
-            this.folderHashSet = new Utils.HashSet();
-            this.folderHashSet.set("f", "Filter");
-            //get all folder name
-            this.folderName = [];
-            this.folderHashSet.forEach(function (k, v) {
-                _this.folderName.push(k);
-            });
-            this.initData();
-            this.initFolder();
-        }
-        FilterViewerUI.prototype.initFolder = function () {
-            var _this = this;
-            this.folderName.forEach(function (fn) {
-                var f = _this.gui.addFolder(_this.folderHashSet.get(fn));
-                for (var key in _this.data) {
-                    //judge this key is in folder or not
-                    var f_name = key.split("_");
-                    if (key.includes('_') && f_name[0] == fn) {
-                        var c = f.add(_this.data, key).listen();
-                        _this.uiController.set(key, c);
-                    }
-                }
-            });
-        };
-        FilterViewerUI.prototype.initData = function () {
-            for (var key in this.data) {
-                if (!key.includes('_')) {
-                    this.gui.add(this.data, key);
-                }
-            }
-        };
-        return FilterViewerUI;
-    }());
-    Utils.FilterViewerUI = FilterViewerUI;
-})(Utils || (Utils = {}));
 /* =========================================================================
  *
  *  EgnType.ts
@@ -102,6 +29,8 @@ var EcognitaWeb3D;
         Filter[Filter["GKUWAHARA"] = 4] = "GKUWAHARA";
         Filter[Filter["AKUWAHARA"] = 5] = "AKUWAHARA";
         Filter[Filter["ANISTROPIC"] = 6] = "ANISTROPIC";
+        Filter[Filter["LIC"] = 7] = "LIC";
+        Filter[Filter["NOISELIC"] = 8] = "NOISELIC";
     })(Filter = EcognitaWeb3D.Filter || (EcognitaWeb3D.Filter = {}));
     var RenderPipeLine;
     (function (RenderPipeLine) {
@@ -991,9 +920,8 @@ var Shaders = {
         'const int N = 8;\n\n' +
         'void main (void) {\n' +
         '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
-        '    vec2 uv = gl_FragCoord.xy / src_size;\n' +
-        '	vec2 src_uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) /' +
-        ' src_size.y);\n\n' +
+        '	vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / src' +
+        '_size.y);\n\n' +
         '    if(anisotropic){\n' +
         '        vec4 m[8];\n' +
         '        vec3 s[8];\n' +
@@ -1017,7 +945,7 @@ var Shaders = {
         '            for (int i = -max_x; i <= max_x; ++i) {\n' +
         '                vec2 v = SR * vec2(i,j);\n' +
         '                if (dot(v,v) <= 0.25) {\n' +
-        '                vec4 c_fix = texture2D(src, src_uv + vec2(i,j) / src_size);\n' +
+        '                vec4 c_fix = texture2D(src, uv + vec2(i,j) / src_size);\n' +
         '                vec3 c = c_fix.rgb;\n' +
         '                for (int k = 0; k < N; ++k) {\n' +
         '                    float w = texture2D(k0, vec2(0.5, 0.5) + v).x;\n\n' +
@@ -1038,7 +966,7 @@ var Shaders = {
         '        }\n\n' +
         '        gl_FragColor = vec4(o.rgb / o.w, 1.0);\n' +
         '    }else{\n' +
-        '        gl_FragColor = texture2D(src, src_uv);\n' +
+        '        gl_FragColor = texture2D(src, uv);\n' +
         '    }\n\n' +
         '}\n',
     'AKF-vert': 'attribute vec3 position;\n' +
@@ -1060,14 +988,13 @@ var Shaders = {
         'varying vec2 vTexCoord;\n\n' +
         'void main (void) {\n' +
         '	vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
-        '	vec2 uv = gl_FragCoord.xy /  src_size;\n' +
-        '	vec4 t = texture2D( tfm, uv );\n' +
-        '	vec2 src_uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) /' +
-        ' src_size.y);\n' +
+        '	vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / src' +
+        '_size.y);\n' +
+        '	vec4 t = texture2D( tfm, uv );\n\n' +
         '	if(anisotropic){\n' +
         '		gl_FragColor = texture2D(visual, vec2(t.w,0.5));\n' +
         '	}else{\n' +
-        '		gl_FragColor = texture2D(src, src_uv);\n' +
+        '		gl_FragColor = texture2D(src, uv);\n' +
         '	}\n' +
         '}\n',
     'Anisotropic-vert': 'attribute vec3 position;\n' +
@@ -1338,6 +1265,48 @@ var Shaders = {
         '    float diffuse = clamp(dot(invLight,normal),0.1,1.0);\n' +
         '    vColor = color*vec4(vec3(diffuse),1.0) +ambientColor;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'ETF-frag': '// Edge Tangent Flow\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n' +
+        '    vec2 d = 1.0 / src_size;\n' +
+        '    vec3 c = texture2D(src, uv).xyz;\n' +
+        '    float gx = c.z;\n' +
+        '    vec2 tx = c.xy;\n' +
+        '    const float kERNEL = 5.0;\n' +
+        '    vec2 etf = vec2(0.0);\n' +
+        '    vec2 sum = vec2(0,0);\n' +
+        '    float weight = 0.0;\n' +
+        '    for(float j = -kERNEL ; j<kERNEL;j++){\n' +
+        '        for(float i=-kERNEL ; i<kERNEL;i++){\n' +
+        '            vec2 ty = texture2D(src, uv + vec2(i * d.x, j * d.y)).xy;\n' +
+        '            float wd = dot(tx,ty);\n' +
+        '            float gy = texture2D(src, uv + vec2(i * d.x, j * d.y)).z;\n' +
+        '            float wm = (gy - gx + 1.0)/2.0;\n\n' +
+        '            sum += ty * (wm * wd);\n' +
+        '            weight += wm * wd;\n' +
+        '        }\n' +
+        '    }\n\n' +
+        '    if(weight != 0.0){\n' +
+        '        etf = sum / weight;\n' +
+        '    }\n\n' +
+        '    float mag = sqrt(etf.x*etf.x + etf.y*etf.y);\n' +
+        '    float vx = etf.x/mag;\n' +
+        '    float vy = etf.y/mag;\n' +
+        '    gl_FragColor = vec4(vx,vy,mag, 1.0);\n' +
+        '}\n',
+    'ETF-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'filterScene-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +
@@ -2361,6 +2330,79 @@ var Shaders = {
         '	vTexCoord   = texCoord;\n' +
         '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'LIC-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform sampler2D tfm;\n\n' +
+        'uniform bool b_lic;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'uniform float sigma;\n\n' +
+        'struct lic_t { \n' +
+        '    vec2 p; \n' +
+        '    vec2 t;\n' +
+        '    float w;\n' +
+        '    float dw;\n' +
+        '};\n\n' +
+        'void step(inout lic_t s) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 t = texture2D(tfm, s.p).xy;\n' +
+        '    if (dot(t, s.t) < 0.0) t = -t;\n' +
+        '    s.t = t;\n\n' +
+        '    s.dw = (abs(t.x) > abs(t.y))? \n' +
+        '        abs((fract(s.p.x) - 0.5 - sign(t.x)) / t.x) : \n' +
+        '        abs((fract(s.p.y) - 0.5 - sign(t.y)) / t.y);\n\n' +
+        '    s.p += t * s.dw / src_size;\n' +
+        '    s.w += s.dw;\n' +
+        '}\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    float twoSigma2 = 2.0 * sigma * sigma;\n' +
+        '    float halfWidth = 2.0 * sigma;\n' +
+        '    vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / ' +
+        'src_size.y);\n\n' +
+        '    if(b_lic){\n' +
+        '        const int MAX_NUM_ITERATION = 99999;\n' +
+        '        vec3 c = texture2D( src, uv ).xyz;\n' +
+        '        float w = 1.0;\n\n' +
+        '        lic_t a, b;\n' +
+        '        a.p = b.p = uv;\n' +
+        '        a.t = texture2D( tfm, uv ).xy / src_size;\n' +
+        '        b.t = -a.t;\n' +
+        '        a.w = b.w = 0.0;\n\n' +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n' +
+        '            if (a.w < halfWidth) {\n' +
+        '                step(a);\n' +
+        '                float k = a.dw * exp(-a.w * a.w / twoSigma2);\n' +
+        '                c += k * texture2D(src, a.p).xyz;\n' +
+        '                w += k;\n' +
+        '            }else{\n' +
+        '                break;\n' +
+        '            }\n' +
+        '        }\n\n' +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n' +
+        '            if (b.w < halfWidth) {\n' +
+        '                step(b);\n' +
+        '                float k = b.dw * exp(-b.w * b.w / twoSigma2);\n' +
+        '                c += k * texture2D(src, b.p).xyz;\n' +
+        '                w += k;\n' +
+        '            }else{\n' +
+        '                break;\n' +
+        '            }\n' +
+        '        }\n\n' +
+        '        gl_FragColor = vec4(c / w, 1.0);\n' +
+        '    }else{\n' +
+        '        gl_FragColor = texture2D(src, uv);\n' +
+        '    }\n\n' +
+        '}\n',
+    'LIC-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'phong-frag': 'precision mediump float;\n\n' +
         'uniform mat4 invMatrix;\n' +
         'uniform vec3 lightDirection;\n' +
@@ -2781,16 +2823,10 @@ var Shaders = {
         'uniform sampler2D src;\n' +
         'uniform float cvsHeight;\n' +
         'uniform float cvsWidth;\n\n' +
-        'const float redScale   = 0.298912;\n' +
-        'const float greenScale = 0.586611;\n' +
-        'const float blueScale  = 0.114478;\n' +
-        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
         'void main (void) {\n' +
         '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
-        '    vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / ' +
-        'src_size.y);\n' +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n' +
         '    vec2 d = 1.0 / src_size;\n' +
-        '    vec3 c = texture2D(src, uv).xyz;\n\n' +
         '    vec3 u = (\n' +
         '        -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz +\n' +
         '        -2.0 * texture2D(src, uv + vec2(-d.x,  0.0)).xyz + \n' +
@@ -2894,6 +2930,46 @@ var Shaders = {
         '    vColor        = color;\n' +
         '    vTextureCoord = textureCoord;\n' +
         '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'TF-frag': '// Tangent Field\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n' +
+        '    vec2 d = 1.0 / src_size;\n' +
+        '    vec3 u = (\n' +
+        '        -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz +\n' +
+        '        -2.0 * texture2D(src, uv + vec2(-d.x,  0.0)).xyz + \n' +
+        '        -1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +\n' +
+        '        +1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +\n' +
+        '        +2.0 * texture2D(src, uv + vec2( d.x,  0.0)).xyz + \n' +
+        '        +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz\n' +
+        '        ) / 4.0;\n\n' +
+        '    vec3 v = (\n' +
+        '           -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz + \n' +
+        '           -2.0 * texture2D(src, uv + vec2( 0.0, -d.y)).xyz + \n' +
+        '           -1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +\n' +
+        '           +1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +\n' +
+        '           +2.0 * texture2D(src, uv + vec2( 0.0,  d.y)).xyz + \n' +
+        '           +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz\n' +
+        '           ) / 4.0;\n' +
+        '    float gu = (u.x + u.y + u.z)/3.0;\n' +
+        '    float gv = (v.x + v.y + v.z)/3.0;\n\n' +
+        '    float mag = sqrt(gu*gu+gv*gv);\n' +
+        '    float vx = gu/mag;\n' +
+        '    float vy = gv/mag;\n' +
+        '    gl_FragColor = vec4(-vy, vx, mag, 1.0);\n' +
+        '}\n',
+    'TF-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'TFM-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
         'precision mediump float;\n\n' +
@@ -3211,6 +3287,82 @@ var EcognitaMathLib;
     }());
     EcognitaMathLib.CubeModel = CubeModel;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
+var Utils;
+(function (Utils) {
+    ;
+    var HashSet = /** @class */ (function () {
+        function HashSet() {
+            this.items = {};
+        }
+        HashSet.prototype.set = function (key, value) {
+            this.items[key] = value;
+        };
+        HashSet.prototype["delete"] = function (key) {
+            return delete this.items[key];
+        };
+        HashSet.prototype.has = function (key) {
+            return key in this.items;
+        };
+        HashSet.prototype.get = function (key) {
+            return this.items[key];
+        };
+        HashSet.prototype.len = function () {
+            return Object.keys(this.items).length;
+        };
+        HashSet.prototype.forEach = function (f) {
+            for (var k in this.items) {
+                f(k, this.items[k]);
+            }
+        };
+        return HashSet;
+    }());
+    Utils.HashSet = HashSet;
+})(Utils || (Utils = {}));
+/// <reference path="../lib/HashSet.ts" />
+var Utils;
+(function (Utils) {
+    var FilterViewerUI = /** @class */ (function () {
+        function FilterViewerUI(data) {
+            var _this = this;
+            this.gui = new dat.gui.GUI();
+            this.data = data;
+            this.gui.remember(data);
+            this.uiController = new Utils.HashSet();
+            this.folderHashSet = new Utils.HashSet();
+            this.folderHashSet.set("f", "Filter");
+            //get all folder name
+            this.folderName = [];
+            this.folderHashSet.forEach(function (k, v) {
+                _this.folderName.push(k);
+            });
+            this.initData();
+            this.initFolder();
+        }
+        FilterViewerUI.prototype.initFolder = function () {
+            var _this = this;
+            this.folderName.forEach(function (fn) {
+                var f = _this.gui.addFolder(_this.folderHashSet.get(fn));
+                for (var key in _this.data) {
+                    //judge this key is in folder or not
+                    var f_name = key.split("_");
+                    if (key.includes('_') && f_name[0] == fn) {
+                        var c = f.add(_this.data, key).listen();
+                        _this.uiController.set(key, c);
+                    }
+                }
+            });
+        };
+        FilterViewerUI.prototype.initData = function () {
+            for (var key in this.data) {
+                if (!key.includes('_')) {
+                    this.gui.add(this.data, key);
+                }
+            }
+        };
+        return FilterViewerUI;
+    }());
+    Utils.FilterViewerUI = FilterViewerUI;
+})(Utils || (Utils = {}));
 /* =========================================================================
  *
  *  EgnWebGL.ts
@@ -3227,7 +3379,7 @@ var EcognitaMathLib;
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_shaders.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_model.ts" />
 /// <reference path="../lib/HashSet.ts" />
-/// <reference path="../lib/FilterViewerUi.ts" />
+/// <reference path="../lib/EgnFilterViewerUI.ts" />
 var EcognitaWeb3D;
 (function (EcognitaWeb3D) {
     var WebGLEnv = /** @class */ (function () {
@@ -3285,9 +3437,8 @@ var EcognitaWeb3D;
             //load demo texture
             this.loadTexture("./image/k0.png", true, gl.CLAMP_TO_BORDER, gl.NEAREST, false);
             this.loadTexture("./image/visual_rgb.png");
-            //this.loadTexture("./image/cat.jpg", true, gl.CLAMP_TO_EDGE,gl.NEAREST);
             this.loadTexture("./image/lion.png", false);
-            //this.loadTexture("./image/anim.png", true, gl.CLAMP_TO_EDGE, gl.NEAREST);
+            this.loadTexture("./image/noise.png", false);
         };
         WebGLEnv.prototype.loadExtraLibrary = function (ui_data) {
             this.ui_data = ui_data;
@@ -3319,7 +3470,6 @@ var EcognitaWeb3D;
  *  v0.1
  *
  * ========================================================================= */
-/// <reference path="../lib/FilterViewerUI.ts" />
 /// <reference path="../lib/EgnType.ts" />
 /// <reference path="../lib/EgnWebGL.ts" />
 var EcognitaWeb3D;
@@ -3329,6 +3479,22 @@ var EcognitaWeb3D;
         function FilterViewer(cvs) {
             return _super.call(this, cvs) || this;
         }
+        FilterViewer.prototype.getReqQuery = function () {
+            if (window.location.href.split('?').length == 1) {
+                return {};
+            }
+            var queryString = window.location.href.split('?')[1];
+            var queryObj = {};
+            if (queryString != '') {
+                var querys = queryString.split("&");
+                for (var i = 0; i < querys.length; i++) {
+                    var key = querys[i].split('=')[0];
+                    var value = querys[i].split('=')[1];
+                    queryObj[key] = value;
+                }
+            }
+            return queryObj;
+        };
         FilterViewer.prototype.regisButton = function (btn_data) {
             var _this = this;
             this.btnStatusList = new Utils.HashSet();
@@ -3354,20 +3520,32 @@ var EcognitaWeb3D;
         };
         FilterViewer.prototype.regisUserParam = function (user_config) {
             this.filterMvpMatrix = this.matUtil.identity(this.matUtil.create());
-            this.usrPipeLine = EcognitaWeb3D.RenderPipeLine[user_config.default_pipline];
-            this.usrFilter = EcognitaWeb3D.Filter[user_config.default_filter];
-            this.filterShader = this.shaders.get(user_config.default_shader);
             this.usrParams = user_config.user_params;
+            var default_btn_name = user_config.default_btn;
+            var params = this.getReqQuery();
+            if (params.p == null || params.f == null || params.s == null || params.b == null) {
+                this.usrPipeLine = EcognitaWeb3D.RenderPipeLine[user_config.default_pipline];
+                this.usrFilter = EcognitaWeb3D.Filter[user_config.default_filter];
+                this.filterShader = this.shaders.get(user_config.default_shader);
+            }
+            else {
+                this.usrPipeLine = EcognitaWeb3D.RenderPipeLine[params.p];
+                this.usrFilter = EcognitaWeb3D.Filter[params.f];
+                this.filterShader = this.shaders.get(params.s);
+                default_btn_name = params.b;
+            }
+            this.uiData[default_btn_name] = true;
         };
         FilterViewer.prototype.initialize = function (ui_data, shader_data, button_data, user_config) {
+            this.uiData = ui_data;
             this.initGlobalVariables();
             this.loadAssets();
-            this.loadExtraLibrary(ui_data);
             this.loadInternalLibrary(shader_data.shaderList);
-            this.initGlobalMatrix();
-            this.regisButton(button_data.buttonList);
             this.regisUniforms(shader_data.shaderList);
             this.regisUserParam(user_config);
+            this.loadExtraLibrary(ui_data);
+            this.initGlobalMatrix();
+            this.regisButton(button_data.buttonList);
             this.initModel();
             this.regisEvent();
             this.settingRenderPipeline();
@@ -3477,6 +3655,21 @@ var EcognitaWeb3D;
                 gl.uniform1f(AKFUniformLoc[7], this.canvas.height);
                 gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
                 gl.uniform1i(AKFUniformLoc[9], this.btnStatusList.get("f_AnisotropicKuwahara"));
+            }
+            else if (this.usrFilter == EcognitaWeb3D.Filter.LIC || this.usrFilter == EcognitaWeb3D.Filter.NOISELIC) {
+                var LICUniformLoc = this.uniLocations.get("LIC");
+                gl.uniformMatrix4fv(LICUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(LICUniformLoc[1], 0);
+                gl.uniform1i(LICUniformLoc[2], 1);
+                gl.uniform1f(LICUniformLoc[3], 3.0);
+                gl.uniform1f(LICUniformLoc[4], this.canvas.height);
+                gl.uniform1f(LICUniformLoc[5], this.canvas.width);
+                if (this.usrFilter == EcognitaWeb3D.Filter.LIC) {
+                    gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_LIC"));
+                }
+                else if (this.usrFilter == EcognitaWeb3D.Filter.NOISELIC) {
+                    gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_NoiseLIC"));
+                }
             }
         };
         FilterViewer.prototype.settingFrameBuffer = function (frameBufferName) {
@@ -3802,11 +3995,19 @@ var EcognitaWeb3D;
                     RenderSimpleScene();
                     //save original texture to tex1
                     gl.activeTexture(gl.TEXTURE1);
-                    if (inTex != undefined && _this.ui_data.useTexture) {
-                        inTex.bind(inTex.texture);
+                    if (_this.usrFilter == EcognitaWeb3D.Filter.NOISELIC) {
+                        var noiseTex = _this.Texture.get("./image/noise.png");
+                        if (noiseTex != undefined) {
+                            noiseTex.bind(noiseTex.texture);
+                        }
                     }
                     else {
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        if (inTex != undefined && _this.ui_data.useTexture) {
+                            inTex.bind(inTex.texture);
+                        }
+                        else {
+                            gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        }
                     }
                     //render Anisotropic
                     _this.filterShader.bind();

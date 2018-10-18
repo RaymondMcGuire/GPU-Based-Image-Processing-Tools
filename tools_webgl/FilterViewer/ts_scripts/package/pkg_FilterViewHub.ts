@@ -5,7 +5,6 @@
  *  v0.1
  *  
  * ========================================================================= */
-/// <reference path="../lib/FilterViewerUI.ts" />
 /// <reference path="../lib/EgnType.ts" />
 /// <reference path="../lib/EgnWebGL.ts" />
 
@@ -18,6 +17,7 @@ module EcognitaWeb3D {
 
         usrQuaternion: any;
         usrParams: any;
+        uiData:any;
 
         filterMvpMatrix: any;
         filterShader: any;
@@ -28,6 +28,25 @@ module EcognitaWeb3D {
 
             super(cvs);
 
+        }
+
+        getReqQuery() {
+            if (window.location.href.split('?').length == 1) {
+                return {};
+            }
+            var queryString = window.location.href.split('?')[1];
+        
+            var queryObj = {};
+        
+            if (queryString != '') {
+                var querys = queryString.split("&");
+                for (var i = 0; i < querys.length; i++) {
+                    var key = querys[i].split('=')[0];
+                    var value = querys[i].split('=')[1];
+                    queryObj[key] = value;
+                }
+            }
+            return queryObj;
         }
 
         regisButton(btn_data: any) {
@@ -59,23 +78,35 @@ module EcognitaWeb3D {
 
         regisUserParam(user_config: any) {
             this.filterMvpMatrix = this.matUtil.identity(this.matUtil.create());
-            this.usrPipeLine = RenderPipeLine[user_config.default_pipline];
-            this.usrFilter = Filter[user_config.default_filter];
-            this.filterShader = this.shaders.get(user_config.default_shader);
             this.usrParams = user_config.user_params;
+            var default_btn_name = user_config.default_btn;
+
+            var params = <any>this.getReqQuery();
+            if (params.p == null || params.f == null || params.s == null || params.b == null) {
+                this.usrPipeLine = RenderPipeLine[user_config.default_pipline];
+                this.usrFilter = Filter[user_config.default_filter];
+                this.filterShader = this.shaders.get(user_config.default_shader);
+            }else{
+                this.usrPipeLine = RenderPipeLine[params.p];
+                this.usrFilter = Filter[params.f];
+                this.filterShader = this.shaders.get(params.s);
+                default_btn_name = params.b;
+            }
+
+            this.uiData[default_btn_name] = true;
         }
 
         initialize(ui_data: any, shader_data: any, button_data: any, user_config: any) {
+            this.uiData = ui_data;
 
             this.initGlobalVariables();
             this.loadAssets();
-            this.loadExtraLibrary(ui_data);
             this.loadInternalLibrary(shader_data.shaderList);
-            this.initGlobalMatrix();
-
-            this.regisButton(button_data.buttonList);
             this.regisUniforms(shader_data.shaderList);
             this.regisUserParam(user_config);
+            this.loadExtraLibrary(ui_data);
+            this.initGlobalMatrix();
+            this.regisButton(button_data.buttonList);
             this.initModel();
             this.regisEvent();
             this.settingRenderPipeline();
@@ -191,6 +222,21 @@ module EcognitaWeb3D {
                 gl.uniform1f(AKFUniformLoc[7], this.canvas.height);
                 gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
                 gl.uniform1i(AKFUniformLoc[9], this.btnStatusList.get("f_AnisotropicKuwahara"));
+            } else if(this.usrFilter == Filter.LIC || this.usrFilter == Filter.NOISELIC){
+                var LICUniformLoc = this.uniLocations.get("LIC");
+                gl.uniformMatrix4fv(LICUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(LICUniformLoc[1], 0);
+                gl.uniform1i(LICUniformLoc[2], 1);
+                gl.uniform1f(LICUniformLoc[3], 3.0);
+                gl.uniform1f(LICUniformLoc[4], this.canvas.height);
+                gl.uniform1f(LICUniformLoc[5], this.canvas.width);
+
+                if(this.usrFilter == Filter.LIC){
+                    gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_LIC"));  
+                }else if(this.usrFilter == Filter.NOISELIC){
+                    gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_NoiseLIC"));  
+                }
+                
             }
         }
 
@@ -573,10 +619,19 @@ module EcognitaWeb3D {
                     RenderSimpleScene();
                     //save original texture to tex1
                     gl.activeTexture(gl.TEXTURE1);
-                    if (inTex != undefined && this.ui_data.useTexture) {
-                        inTex.bind(inTex.texture);
-                    } else {
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+
+                    if(this.usrFilter == Filter.NOISELIC){
+
+                        var noiseTex = this.Texture.get("./image/noise.png");
+                        if (noiseTex != undefined) {
+                            noiseTex.bind(noiseTex.texture);
+                        }
+                    }else{
+                        if (inTex != undefined && this.ui_data.useTexture) {
+                            inTex.bind(inTex.texture);
+                        } else {
+                            gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        }
                     }
 
 

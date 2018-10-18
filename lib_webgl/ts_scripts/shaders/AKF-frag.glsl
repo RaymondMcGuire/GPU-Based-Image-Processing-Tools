@@ -17,8 +17,7 @@ const int N = 8;
 
 void main (void) {
     vec2 src_size = vec2(cvsWidth, cvsHeight);
-    vec2 uv = gl_FragCoord.xy / src_size;
-	vec2 src_uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / src_size.y);
+	vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / src_size.y);
 
     if(anisotropic){
         vec4 m[8];
@@ -49,7 +48,7 @@ void main (void) {
             for (int i = -max_x; i <= max_x; ++i) {
                 vec2 v = SR * vec2(i,j);
                 if (dot(v,v) <= 0.25) {
-                vec4 c_fix = texture2D(src, src_uv + vec2(i,j) / src_size);
+                vec4 c_fix = texture2D(src, uv + vec2(i,j) / src_size);
                 vec3 c = c_fix.rgb;
                 for (int k = 0; k < N; ++k) {
                     float w = texture2D(k0, vec2(0.5, 0.5) + v).x;
@@ -76,7 +75,7 @@ void main (void) {
 
         gl_FragColor = vec4(o.rgb / o.w, 1.0);
     }else{
-        gl_FragColor = texture2D(src, src_uv);
+        gl_FragColor = texture2D(src, uv);
     }
 
 }
