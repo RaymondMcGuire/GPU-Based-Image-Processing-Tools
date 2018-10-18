@@ -47,6 +47,12 @@
       "pipline": "ANISTROPIC",
       "filter": "ANISTROPIC",
       "shader": "Anisotropic"
+    },
+    {
+      "name": "f_LIC",
+      "pipline": "ANISTROPIC",
+      "filter": "LIC",
+      "shader": "LIC"
     }
   ]
 }

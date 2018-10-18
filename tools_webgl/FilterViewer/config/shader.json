@@ -138,6 +138,18 @@
                 "cvsWidth",
                 "b_gkuwahara"
             ]
+        },
+        {
+            "name": "LIC",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "sigma",
+                "cvsHeight",
+                "cvsWidth",
+                "b_lic"
+            ]
         }
     ]
 }

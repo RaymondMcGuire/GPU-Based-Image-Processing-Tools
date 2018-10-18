@@ -12,7 +12,7 @@ const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);
 
 void main (void) {
     vec2 src_size = vec2(cvsWidth, cvsHeight);
-    vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / src_size.y);
+    vec2 uv = gl_FragCoord.xy / src_size;
     vec2 d = 1.0 / src_size;
     vec3 c = texture2D(src, uv).xyz;
 

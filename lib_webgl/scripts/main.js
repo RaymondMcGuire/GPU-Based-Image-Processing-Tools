@@ -844,9 +844,8 @@ var Shaders = {
         'const int N = 8;\n\n' +
         'void main (void) {\n' +
         '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
-        '    vec2 uv = gl_FragCoord.xy / src_size;\n' +
-        '	vec2 src_uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) /' +
-        ' src_size.y);\n\n' +
+        '	vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / src' +
+        '_size.y);\n\n' +
         '    if(anisotropic){\n' +
         '        vec4 m[8];\n' +
         '        vec3 s[8];\n' +
@@ -870,7 +869,7 @@ var Shaders = {
         '            for (int i = -max_x; i <= max_x; ++i) {\n' +
         '                vec2 v = SR * vec2(i,j);\n' +
         '                if (dot(v,v) <= 0.25) {\n' +
-        '                vec4 c_fix = texture2D(src, src_uv + vec2(i,j) / src_size);\n' +
+        '                vec4 c_fix = texture2D(src, uv + vec2(i,j) / src_size);\n' +
         '                vec3 c = c_fix.rgb;\n' +
         '                for (int k = 0; k < N; ++k) {\n' +
         '                    float w = texture2D(k0, vec2(0.5, 0.5) + v).x;\n\n' +
@@ -891,7 +890,7 @@ var Shaders = {
         '        }\n\n' +
         '        gl_FragColor = vec4(o.rgb / o.w, 1.0);\n' +
         '    }else{\n' +
-        '        gl_FragColor = texture2D(src, src_uv);\n' +
+        '        gl_FragColor = texture2D(src, uv);\n' +
         '    }\n\n' +
         '}\n',
     'AKF-vert': 'attribute vec3 position;\n' +
@@ -913,14 +912,13 @@ var Shaders = {
         'varying vec2 vTexCoord;\n\n' +
         'void main (void) {\n' +
         '	vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
-        '	vec2 uv = gl_FragCoord.xy /  src_size;\n' +
-        '	vec4 t = texture2D( tfm, uv );\n' +
-        '	vec2 src_uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) /' +
-        ' src_size.y);\n' +
+        '	vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / src' +
+        '_size.y);\n' +
+        '	vec4 t = texture2D( tfm, uv );\n\n' +
         '	if(anisotropic){\n' +
         '		gl_FragColor = texture2D(visual, vec2(t.w,0.5));\n' +
         '	}else{\n' +
-        '		gl_FragColor = texture2D(src, src_uv);\n' +
+        '		gl_FragColor = texture2D(src, uv);\n' +
         '	}\n' +
         '}\n',
     'Anisotropic-vert': 'attribute vec3 position;\n' +
@@ -2214,6 +2212,79 @@ var Shaders = {
         '	vTexCoord   = texCoord;\n' +
         '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'LIC-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform sampler2D tfm;\n\n' +
+        'uniform bool b_lic;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'uniform float sigma;\n\n' +
+        'struct lic_t { \n' +
+        '    vec2 p; \n' +
+        '    vec2 t;\n' +
+        '    float w;\n' +
+        '    float dw;\n' +
+        '};\n\n' +
+        'void step(inout lic_t s) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 t = texture2D(tfm, s.p).xy;\n' +
+        '    if (dot(t, s.t) < 0.0) t = -t;\n' +
+        '    s.t = t;\n\n' +
+        '    s.dw = (abs(t.x) > abs(t.y))? \n' +
+        '        abs((fract(s.p.x) - 0.5 - sign(t.x)) / t.x) : \n' +
+        '        abs((fract(s.p.y) - 0.5 - sign(t.y)) / t.y);\n\n' +
+        '    s.p += t * s.dw / src_size;\n' +
+        '    s.w += s.dw;\n' +
+        '}\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    float twoSigma2 = 2.0 * sigma * sigma;\n' +
+        '    float halfWidth = 2.0 * sigma;\n' +
+        '    vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / ' +
+        'src_size.y);\n\n' +
+        '    if(b_lic){\n' +
+        '        const int MAX_NUM_ITERATION = 99999;\n' +
+        '        vec3 c = texture2D( src, uv ).xyz;\n' +
+        '        float w = 1.0;\n\n' +
+        '        lic_t a, b;\n' +
+        '        a.p = b.p = uv;\n' +
+        '        a.t = texture2D( tfm, uv ).xy / src_size;\n' +
+        '        b.t = -a.t;\n' +
+        '        a.w = b.w = 0.0;\n\n' +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n' +
+        '            if (a.w < halfWidth) {\n' +
+        '                step(a);\n' +
+        '                float k = a.dw * exp(-a.w * a.w / twoSigma2);\n' +
+        '                c += k * texture2D(src, a.p).xyz;\n' +
+        '                w += k;\n' +
+        '            }else{\n' +
+        '                break;\n' +
+        '            }\n' +
+        '        }\n\n' +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n' +
+        '            if (b.w < halfWidth) {\n' +
+        '                step(b);\n' +
+        '                float k = b.dw * exp(-b.w * b.w / twoSigma2);\n' +
+        '                c += k * texture2D(src, b.p).xyz;\n' +
+        '                w += k;\n' +
+        '            }else{\n' +
+        '                break;\n' +
+        '            }\n' +
+        '        }\n\n' +
+        '        gl_FragColor = vec4(c / w, 1.0);\n' +
+        '    }else{\n' +
+        '        gl_FragColor = texture2D(src, uv);\n' +
+        '    }\n\n' +
+        '}\n',
+    'LIC-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'phong-frag': 'precision mediump float;\n\n' +
         'uniform mat4 invMatrix;\n' +
         'uniform vec3 lightDirection;\n' +
@@ -2640,8 +2711,7 @@ var Shaders = {
         'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
         'void main (void) {\n' +
         '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
-        '    vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / ' +
-        'src_size.y);\n' +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n' +
         '    vec2 d = 1.0 / src_size;\n' +
         '    vec3 c = texture2D(src, uv).xyz;\n\n' +
         '    vec3 u = (\n' +

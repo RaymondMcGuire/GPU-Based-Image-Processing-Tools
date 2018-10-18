@@ -13,7 +13,8 @@ module EcognitaWeb3D {
         KUWAHARA,
         GKUWAHARA,
         AKUWAHARA,
-        ANISTROPIC
+        ANISTROPIC,
+        LIC
     }
 
     export enum RenderPipeLine {

@@ -1,11 +1,12 @@
 {
     "name": "Filter Viewer",
-    "useTexture": false,
+    "useTexture": true,
     "f_BloomEffect": false,
     "f_VisualAnisotropic": false,
+    "f_LIC": false,
     "f_LaplacianFilter": false,
     "f_GaussianFilter": false,
-    "f_SobelFilter": true,
+    "f_SobelFilter": false,
     "f_KuwaharaFilter": false,
     "f_GeneralizedKuwaharaFilter": false,
     "f_AnisotropicKuwahara": false
