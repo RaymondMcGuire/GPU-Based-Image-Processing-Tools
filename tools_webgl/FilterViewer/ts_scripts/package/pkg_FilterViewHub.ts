@@ -222,7 +222,7 @@ module EcognitaWeb3D {
                 gl.uniform1f(AKFUniformLoc[7], this.canvas.height);
                 gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
                 gl.uniform1i(AKFUniformLoc[9], this.btnStatusList.get("f_AnisotropicKuwahara"));
-            } else if(this.usrFilter == Filter.LIC){
+            } else if(this.usrFilter == Filter.LIC || this.usrFilter == Filter.NOISELIC){
                 var LICUniformLoc = this.uniLocations.get("LIC");
                 gl.uniformMatrix4fv(LICUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(LICUniformLoc[1], 0);
@@ -230,7 +230,13 @@ module EcognitaWeb3D {
                 gl.uniform1f(LICUniformLoc[3], 3.0);
                 gl.uniform1f(LICUniformLoc[4], this.canvas.height);
                 gl.uniform1f(LICUniformLoc[5], this.canvas.width);
-                gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_LIC"));  
+
+                if(this.usrFilter == Filter.LIC){
+                    gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_LIC"));  
+                }else if(this.usrFilter == Filter.NOISELIC){
+                    gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_NoiseLIC"));  
+                }
+                
             }
         }
 
@@ -613,11 +619,22 @@ module EcognitaWeb3D {
                     RenderSimpleScene();
                     //save original texture to tex1
                     gl.activeTexture(gl.TEXTURE1);
-                    if (inTex != undefined && this.ui_data.useTexture) {
-                        inTex.bind(inTex.texture);
-                    } else {
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+
+                    if(this.usrFilter == Filter.NOISELIC){
+
+                        var noiseTex = this.Texture.get("./image/noise.png");
+                        if (noiseTex != undefined) {
+                            noiseTex.bind(noiseTex.texture);
+                        }
+                    }else{
+                        if (inTex != undefined && this.ui_data.useTexture) {
+                            inTex.bind(inTex.texture);
+                        } else {
+                            gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        }
                     }
+
+
 
 
                     //render Anisotropic

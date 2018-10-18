@@ -14,7 +14,8 @@ module EcognitaWeb3D {
         GKUWAHARA,
         AKUWAHARA,
         ANISTROPIC,
-        LIC
+        LIC,
+        NOISELIC
     }
 
     export enum RenderPipeLine {

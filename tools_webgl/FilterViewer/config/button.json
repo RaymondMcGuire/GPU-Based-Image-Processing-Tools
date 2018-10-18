@@ -53,6 +53,12 @@
       "pipline": "ANISTROPIC",
       "filter": "LIC",
       "shader": "LIC"
+    },
+    {
+      "name": "f_NoiseLIC",
+      "pipline": "ANISTROPIC",
+      "filter": "NOISELIC",
+      "shader": "LIC"
     }
   ]
 }

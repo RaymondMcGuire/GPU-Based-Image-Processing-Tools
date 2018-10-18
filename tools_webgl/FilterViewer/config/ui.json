@@ -4,6 +4,7 @@
     "f_BloomEffect": false,
     "f_VisualAnisotropic": false,
     "f_LIC": false,
+    "f_NoiseLIC": false,
     "f_LaplacianFilter": false,
     "f_GaussianFilter": false,
     "f_SobelFilter": false,

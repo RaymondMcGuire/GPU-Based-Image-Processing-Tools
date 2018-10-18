@@ -30,6 +30,7 @@ var EcognitaWeb3D;
         Filter[Filter["AKUWAHARA"] = 5] = "AKUWAHARA";
         Filter[Filter["ANISTROPIC"] = 6] = "ANISTROPIC";
         Filter[Filter["LIC"] = 7] = "LIC";
+        Filter[Filter["NOISELIC"] = 8] = "NOISELIC";
     })(Filter = EcognitaWeb3D.Filter || (EcognitaWeb3D.Filter = {}));
     var RenderPipeLine;
     (function (RenderPipeLine) {
@@ -1264,6 +1265,48 @@ var Shaders = {
         '    float diffuse = clamp(dot(invLight,normal),0.1,1.0);\n' +
         '    vColor = color*vec4(vec3(diffuse),1.0) +ambientColor;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'ETF-frag': '// Edge Tangent Flow\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n' +
+        '    vec2 d = 1.0 / src_size;\n' +
+        '    vec3 c = texture2D(src, uv).xyz;\n' +
+        '    float gx = c.z;\n' +
+        '    vec2 tx = c.xy;\n' +
+        '    const float kERNEL = 5.0;\n' +
+        '    vec2 etf = vec2(0.0);\n' +
+        '    vec2 sum = vec2(0,0);\n' +
+        '    float weight = 0.0;\n' +
+        '    for(float j = -kERNEL ; j<kERNEL;j++){\n' +
+        '        for(float i=-kERNEL ; i<kERNEL;i++){\n' +
+        '            vec2 ty = texture2D(src, uv + vec2(i * d.x, j * d.y)).xy;\n' +
+        '            float wd = dot(tx,ty);\n' +
+        '            float gy = texture2D(src, uv + vec2(i * d.x, j * d.y)).z;\n' +
+        '            float wm = (gy - gx + 1.0)/2.0;\n\n' +
+        '            sum += ty * (wm * wd);\n' +
+        '            weight += wm * wd;\n' +
+        '        }\n' +
+        '    }\n\n' +
+        '    if(weight != 0.0){\n' +
+        '        etf = sum / weight;\n' +
+        '    }\n\n' +
+        '    float mag = sqrt(etf.x*etf.x + etf.y*etf.y);\n' +
+        '    float vx = etf.x/mag;\n' +
+        '    float vy = etf.y/mag;\n' +
+        '    gl_FragColor = vec4(vx,vy,mag, 1.0);\n' +
+        '}\n',
+    'ETF-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'filterScene-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +
@@ -2780,15 +2823,10 @@ var Shaders = {
         'uniform sampler2D src;\n' +
         'uniform float cvsHeight;\n' +
         'uniform float cvsWidth;\n\n' +
-        'const float redScale   = 0.298912;\n' +
-        'const float greenScale = 0.586611;\n' +
-        'const float blueScale  = 0.114478;\n' +
-        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
         'void main (void) {\n' +
         '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
         '    vec2 uv = gl_FragCoord.xy / src_size;\n' +
         '    vec2 d = 1.0 / src_size;\n' +
-        '    vec3 c = texture2D(src, uv).xyz;\n\n' +
         '    vec3 u = (\n' +
         '        -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz +\n' +
         '        -2.0 * texture2D(src, uv + vec2(-d.x,  0.0)).xyz + \n' +
@@ -2892,6 +2930,46 @@ var Shaders = {
         '    vColor        = color;\n' +
         '    vTextureCoord = textureCoord;\n' +
         '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'TF-frag': '// Tangent Field\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n' +
+        '    vec2 d = 1.0 / src_size;\n' +
+        '    vec3 u = (\n' +
+        '        -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz +\n' +
+        '        -2.0 * texture2D(src, uv + vec2(-d.x,  0.0)).xyz + \n' +
+        '        -1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +\n' +
+        '        +1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +\n' +
+        '        +2.0 * texture2D(src, uv + vec2( d.x,  0.0)).xyz + \n' +
+        '        +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz\n' +
+        '        ) / 4.0;\n\n' +
+        '    vec3 v = (\n' +
+        '           -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz + \n' +
+        '           -2.0 * texture2D(src, uv + vec2( 0.0, -d.y)).xyz + \n' +
+        '           -1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +\n' +
+        '           +1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +\n' +
+        '           +2.0 * texture2D(src, uv + vec2( 0.0,  d.y)).xyz + \n' +
+        '           +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz\n' +
+        '           ) / 4.0;\n' +
+        '    float gu = (u.x + u.y + u.z)/3.0;\n' +
+        '    float gv = (v.x + v.y + v.z)/3.0;\n\n' +
+        '    float mag = sqrt(gu*gu+gv*gv);\n' +
+        '    float vx = gu/mag;\n' +
+        '    float vy = gv/mag;\n' +
+        '    gl_FragColor = vec4(-vy, vx, mag, 1.0);\n' +
+        '}\n',
+    'TF-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'TFM-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
         'precision mediump float;\n\n' +
@@ -3359,9 +3437,8 @@ var EcognitaWeb3D;
             //load demo texture
             this.loadTexture("./image/k0.png", true, gl.CLAMP_TO_BORDER, gl.NEAREST, false);
             this.loadTexture("./image/visual_rgb.png");
-            //this.loadTexture("./image/cat.jpg", true, gl.CLAMP_TO_EDGE,gl.NEAREST);
             this.loadTexture("./image/lion.png", false);
-            //this.loadTexture("./image/anim.png", true, gl.CLAMP_TO_EDGE, gl.NEAREST);
+            this.loadTexture("./image/noise.png", false);
         };
         WebGLEnv.prototype.loadExtraLibrary = function (ui_data) {
             this.ui_data = ui_data;
@@ -3579,7 +3656,7 @@ var EcognitaWeb3D;
                 gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
                 gl.uniform1i(AKFUniformLoc[9], this.btnStatusList.get("f_AnisotropicKuwahara"));
             }
-            else if (this.usrFilter == EcognitaWeb3D.Filter.LIC) {
+            else if (this.usrFilter == EcognitaWeb3D.Filter.LIC || this.usrFilter == EcognitaWeb3D.Filter.NOISELIC) {
                 var LICUniformLoc = this.uniLocations.get("LIC");
                 gl.uniformMatrix4fv(LICUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(LICUniformLoc[1], 0);
@@ -3587,7 +3664,12 @@ var EcognitaWeb3D;
                 gl.uniform1f(LICUniformLoc[3], 3.0);
                 gl.uniform1f(LICUniformLoc[4], this.canvas.height);
                 gl.uniform1f(LICUniformLoc[5], this.canvas.width);
-                gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_LIC"));
+                if (this.usrFilter == EcognitaWeb3D.Filter.LIC) {
+                    gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_LIC"));
+                }
+                else if (this.usrFilter == EcognitaWeb3D.Filter.NOISELIC) {
+                    gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_NoiseLIC"));
+                }
             }
         };
         FilterViewer.prototype.settingFrameBuffer = function (frameBufferName) {
@@ -3913,11 +3995,19 @@ var EcognitaWeb3D;
                     RenderSimpleScene();
                     //save original texture to tex1
                     gl.activeTexture(gl.TEXTURE1);
-                    if (inTex != undefined && _this.ui_data.useTexture) {
-                        inTex.bind(inTex.texture);
+                    if (_this.usrFilter == EcognitaWeb3D.Filter.NOISELIC) {
+                        var noiseTex = _this.Texture.get("./image/noise.png");
+                        if (noiseTex != undefined) {
+                            noiseTex.bind(noiseTex.texture);
+                        }
                     }
                     else {
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        if (inTex != undefined && _this.ui_data.useTexture) {
+                            inTex.bind(inTex.texture);
+                        }
+                        else {
+                            gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        }
                     }
                     //render Anisotropic
                     _this.filterShader.bind();

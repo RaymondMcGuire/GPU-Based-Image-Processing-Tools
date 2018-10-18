@@ -10,6 +10,24 @@
             ]
         },
         {
+            "name": "ETF",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "cvsHeight",
+                "cvsWidth"
+            ]
+        },
+        {
+            "name": "TF",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "cvsHeight",
+                "cvsWidth"
+            ]
+        },
+        {
             "name": "Gaussian_K",
             "uniforms": [
                 "mvpMatrix",

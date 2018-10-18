@@ -1,4 +1,4 @@
-// by Jan Eric Kyprianidis <www.kyprianidis.com>
+// Tangent Field
 precision mediump float;
 
 uniform sampler2D src;
@@ -26,6 +26,11 @@ void main (void) {
            +2.0 * texture2D(src, uv + vec2( 0.0,  d.y)).xyz + 
            +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz
            ) / 4.0;
+    float gu = (u.x + u.y + u.z)/3.0;
+    float gv = (v.x + v.y + v.z)/3.0;
 
-    gl_FragColor = vec4(dot(u, u), dot(v, v), dot(u, v), 1.0);
+    float mag = sqrt(gu*gu+gv*gv);
+    float vx = gu/mag;
+    float vy = gv/mag;
+    gl_FragColor = vec4(-vy, vx, mag, 1.0);
 }

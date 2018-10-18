@@ -91,9 +91,8 @@ module EcognitaWeb3D {
             //load demo texture
             this.loadTexture("./image/k0.png", true, gl.CLAMP_TO_BORDER, gl.NEAREST, false);
             this.loadTexture("./image/visual_rgb.png");
-            //this.loadTexture("./image/cat.jpg", true, gl.CLAMP_TO_EDGE,gl.NEAREST);
             this.loadTexture("./image/lion.png", false);
-            //this.loadTexture("./image/anim.png", true, gl.CLAMP_TO_EDGE, gl.NEAREST);
+            this.loadTexture("./image/noise.png", false);
 
         }
 
