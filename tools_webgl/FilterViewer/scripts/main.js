@@ -11,82 +11,6 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var Utils;
-(function (Utils) {
-    ;
-    var HashSet = /** @class */ (function () {
-        function HashSet() {
-            this.items = {};
-        }
-        HashSet.prototype.set = function (key, value) {
-            this.items[key] = value;
-        };
-        HashSet.prototype["delete"] = function (key) {
-            return delete this.items[key];
-        };
-        HashSet.prototype.has = function (key) {
-            return key in this.items;
-        };
-        HashSet.prototype.get = function (key) {
-            return this.items[key];
-        };
-        HashSet.prototype.len = function () {
-            return Object.keys(this.items).length;
-        };
-        HashSet.prototype.forEach = function (f) {
-            for (var k in this.items) {
-                f(k, this.items[k]);
-            }
-        };
-        return HashSet;
-    }());
-    Utils.HashSet = HashSet;
-})(Utils || (Utils = {}));
-/// <reference path="../lib/HashSet.ts" />
-var Utils;
-(function (Utils) {
-    var FilterViewerUI = /** @class */ (function () {
-        function FilterViewerUI(data) {
-            var _this = this;
-            this.gui = new dat.gui.GUI();
-            this.data = data;
-            this.gui.remember(data);
-            this.uiController = new Utils.HashSet();
-            this.folderHashSet = new Utils.HashSet();
-            this.folderHashSet.set("f", "Filter");
-            //get all folder name
-            this.folderName = [];
-            this.folderHashSet.forEach(function (k, v) {
-                _this.folderName.push(k);
-            });
-            this.initData();
-            this.initFolder();
-        }
-        FilterViewerUI.prototype.initFolder = function () {
-            var _this = this;
-            this.folderName.forEach(function (fn) {
-                var f = _this.gui.addFolder(_this.folderHashSet.get(fn));
-                for (var key in _this.data) {
-                    //judge this key is in folder or not
-                    var f_name = key.split("_");
-                    if (key.includes('_') && f_name[0] == fn) {
-                        var c = f.add(_this.data, key).listen();
-                        _this.uiController.set(key, c);
-                    }
-                }
-            });
-        };
-        FilterViewerUI.prototype.initData = function () {
-            for (var key in this.data) {
-                if (!key.includes('_')) {
-                    this.gui.add(this.data, key);
-                }
-            }
-        };
-        return FilterViewerUI;
-    }());
-    Utils.FilterViewerUI = FilterViewerUI;
-})(Utils || (Utils = {}));
 /* =========================================================================
  *
  *  EgnType.ts
@@ -3285,6 +3209,82 @@ var EcognitaMathLib;
     }());
     EcognitaMathLib.CubeModel = CubeModel;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
+var Utils;
+(function (Utils) {
+    ;
+    var HashSet = /** @class */ (function () {
+        function HashSet() {
+            this.items = {};
+        }
+        HashSet.prototype.set = function (key, value) {
+            this.items[key] = value;
+        };
+        HashSet.prototype["delete"] = function (key) {
+            return delete this.items[key];
+        };
+        HashSet.prototype.has = function (key) {
+            return key in this.items;
+        };
+        HashSet.prototype.get = function (key) {
+            return this.items[key];
+        };
+        HashSet.prototype.len = function () {
+            return Object.keys(this.items).length;
+        };
+        HashSet.prototype.forEach = function (f) {
+            for (var k in this.items) {
+                f(k, this.items[k]);
+            }
+        };
+        return HashSet;
+    }());
+    Utils.HashSet = HashSet;
+})(Utils || (Utils = {}));
+/// <reference path="../lib/HashSet.ts" />
+var Utils;
+(function (Utils) {
+    var FilterViewerUI = /** @class */ (function () {
+        function FilterViewerUI(data) {
+            var _this = this;
+            this.gui = new dat.gui.GUI();
+            this.data = data;
+            this.gui.remember(data);
+            this.uiController = new Utils.HashSet();
+            this.folderHashSet = new Utils.HashSet();
+            this.folderHashSet.set("f", "Filter");
+            //get all folder name
+            this.folderName = [];
+            this.folderHashSet.forEach(function (k, v) {
+                _this.folderName.push(k);
+            });
+            this.initData();
+            this.initFolder();
+        }
+        FilterViewerUI.prototype.initFolder = function () {
+            var _this = this;
+            this.folderName.forEach(function (fn) {
+                var f = _this.gui.addFolder(_this.folderHashSet.get(fn));
+                for (var key in _this.data) {
+                    //judge this key is in folder or not
+                    var f_name = key.split("_");
+                    if (key.includes('_') && f_name[0] == fn) {
+                        var c = f.add(_this.data, key).listen();
+                        _this.uiController.set(key, c);
+                    }
+                }
+            });
+        };
+        FilterViewerUI.prototype.initData = function () {
+            for (var key in this.data) {
+                if (!key.includes('_')) {
+                    this.gui.add(this.data, key);
+                }
+            }
+        };
+        return FilterViewerUI;
+    }());
+    Utils.FilterViewerUI = FilterViewerUI;
+})(Utils || (Utils = {}));
 /* =========================================================================
  *
  *  EgnWebGL.ts
@@ -3301,7 +3301,7 @@ var EcognitaMathLib;
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_shaders.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_model.ts" />
 /// <reference path="../lib/HashSet.ts" />
-/// <reference path="../lib/FilterViewerUi.ts" />
+/// <reference path="../lib/EgnFilterViewerUI.ts" />
 var EcognitaWeb3D;
 (function (EcognitaWeb3D) {
     var WebGLEnv = /** @class */ (function () {
@@ -3393,7 +3393,6 @@ var EcognitaWeb3D;
  *  v0.1
  *
  * ========================================================================= */
-/// <reference path="../lib/FilterViewerUI.ts" />
 /// <reference path="../lib/EgnType.ts" />
 /// <reference path="../lib/EgnWebGL.ts" />
 var EcognitaWeb3D;

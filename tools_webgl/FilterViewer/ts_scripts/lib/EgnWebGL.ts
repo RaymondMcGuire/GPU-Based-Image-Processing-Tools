@@ -14,7 +14,7 @@
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_shaders.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_model.ts" />
 /// <reference path="../lib/HashSet.ts" />
-/// <reference path="../lib/FilterViewerUi.ts" />
+/// <reference path="../lib/EgnFilterViewerUI.ts" />
 module EcognitaWeb3D {
     declare var gl: any;
     declare var Stats: any;

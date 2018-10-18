@@ -5,7 +5,6 @@
  *  v0.1
  *  
  * ========================================================================= */
-/// <reference path="../lib/FilterViewerUI.ts" />
 /// <reference path="../lib/EgnType.ts" />
 /// <reference path="../lib/EgnWebGL.ts" />
 
