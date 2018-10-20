@@ -1,5 +1,101 @@
 {
-    "shaderList": [
+    "shaderList": [{
+            "name": "DoG",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "sigma_e",
+                "sigma_r",
+                "tau",
+                "phi",
+                "cvsHeight",
+                "cvsWidth",
+                "b_DoG"
+            ]
+        },
+        {
+            "name": "XDoG",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "sigma",
+                "k",
+                "p",
+                "epsilon",
+                "phi",
+                "cvsHeight",
+                "cvsWidth",
+                "b_XDoG"
+            ]
+        },
+        {
+            "name": "P_FXDoG",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "sigma",
+                "k",
+                "p",
+                "cvsHeight",
+                "cvsWidth",
+                "b_FXDoG"
+            ]
+        },
+        {
+            "name": "FXDoG",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "sigma_m",
+                "phi",
+                "epsilon",
+                "cvsHeight",
+                "cvsWidth",
+                "b_FXDoG"
+            ]
+        },
+        {
+            "name": "P_FDoG",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "sigma_e",
+                "sigma_r",
+                "tau",
+                "cvsHeight",
+                "cvsWidth",
+                "b_FDoG"
+            ]
+        },
+        {
+            "name": "FDoG",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "sigma_m",
+                "phi",
+                "cvsHeight",
+                "cvsWidth",
+                "b_FDoG"
+            ]
+        },
+        {
+            "name": "Abstraction",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "akf",
+                "fxdog",
+                "edge_color",
+                "cvsHeight",
+                "cvsWidth",
+                "b_Abstraction"
+            ]
+        },
         {
             "name": "SST",
             "uniforms": [
@@ -23,6 +119,8 @@
             "uniforms": [
                 "mvpMatrix",
                 "src",
+                "hCoef",
+                "vCoef",
                 "cvsHeight",
                 "cvsWidth"
             ]

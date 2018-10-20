@@ -15,13 +15,19 @@ module EcognitaWeb3D {
         AKUWAHARA,
         ANISTROPIC,
         LIC,
-        NOISELIC
+        NOISELIC,
+        DoG,
+        XDoG,
+        FDoG,
+        FXDoG,
+        ABSTRACTION
     }
 
     export enum RenderPipeLine {
         CONVOLUTION_FILTER,
         ANISTROPIC,
         BLOOM_EFFECT,
-        CONVOLUTION_TWICE
+        CONVOLUTION_TWICE,
+        ABSTRACTION
     }
 }

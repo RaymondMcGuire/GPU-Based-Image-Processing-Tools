@@ -9,11 +9,6 @@ uniform float hCoef[9];
 uniform float vCoef[9];
 varying vec2 vTexCoord;
 
-const float redScale   = 0.298912;
-const float greenScale = 0.586611;
-const float blueScale  = 0.114478;
-const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);
-
 void main(void){
     vec3 destColor = vec3(0.0);
     if(b_sobel){

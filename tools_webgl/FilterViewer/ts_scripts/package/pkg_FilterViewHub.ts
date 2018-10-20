@@ -32,6 +32,7 @@ module EcognitaWeb3D {
 
         }
 
+
         getReqQuery() {
             if (window.location.href.split('?').length == 1) {
                 return {};
@@ -188,7 +189,30 @@ module EcognitaWeb3D {
                 gl.uniform1f(SobelFilterUniformLoc[4], this.canvas.height);
                 gl.uniform1f(SobelFilterUniformLoc[5], this.canvas.width);
                 gl.uniform1i(SobelFilterUniformLoc[6], this.btnStatusList.get("f_SobelFilter"));
-            } else if (this.usrFilter == Filter.KUWAHARA) {
+            } else if (this.usrFilter == Filter.DoG) {
+                var DoGFilterUniformLoc = this.uniLocations.get("DoG");
+                gl.uniformMatrix4fv(DoGFilterUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(DoGFilterUniformLoc[1], 0);
+                gl.uniform1f(DoGFilterUniformLoc[2], 1.0);
+                gl.uniform1f(DoGFilterUniformLoc[3], 1.6);
+                gl.uniform1f(DoGFilterUniformLoc[4], 0.99);
+                gl.uniform1f(DoGFilterUniformLoc[5], 2.0);
+                gl.uniform1f(DoGFilterUniformLoc[6], this.canvas.height);
+                gl.uniform1f(DoGFilterUniformLoc[7], this.canvas.width);
+                gl.uniform1i(DoGFilterUniformLoc[8], this.btnStatusList.get("f_DoG"));
+            }else if (this.usrFilter == Filter.XDoG) {
+                var XDoGFilterUniformLoc = this.uniLocations.get("XDoG");
+                gl.uniformMatrix4fv(XDoGFilterUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(XDoGFilterUniformLoc[1], 0);
+                gl.uniform1f(XDoGFilterUniformLoc[2], 1.4);
+                gl.uniform1f(XDoGFilterUniformLoc[3], 1.6);
+                gl.uniform1f(XDoGFilterUniformLoc[4], 21.7);
+                gl.uniform1f(XDoGFilterUniformLoc[5], 79.5);
+                gl.uniform1f(XDoGFilterUniformLoc[6], 0.017);
+                gl.uniform1f(XDoGFilterUniformLoc[7], this.canvas.height);
+                gl.uniform1f(XDoGFilterUniformLoc[8], this.canvas.width);
+                gl.uniform1i(XDoGFilterUniformLoc[9], this.btnStatusList.get("f_XDoG"));
+            }else if (this.usrFilter == Filter.KUWAHARA) {
                 var KuwaharaFilterUniformLoc = this.uniLocations.get("kuwaharaFilter");
                 gl.uniformMatrix4fv(KuwaharaFilterUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(KuwaharaFilterUniformLoc[1], 0);
@@ -240,6 +264,40 @@ module EcognitaWeb3D {
                     gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_NoiseLIC"));  
                 }
                 
+            }else if(this.usrFilter == Filter.FDoG){
+                var FDoGUniformLoc = this.uniLocations.get("FDoG");
+                gl.uniformMatrix4fv(FDoGUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(FDoGUniformLoc[1], 0);
+                gl.uniform1i(FDoGUniformLoc[2], 1);
+                gl.uniform1f(FDoGUniformLoc[3], 3.0);
+                gl.uniform1f(FDoGUniformLoc[4], 2.0);
+                gl.uniform1f(FDoGUniformLoc[5], this.canvas.height);
+                gl.uniform1f(FDoGUniformLoc[6], this.canvas.width);
+                gl.uniform1i(FDoGUniformLoc[7], this.btnStatusList.get("f_FDoG"));  
+
+            }else if(this.usrFilter == Filter.FXDoG){
+                var FXDoGUniformLoc = this.uniLocations.get("FXDoG");
+                gl.uniformMatrix4fv(FXDoGUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(FXDoGUniformLoc[1], 0);
+                gl.uniform1i(FXDoGUniformLoc[2], 1);
+                gl.uniform1f(FXDoGUniformLoc[3], 4.4);
+                gl.uniform1f(FXDoGUniformLoc[4], 0.017);
+                gl.uniform1f(FXDoGUniformLoc[5], 79.5);
+                gl.uniform1f(FXDoGUniformLoc[6], this.canvas.height);
+                gl.uniform1f(FXDoGUniformLoc[7], this.canvas.width);
+                gl.uniform1i(FXDoGUniformLoc[8], this.btnStatusList.get("f_FXDoG"));  
+
+            }else if(this.usrFilter == Filter.ABSTRACTION){
+                var ABSUniformLoc = this.uniLocations.get("Abstraction");
+                gl.uniformMatrix4fv(ABSUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(ABSUniformLoc[1], 1);
+                gl.uniform1i(ABSUniformLoc[2], 3);
+                gl.uniform1i(ABSUniformLoc[3], 4);
+                gl.uniform3fv(ABSUniformLoc[4], [0.0,0.0,0.0]);
+                gl.uniform1f(ABSUniformLoc[5], this.canvas.height);
+                gl.uniform1f(ABSUniformLoc[6], this.canvas.width);
+                gl.uniform1i(ABSUniformLoc[7], this.btnStatusList.get("f_Abstraction"));  
+
             }
         }
 
@@ -378,6 +436,22 @@ module EcognitaWeb3D {
             var synthShader = this.shaders.get("synth");
             var uniLocation_synth = this.uniLocations.get("synth");
 
+            var TFShader = this.shaders.get("TF");
+            var uniLocation_TF = this.uniLocations.get("TF");
+
+            var ETFShader = this.shaders.get("ETF");
+            var uniLocation_ETF = this.uniLocations.get("ETF");
+
+            //DoG XDoG
+            var PFDoGShader = this.shaders.get("P_FDoG");
+            var uniLocation_PFDoG = this.uniLocations.get("P_FDoG");
+
+            var PFXDoGShader = this.shaders.get("P_FXDoG");
+            var uniLocation_PFXDoG = this.uniLocations.get("P_FXDoG");
+
+            var FXDoGShader = this.shaders.get("FXDoG");
+            var uniLocation_FXDoG = this.uniLocations.get("FXDoG");
+
             //anisotropic
             var SSTShader = this.shaders.get("SST");
             var uniLocation_SST = this.uniLocations.get("SST");
@@ -387,12 +461,21 @@ module EcognitaWeb3D {
 
             var TFMShader = this.shaders.get("TFM");
             var uniLocation_TFM = this.uniLocations.get("TFM");
+
+            var AKFShader = this.shaders.get("AKF");
+            var AKFUniformLoc = this.uniLocations.get("AKF");
             //-----------------------------------------------
 
             this.settingFrameBuffer("frameBuffer1");
             var frameBuffer1 = this.framebuffers.get("frameBuffer1");
             this.settingFrameBuffer("frameBuffer2");
             var frameBuffer2 = this.framebuffers.get("frameBuffer2");
+            this.settingFrameBuffer("frameBuffer3");
+            var frameBuffer3 = this.framebuffers.get("frameBuffer3");
+            this.settingFrameBuffer("frameBuffer4");
+            var frameBuffer4 = this.framebuffers.get("frameBuffer4");
+            this.settingFrameBuffer("frameBuffer5");
+            var frameBuffer5 = this.framebuffers.get("frameBuffer5");
 
             var loop = () => {
                 //--------------------------------------animation global variables
@@ -575,6 +658,40 @@ module EcognitaWeb3D {
                         gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
                     }
 
+                    // //render TF
+                    // TFShader.bind();
+                    // frameBuffer2.bindFrameBuffer();
+
+                    // gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    // gl.clearDepth(1.0);
+                    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    // vbo_board.bind(TFShader);
+                    // ibo_board.bind();
+                    // gl.uniformMatrix4fv(uniLocation_TF[0], false, this.filterMvpMatrix);
+                    // gl.uniform1i(uniLocation_TF[1], 0);
+                    // gl.uniform1fv(uniLocation_TF[2], this.usrParams.sobelHorCoef);
+                    // gl.uniform1fv(uniLocation_TF[3], this.usrParams.sobelVerCoef);
+                    // gl.uniform1f(uniLocation_TF[4], this.canvas.height);
+                    // gl.uniform1f(uniLocation_TF[5], this.canvas.width);
+                    // ibo_board.draw(gl.TRIANGLES);
+
+                    // gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+
+                    // //render ETF
+                    // ETFShader.bind();
+                    // frameBuffer1.bindFrameBuffer();
+                    // gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    // gl.clearDepth(1.0);
+                    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    // vbo_board.bind(ETFShader);
+                    // ibo_board.bind();
+                    // gl.uniformMatrix4fv(uniLocation_ETF[0], false, this.filterMvpMatrix);
+                    // gl.uniform1i(uniLocation_ETF[1], 0);
+                    // gl.uniform1f(uniLocation_ETF[2], this.canvas.height);
+                    // gl.uniform1f(uniLocation_ETF[3], this.canvas.width);
+                    // ibo_board.draw(gl.TRIANGLES);
+
+                    // gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
 
 
                     //render SST
@@ -627,6 +744,7 @@ module EcognitaWeb3D {
 
                     gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
 
+                    //render original image to texture1
                     frameBuffer1.bindFrameBuffer();
                     RenderSimpleScene();
                     //save original texture to tex1
@@ -646,8 +764,207 @@ module EcognitaWeb3D {
                         }
                     }
 
+                    //FDoG pre-calculation
+                    if(this.usrFilter == Filter.FDoG){
+                        PFDoGShader.bind();
+                        frameBuffer3.bindFrameBuffer();
+                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                        gl.clearDepth(1.0);
+                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                        vbo_board.bind(PFDoGShader);
+                        ibo_board.bind();
+                        gl.uniformMatrix4fv(uniLocation_PFDoG[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_PFDoG[1], 0);
+                        gl.uniform1i(uniLocation_PFDoG[2], 1);
+                        gl.uniform1f(uniLocation_PFDoG[3], 1.0);
+                        gl.uniform1f(uniLocation_PFDoG[4], 1.6);
+                        gl.uniform1f(uniLocation_PFDoG[5], 0.99);
+                        gl.uniform1f(uniLocation_PFDoG[6], this.canvas.height);
+                        gl.uniform1f(uniLocation_PFDoG[7], this.canvas.width);
+                        gl.uniform1i(uniLocation_PFDoG[8], this.btnStatusList.get("f_FDoG"));
+                        
+                        ibo_board.draw(gl.TRIANGLES);
+                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer3.targetTexture);
 
-                    //render Anisotropic
+                    }else if(this.usrFilter == Filter.FXDoG){
+                        PFXDoGShader.bind();
+                        frameBuffer3.bindFrameBuffer();
+                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                        gl.clearDepth(1.0);
+                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                        vbo_board.bind(PFXDoGShader);
+                        ibo_board.bind();
+                        gl.uniformMatrix4fv(uniLocation_PFXDoG[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_PFXDoG[1], 0);
+                        gl.uniform1i(uniLocation_PFXDoG[2], 1);
+                        gl.uniform1f(uniLocation_PFXDoG[3], 1.4);
+                        gl.uniform1f(uniLocation_PFXDoG[4], 1.6);
+                        gl.uniform1f(uniLocation_PFXDoG[5], 21.7);
+                        gl.uniform1f(uniLocation_PFXDoG[6], this.canvas.height);
+                        gl.uniform1f(uniLocation_PFXDoG[7], this.canvas.width);
+                        gl.uniform1i(uniLocation_PFXDoG[8], this.btnStatusList.get("f_FXDoG"));
+                        
+                        ibo_board.draw(gl.TRIANGLES);
+                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer3.targetTexture);
+                    }
+
+
+                    //render Filter
+                    this.filterShader.bind();
+                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(this.filterShader);
+                    ibo_board.bind();
+                    this.renderFilter();
+                    ibo_board.draw(gl.TRIANGLES);
+                } else if (this.usrPipeLine == RenderPipeLine.ABSTRACTION) {
+
+                    //get k0 texture
+                    var k0Tex = this.Texture.get("./image/k0.png");
+                    if (k0Tex != undefined) {
+                        gl.activeTexture(gl.TEXTURE2);
+                        k0Tex.bind(k0Tex.texture);
+                    }
+
+                    //tex0/f2: render TFM
+                    frameBuffer1.bindFrameBuffer();
+                    RenderSimpleScene();
+
+                    //render anisotropic 
+                    gl.activeTexture(gl.TEXTURE0);
+                    if (inTex != undefined && this.ui_data.useTexture) {
+                        inTex.bind(inTex.texture);
+                    } else {
+                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    }
+
+                    //render SST
+                    SSTShader.bind();
+                    frameBuffer2.bindFrameBuffer();
+
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(SSTShader);
+                    ibo_board.bind();
+                    gl.uniformMatrix4fv(uniLocation_SST[0], false, this.filterMvpMatrix);
+                    gl.uniform1i(uniLocation_SST[1], 0);
+                    gl.uniform1f(uniLocation_SST[2], this.canvas.height);
+                    gl.uniform1f(uniLocation_SST[3], this.canvas.width);
+                    ibo_board.draw(gl.TRIANGLES);
+
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+
+                    //render Gaussian
+                    GAUShader.bind();
+                    frameBuffer1.bindFrameBuffer();
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(GAUShader);
+                    ibo_board.bind();
+                    gl.uniformMatrix4fv(uniLocation_GAU[0], false, this.filterMvpMatrix);
+                    gl.uniform1i(uniLocation_GAU[1], 0);
+                    gl.uniform1f(uniLocation_GAU[2], 2.0);
+                    gl.uniform1f(uniLocation_GAU[3], this.canvas.height);
+                    gl.uniform1f(uniLocation_GAU[4], this.canvas.width);
+                    ibo_board.draw(gl.TRIANGLES);
+
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+
+                    //render TFM
+                    TFMShader.bind();
+                    frameBuffer2.bindFrameBuffer();
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(TFMShader);
+                    ibo_board.bind();
+                    gl.uniformMatrix4fv(uniLocation_TFM[0], false, this.filterMvpMatrix);
+                    gl.uniform1i(uniLocation_TFM[1], 0);
+                    gl.uniform1f(uniLocation_TFM[2], this.canvas.height);
+                    gl.uniform1f(uniLocation_TFM[3], this.canvas.width);
+                    ibo_board.draw(gl.TRIANGLES);
+
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+
+                    //tex1/f1:src
+                    frameBuffer1.bindFrameBuffer();
+                    RenderSimpleScene();
+                    //save original texture to tex1
+                    gl.activeTexture(gl.TEXTURE1);
+                    if (inTex != undefined && this.ui_data.useTexture) {
+                        inTex.bind(inTex.texture);
+                    } else {
+                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    }
+
+                    //tex3/f3:akf
+                    AKFShader.bind();
+                    frameBuffer3.bindFrameBuffer();
+                    gl.activeTexture(gl.TEXTURE3);
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(AKFShader);
+                    ibo_board.bind();
+                    gl.uniformMatrix4fv(AKFUniformLoc[0], false, this.filterMvpMatrix);
+                    gl.uniform1i(AKFUniformLoc[1], 0);
+                    gl.uniform1i(AKFUniformLoc[2], 1);
+                    gl.uniform1i(AKFUniformLoc[3], 2);
+                    gl.uniform1f(AKFUniformLoc[4], 6.0);
+                    gl.uniform1f(AKFUniformLoc[5], 8.0);
+                    gl.uniform1f(AKFUniformLoc[6], 1.0);
+                    gl.uniform1f(AKFUniformLoc[7], this.canvas.height);
+                    gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
+                    gl.uniform1i(AKFUniformLoc[9], this.btnStatusList.get("f_Abstraction"));
+                    ibo_board.draw(gl.TRIANGLES);
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer3.targetTexture);
+
+                    //tex4/f4:fxdog
+                    PFXDoGShader.bind();
+                    frameBuffer4.bindFrameBuffer();
+                    gl.activeTexture(gl.TEXTURE4);
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(PFXDoGShader);
+                    ibo_board.bind();
+                    gl.uniformMatrix4fv(uniLocation_PFXDoG[0], false, this.filterMvpMatrix);
+                    gl.uniform1i(uniLocation_PFXDoG[1], 0);
+                    gl.uniform1i(uniLocation_PFXDoG[2], 1);
+                    gl.uniform1f(uniLocation_PFXDoG[3], 1.4);
+                    gl.uniform1f(uniLocation_PFXDoG[4], 1.6);
+                    gl.uniform1f(uniLocation_PFXDoG[5], 21.7);
+                    gl.uniform1f(uniLocation_PFXDoG[6], this.canvas.height);
+                    gl.uniform1f(uniLocation_PFXDoG[7], this.canvas.width);
+                    gl.uniform1i(uniLocation_PFXDoG[8], this.btnStatusList.get("f_Abstraction"));
+                    
+                    ibo_board.draw(gl.TRIANGLES);
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer4.targetTexture);
+                    
+                    FXDoGShader.bind();
+                    frameBuffer5.bindFrameBuffer();
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_board.bind(FXDoGShader);
+                    ibo_board.bind();
+                    gl.uniformMatrix4fv(uniLocation_FXDoG[0], false, this.filterMvpMatrix);
+                    gl.uniform1i(uniLocation_FXDoG[1], 0);
+                    gl.uniform1i(uniLocation_FXDoG[2], 4);
+                    gl.uniform1f(uniLocation_FXDoG[3], 4.4);
+                    gl.uniform1f(uniLocation_FXDoG[4], 0.017);
+                    gl.uniform1f(uniLocation_FXDoG[5], 79.5);
+                    gl.uniform1f(uniLocation_FXDoG[6], this.canvas.height);
+                    gl.uniform1f(uniLocation_FXDoG[7], this.canvas.width);
+                    gl.uniform1i(uniLocation_FXDoG[8], this.btnStatusList.get("f_Abstraction"));  
+                    ibo_board.draw(gl.TRIANGLES);
+                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer5.targetTexture);
+
+                    //render Abstratcion Filter
                     this.filterShader.bind();
                     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
                     gl.clearColor(0.0, 0.0, 0.0, 1.0);

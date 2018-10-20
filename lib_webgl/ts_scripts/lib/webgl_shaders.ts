@@ -1,4 +1,43 @@
 var Shaders = {
+    'Abstraction-frag':
+        '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n'                               +
+        'precision mediump float;\n\n'                                                     +
+
+        'uniform sampler2D src;\n'                                                         +
+        'uniform sampler2D akf;\n'                                                         +
+        'uniform sampler2D fxdog;\n'                                                       +
+        'uniform vec3 edge_color;\n\n'                                                     +
+
+        'uniform bool b_Abstraction;\n'                                                    +
+        'uniform float cvsHeight;\n'                                                       +
+        'uniform float cvsWidth;\n\n'                                                      +
+
+        'void main (void) {\n'                                                             +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n'                                 +
+        '	vec2 uv = gl_FragCoord.xy / src_size ; \n'                                       +
+        '    vec2 uv_src = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y' +
+                                                                    ') / src_size.y);\n'   +
+        '    if(b_Abstraction){\n'                                                         +
+        '        vec2 d = 1.0 / src_size;\n'                                               +
+        '        vec3 c = texture2D(akf, uv).xyz;\n'                                       +
+        '        float e = texture2D(fxdog, uv).x;\n'                                      +
+        '        gl_FragColor = vec4(mix(edge_color, c, e), 1.0);\n'                       +
+        '    }else{\n'                                                                     +
+        '        gl_FragColor = texture2D(src, uv_src);\n'                                 +
+        '    }\n'                                                                          +
+        '}\n',
+
+    'Abstraction-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
     'AKF-frag':
         '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n'                               +
         'precision mediump float;\n\n'                                                     +
@@ -451,48 +490,221 @@ var Shaders = {
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n'                +
         '}\n',
 
+    'DoG-frag':
+        'precision mediump float;\n\n'                                                     +
+
+        'uniform sampler2D src;\n\n'                                                       +
+
+        'uniform bool b_DoG;\n'                                                            +
+        'uniform float cvsHeight;\n'                                                       +
+        'uniform float cvsWidth;\n\n'                                                      +
+
+        'uniform float sigma_e;\n'                                                         +
+        'uniform float sigma_r;\n'                                                         +
+        'uniform float tau;\n'                                                             +
+        'uniform float phi;\n'                                                             +
+        'varying vec2 vTexCoord;\n\n'                                                      +
+
+        'void main(void){\n'                                                               +
+        '    vec3 destColor = vec3(0.0);\n'                                                +
+        '    if(b_DoG){\n'                                                                 +
+        '        float tFrag = 1.0 / cvsHeight;\n'                                         +
+        '        float sFrag = 1.0 / cvsWidth;\n'                                          +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n'                                        +
+        '        vec2 uv = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n'            +
+        '        float twoSigmaESquared = 2.0 * sigma_e * sigma_e;\n'                      +
+        '        float twoSigmaRSquared = 2.0 * sigma_r * sigma_r;\n'                      +
+        '        int halfWidth = int(ceil( 2.0 * sigma_r ));\n\n'                          +
+
+        '        const int MAX_NUM_ITERATION = 99999;\n'                                   +
+        '        vec2 sum = vec2(0.0);\n'                                                  +
+        '        vec2 norm = vec2(0.0);\n\n'                                               +
+
+        '        for(int cnt=0;cnt<MAX_NUM_ITERATION;cnt++){\n'                            +
+        '            if(cnt > (2*halfWidth+1)*(2*halfWidth+1)){break;}\n'                  +
+        '            int i = int(cnt / (2*halfWidth+1)) - halfWidth;\n'                    +
+        '            int j = cnt - halfWidth - int(cnt / (2*halfWidth+1)) * (2*halfWidth+' +
+                                                                                 '1);\n\n' +
+
+        '            float d = length(vec2(i,j));\n'                                       +
+        '            vec2 kernel = vec2( exp( -d * d / twoSigmaESquared ), \n'             +
+        '                                exp( -d * d / twoSigmaRSquared ));\n\n'           +
+
+        '            vec2 L = texture2D(src, (uv + vec2(i,j)) * Frag).xx;\n\n'             +
+
+        '            norm += 2.0 * kernel;\n'                                              +
+        '            sum += kernel * L;\n'                                                 +
+        '        }\n\n'                                                                    +
+
+        '        sum /= norm;\n\n'                                                         +
+
+        '        float H = 100.0 * (sum.x - tau * sum.y);\n'                               +
+        '        float edge = ( H > 0.0 )? 1.0 : 2.0 * smoothstep(-2.0, 2.0, phi * H );\n' +
+        '        destColor = vec3(edge);\n'                                                +
+        '    }else{\n'                                                                     +
+        '        destColor = texture2D(src, vTexCoord).rgb;\n'                             +
+        '    }\n\n'                                                                        +
+
+        '    gl_FragColor = vec4(destColor, 1.0);\n'                                       +
+        '}\n',
+
+    'DoG-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
     'ETF-frag':
-        '// Edge Tangent Flow\n'                                                  +
-        'precision mediump float;\n\n'                                            +
+        '// Edge Tangent Flow\n'                                                    +
+        'precision mediump float;\n\n'                                              +
 
-        'uniform sampler2D src;\n'                                                +
-        'uniform float cvsHeight;\n'                                              +
-        'uniform float cvsWidth;\n\n'                                             +
+        'uniform sampler2D src;\n'                                                  +
+        'uniform float cvsHeight;\n'                                                +
+        'uniform float cvsWidth;\n\n'                                               +
 
-        'void main (void) {\n'                                                    +
-        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n'                        +
-        '    vec2 uv = gl_FragCoord.xy / src_size;\n'                             +
-        '    vec2 d = 1.0 / src_size;\n'                                          +
-        '    vec3 c = texture2D(src, uv).xyz;\n'                                  +
-        '    float gx = c.z;\n'                                                   +
-        '    vec2 tx = c.xy;\n'                                                   +
-        '    const float kERNEL = 5.0;\n'                                         +
-        '    vec2 etf = vec2(0.0);\n'                                             +
-        '    vec2 sum = vec2(0,0);\n'                                             +
-        '    float weight = 0.0;\n'                                               +
-        '    for(float j = -kERNEL ; j<kERNEL;j++){\n'                            +
-        '        for(float i=-kERNEL ; i<kERNEL;i++){\n'                          +
-        '            vec2 ty = texture2D(src, uv + vec2(i * d.x, j * d.y)).xy;\n' +
-        '            float wd = dot(tx,ty);\n'                                    +
-        '            float gy = texture2D(src, uv + vec2(i * d.x, j * d.y)).z;\n' +
-        '            float wm = (gy - gx + 1.0)/2.0;\n\n'                         +
+        'void main (void) {\n'                                                      +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n'                          +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n'                               +
+        '    vec2 d = 1.0 / src_size;\n'                                            +
+        '    vec3 c = texture2D(src, uv).xyz;\n'                                    +
+        '    float gx = c.z;\n'                                                     +
+        '    vec2 tx = c.xy;\n'                                                     +
+        '    const float KERNEL = 5.0;\n'                                           +
+        '    vec2 etf = vec2(0.0);\n'                                               +
+        '    vec2 sum = vec2(0,0);\n'                                               +
+        '    float weight = 0.0;\n\n'                                               +
 
-        '            sum += ty * (wm * wd);\n'                                    +
-        '            weight += wm * wd;\n'                                        +
-        '        }\n'                                                             +
-        '    }\n\n'                                                               +
+        '    for(float j = -KERNEL ; j<KERNEL;j++){\n'                              +
+        '        for(float i=-KERNEL ; i<KERNEL;i++){\n'                            +
+        '            vec2 ty = texture2D(src, uv + vec2(i * d.x, j * d.y)).xy;\n'   +
+        '            float gy = texture2D(src, uv + vec2(i * d.x, j * d.y)).z;\n\n' +
 
-        '    if(weight != 0.0){\n'                                                +
-        '        etf = sum / weight;\n'                                           +
-        '    }\n\n'                                                               +
+        '            float wd = abs(dot(tx,ty));\n'                                 +
+        '            float wm = (gy - gx + 1.0)/2.0;\n'                             +
+        '            float phi = dot(gx,gy)>0.0?1.0:-1.0;\n'                        +
+        '            float ws = sqrt(j*j+i*i) < KERNEL?1.0:0.0;\n\n'                +
 
-        '    float mag = sqrt(etf.x*etf.x + etf.y*etf.y);\n'                      +
-        '    float vx = etf.x/mag;\n'                                             +
-        '    float vy = etf.y/mag;\n'                                             +
-        '    gl_FragColor = vec4(vx,vy,mag, 1.0);\n'                              +
+        '            sum += ty * (wm * wd );\n'                                     +
+        '            weight += wm * wd ;\n'                                         +
+        '        }\n'                                                               +
+        '    }\n\n'                                                                 +
+
+        '    if(weight != 0.0){\n'                                                  +
+        '        etf = sum / weight;\n'                                             +
+        '    }else{\n'                                                              +
+        '        etf = vec2(0.0);\n'                                                +
+        '    }\n\n'                                                                 +
+
+        '    float mag = sqrt(etf.x*etf.x + etf.y*etf.y);\n'                        +
+        '    float vx = etf.x/mag;\n'                                               +
+        '    float vy = etf.y/mag;\n'                                               +
+        '    gl_FragColor = vec4(vx,vy,mag, 1.0);\n'                                +
         '}\n',
 
     'ETF-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
+    'FDoG-frag':
+        'precision mediump float;\n\n'                                                     +
+
+        'uniform sampler2D src;\n'                                                         +
+        'uniform sampler2D tfm;\n\n'                                                       +
+
+        'uniform float cvsHeight;\n'                                                       +
+        'uniform float cvsWidth;\n\n'                                                      +
+
+        'uniform float sigma_m;\n'                                                         +
+        'uniform float phi;\n\n'                                                           +
+
+        'uniform bool b_FDoG;\n'                                                           +
+        'varying vec2 vTexCoord;\n\n'                                                      +
+
+        'struct lic_t { \n'                                                                +
+        '    vec2 p; \n'                                                                   +
+        '    vec2 t;\n'                                                                    +
+        '    float w;\n'                                                                   +
+        '    float dw;\n'                                                                  +
+        '};\n\n'                                                                           +
+
+        'void step(inout lic_t s) {\n'                                                     +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n'                                 +
+        '    vec2 t = texture2D(tfm, s.p).xy;\n'                                           +
+        '    if (dot(t, s.t) < 0.0) t = -t;\n'                                             +
+        '    s.t = t;\n\n'                                                                 +
+
+        '    s.dw = (abs(t.x) > abs(t.y))? \n'                                             +
+        '        abs((fract(s.p.x) - 0.5 - sign(t.x)) / t.x) : \n'                         +
+        '        abs((fract(s.p.y) - 0.5 - sign(t.y)) / t.y);\n\n'                         +
+
+        '    s.p += t * s.dw / src_size;\n'                                                +
+        '    s.w += s.dw;\n'                                                               +
+        '}\n\n'                                                                            +
+
+        'void main (void) {\n\n'                                                           +
+
+        '    vec3 destColor = vec3(0.0);\n'                                                +
+        '    if(b_FDoG){\n'                                                                +
+        '        vec2 src_size = vec2(cvsWidth, cvsHeight);\n'                             +
+        '        vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y' +
+                                                                    ') / src_size.y);\n\n' +
+
+        '        float twoSigmaMSquared = 2.0 * sigma_m * sigma_m;\n'                      +
+        '        float halfWidth = 2.0 * sigma_m;\n\n'                                     +
+
+        '        float H = texture2D( src, uv ).x;\n'                                      +
+        '        float w = 1.0;\n\n'                                                       +
+
+        '        lic_t a, b;\n'                                                            +
+        '        a.p = b.p = uv;\n'                                                        +
+        '        a.t = texture2D( tfm, uv ).xy / src_size;\n'                              +
+        '        b.t = -a.t;\n'                                                            +
+        '        a.w = b.w = 0.0;\n\n'                                                     +
+
+        '        const int MAX_NUM_ITERATION = 99999;\n'                                   +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n'                               +
+        '            if (a.w < halfWidth) {\n'                                             +
+        '                step(a);\n'                                                       +
+        '                float k = a.dw * exp(-a.w * a.w / twoSigmaMSquared);\n'           +
+        '                H += k * texture2D(src, a.p).x;\n'                                +
+        '                w += k;\n'                                                        +
+        '            }else{\n'                                                             +
+        '                break;\n'                                                         +
+        '            }\n'                                                                  +
+        '        }\n'                                                                      +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n'                               +
+        '            if (b.w < halfWidth) {\n'                                             +
+        '                step(b);\n'                                                       +
+        '                float k = b.dw * exp(-b.w * b.w / twoSigmaMSquared);\n'           +
+        '                H += k * texture2D(src, b.p).x;\n'                                +
+        '                w += k;\n'                                                        +
+        '            }else{\n'                                                             +
+        '                break;\n'                                                         +
+        '            }\n'                                                                  +
+        '        }\n'                                                                      +
+        '        H /= w;\n'                                                                +
+        '        float edge = ( H > 0.0 )? 1.0 : 2.0 * smoothstep(-2.0, 2.0, phi * H );\n' +
+        '        destColor = vec3(edge);\n'                                                +
+        '    }\n'                                                                          +
+        '    else{\n'                                                                      +
+        '        destColor = texture2D(src, vTexCoord).rgb;\n'                             +
+        '    }\n'                                                                          +
+        '    gl_FragColor = vec4(destColor, 1.0);\n'                                       +
+        '}\n',
+
+    'FDoG-vert':
         'attribute vec3 position;\n'                        +
         'attribute vec2 texCoord;\n'                        +
         'uniform   mat4 mvpMatrix;\n'                       +
@@ -569,6 +781,126 @@ var Shaders = {
         '	}\n'                                                                       +
         '	vTextureCoord  = textureCoord;\n'                                          +
         '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n'                       +
+        '}\n',
+
+    'FXDoG-frag':
+        'precision mediump float;\n\n'                                                     +
+
+        'uniform sampler2D src;\n'                                                         +
+        'uniform sampler2D tfm;\n\n'                                                       +
+
+        'uniform float cvsHeight;\n'                                                       +
+        'uniform float cvsWidth;\n\n'                                                      +
+
+        'uniform float sigma_m;\n'                                                         +
+        'uniform float phi;\n'                                                             +
+        'uniform float epsilon;\n\n'                                                       +
+
+        'uniform bool b_FXDoG;\n'                                                          +
+        'varying vec2 vTexCoord;\n\n'                                                      +
+
+        'float cosh(float val)\n'                                                          +
+        '{\n'                                                                              +
+        '    float tmp = exp(val);\n'                                                      +
+        '    float cosH = (tmp + 1.0 / tmp) / 2.0;\n'                                      +
+        '    return cosH;\n'                                                               +
+        '}\n\n'                                                                            +
+
+        'float tanh(float val)\n'                                                          +
+        '{\n'                                                                              +
+        '    float tmp = exp(val);\n'                                                      +
+        '    float tanH = (tmp - 1.0 / tmp) / (tmp + 1.0 / tmp);\n'                        +
+        '    return tanH;\n'                                                               +
+        '}\n\n'                                                                            +
+
+        'float sinh(float val)\n'                                                          +
+        '{\n'                                                                              +
+        '    float tmp = exp(val);\n'                                                      +
+        '    float sinH = (tmp - 1.0 / tmp) / 2.0;\n'                                      +
+        '    return sinH;\n'                                                               +
+        '}\n\n'                                                                            +
+
+        'struct lic_t { \n'                                                                +
+        '    vec2 p; \n'                                                                   +
+        '    vec2 t;\n'                                                                    +
+        '    float w;\n'                                                                   +
+        '    float dw;\n'                                                                  +
+        '};\n\n'                                                                           +
+
+        'void step(inout lic_t s) {\n'                                                     +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n'                                 +
+        '    vec2 t = texture2D(tfm, s.p).xy;\n'                                           +
+        '    if (dot(t, s.t) < 0.0) t = -t;\n'                                             +
+        '    s.t = t;\n\n'                                                                 +
+
+        '    s.dw = (abs(t.x) > abs(t.y))? \n'                                             +
+        '        abs((fract(s.p.x) - 0.5 - sign(t.x)) / t.x) : \n'                         +
+        '        abs((fract(s.p.y) - 0.5 - sign(t.y)) / t.y);\n\n'                         +
+
+        '    s.p += t * s.dw / src_size;\n'                                                +
+        '    s.w += s.dw;\n'                                                               +
+        '}\n\n'                                                                            +
+
+        'void main (void) {\n\n'                                                           +
+
+        '    vec3 destColor = vec3(0.0);\n'                                                +
+        '    if(b_FXDoG){\n'                                                               +
+        '        vec2 src_size = vec2(cvsWidth, cvsHeight);\n'                             +
+        '        vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y' +
+                                                                    ') / src_size.y);\n\n' +
+
+        '        float twoSigmaMSquared = 2.0 * sigma_m * sigma_m;\n'                      +
+        '        float halfWidth = 2.0 * sigma_m;\n\n'                                     +
+
+        '        float H = texture2D( src, uv ).x;\n'                                      +
+        '        float w = 1.0;\n\n'                                                       +
+
+        '        lic_t a, b;\n'                                                            +
+        '        a.p = b.p = uv;\n'                                                        +
+        '        a.t = texture2D( tfm, uv ).xy / src_size;\n'                              +
+        '        b.t = -a.t;\n'                                                            +
+        '        a.w = b.w = 0.0;\n\n'                                                     +
+
+        '        const int MAX_NUM_ITERATION = 99999;\n'                                   +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n'                               +
+        '            if (a.w < halfWidth) {\n'                                             +
+        '                step(a);\n'                                                       +
+        '                float k = a.dw * exp(-a.w * a.w / twoSigmaMSquared);\n'           +
+        '                H += k * texture2D(src, a.p).x;\n'                                +
+        '                w += k;\n'                                                        +
+        '            }else{\n'                                                             +
+        '                break;\n'                                                         +
+        '            }\n'                                                                  +
+        '        }\n'                                                                      +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n'                               +
+        '            if (b.w < halfWidth) {\n'                                             +
+        '                step(b);\n'                                                       +
+        '                float k = b.dw * exp(-b.w * b.w / twoSigmaMSquared);\n'           +
+        '                H += k * texture2D(src, b.p).x;\n'                                +
+        '                w += k;\n'                                                        +
+        '            }else{\n'                                                             +
+        '                break;\n'                                                         +
+        '            }\n'                                                                  +
+        '        }\n'                                                                      +
+        '        H /= w;\n'                                                                +
+        '        float edge = ( H > epsilon )? 1.0 : 1.0 + tanh( phi * (H - epsilon));\n'  +
+        '        destColor = vec3(edge);\n'                                                +
+        '    }\n'                                                                          +
+        '    else{\n'                                                                      +
+        '        destColor = texture2D(src, vTexCoord).rgb;\n'                             +
+        '    }\n'                                                                          +
+        '    gl_FragColor = vec4(destColor, 1.0);\n'                                       +
+        '}\n',
+
+    'FXDoG-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
 
     'gaussianFilter-frag':
@@ -1892,6 +2224,154 @@ var Shaders = {
         '	gl_Position = mvpMatrix * vec4(position, 1.0);\n'     +
         '}\n',
 
+    'P_FDoG-frag':
+        'precision mediump float;\n\n'                                             +
+
+        'uniform sampler2D src;\n'                                                 +
+        'uniform sampler2D tfm;\n\n'                                               +
+
+        'uniform float cvsHeight;\n'                                               +
+        'uniform float cvsWidth;\n\n'                                              +
+
+        'uniform float sigma_e;\n'                                                 +
+        'uniform float sigma_r;\n'                                                 +
+        'uniform float tau;\n\n'                                                   +
+
+        'uniform bool b_FDoG;\n'                                                   +
+        'varying vec2 vTexCoord;\n\n'                                              +
+
+        'void main(void){\n\n'                                                     +
+
+        '    vec3 destColor = vec3(0.0);\n'                                        +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n'                         +
+        '    vec2 uv = gl_FragCoord.xy /src_size;\n'                               +
+        '    if(b_FDoG){\n'                                                        +
+        '        float twoSigmaESquared = 2.0 * sigma_e * sigma_e;\n'              +
+        '        float twoSigmaRSquared = 2.0 * sigma_r * sigma_r;\n\n'            +
+
+        '        vec2 t = texture2D(tfm, uv).xy;\n'                                +
+        '        vec2 n = vec2(t.y, -t.x);\n'                                      +
+        '        vec2 nabs = abs(n);\n'                                            +
+        '        float ds = 1.0 / ((nabs.x > nabs.y)? nabs.x : nabs.y);\n'         +
+        '        n /= src_size;\n\n'                                               +
+
+        '        vec2 sum = texture2D( src, uv ).xx;\n'                            +
+        '        vec2 norm = vec2(1.0, 1.0);\n\n'                                  +
+
+        '        float halfWidth = 2.0 * sigma_r;\n'                               +
+        '        float d = ds;\n'                                                  +
+        '        const int MAX_NUM_ITERATION = 99999;\n'                           +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n\n'                     +
+
+        '            if( d <= halfWidth) {\n'                                      +
+        '                vec2 kernel = vec2( exp( -d * d / twoSigmaESquared ), \n' +
+        '                                    exp( -d * d / twoSigmaRSquared ));\n' +
+        '                norm += 2.0 * kernel;\n\n'                                +
+
+        '                vec2 L0 = texture2D( src, uv - d*n ).xx;\n'               +
+        '                vec2 L1 = texture2D( src, uv + d*n ).xx;\n'               +
+        '                sum += kernel * ( L0 + L1 );\n'                           +
+        '            }else{\n'                                                     +
+        '                break;\n'                                                 +
+        '            }\n'                                                          +
+        '            d+=ds;\n'                                                     +
+        '        }\n\n'                                                            +
+
+        '        sum /= norm;\n\n'                                                 +
+
+        '        float diff = 100.0 * (sum.x - tau * sum.y);\n'                    +
+        '        destColor= vec3(diff);\n'                                         +
+        '    }else{\n'                                                             +
+        '        destColor = texture2D(src, uv).rgb;\n'                            +
+        '    }\n'                                                                  +
+        '    gl_FragColor = vec4(destColor, 1.0);\n'                               +
+        '}\n',
+
+    'P_FDoG-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
+    'P_FXDoG-frag':
+        'precision mediump float;\n\n'                                             +
+
+        'uniform sampler2D src;\n'                                                 +
+        'uniform sampler2D tfm;\n\n'                                               +
+
+        'uniform float cvsHeight;\n'                                               +
+        'uniform float cvsWidth;\n\n'                                              +
+
+        'uniform float sigma;\n'                                                   +
+        'uniform float k;\n'                                                       +
+        'uniform float p;\n\n'                                                     +
+
+        'uniform bool b_FXDoG;\n'                                                  +
+        'varying vec2 vTexCoord;\n\n'                                              +
+
+        'void main(void){\n\n'                                                     +
+
+        '    vec3 destColor = vec3(0.0);\n'                                        +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n'                         +
+        '    vec2 uv = gl_FragCoord.xy /src_size;\n'                               +
+        '    if(b_FXDoG){\n'                                                       +
+        '        float twoSigmaESquared = 2.0 * sigma * sigma;\n'                  +
+        '        float twoSigmaRSquared = twoSigmaESquared * k * k;\n\n'           +
+
+        '        vec2 t = texture2D(tfm, uv).xy;\n'                                +
+        '        vec2 n = vec2(t.y, -t.x);\n'                                      +
+        '        vec2 nabs = abs(n);\n'                                            +
+        '        float ds = 1.0 / ((nabs.x > nabs.y)? nabs.x : nabs.y);\n'         +
+        '        n /= src_size;\n\n'                                               +
+
+        '        vec2 sum = texture2D( src, uv ).xx;\n'                            +
+        '        vec2 norm = vec2(1.0, 1.0);\n\n'                                  +
+
+        '        float halfWidth = 2.0 * sigma;\n'                                 +
+        '        float d = ds;\n'                                                  +
+        '        const int MAX_NUM_ITERATION = 99999;\n'                           +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n\n'                     +
+
+        '            if( d <= halfWidth) {\n'                                      +
+        '                vec2 kernel = vec2( exp( -d * d / twoSigmaESquared ), \n' +
+        '                                    exp( -d * d / twoSigmaRSquared ));\n' +
+        '                norm += 2.0 * kernel;\n\n'                                +
+
+        '                vec2 L0 = texture2D( src, uv - d*n ).xx;\n'               +
+        '                vec2 L1 = texture2D( src, uv + d*n ).xx;\n'               +
+        '                sum += kernel * ( L0 + L1 );\n'                           +
+        '            }else{\n'                                                     +
+        '                break;\n'                                                 +
+        '            }\n'                                                          +
+        '            d+=ds;\n'                                                     +
+        '        }\n\n'                                                            +
+
+        '        sum /= norm;\n\n'                                                 +
+
+        '        float diff = 100.0 * ((1.0 + p) * sum.x - p * sum.y);\n'          +
+        '        destColor= vec3(diff);\n'                                         +
+        '    }else{\n'                                                             +
+        '        destColor = texture2D(src, uv).rgb;\n'                            +
+        '    }\n'                                                                  +
+        '    gl_FragColor = vec4(destColor, 1.0);\n'                               +
+        '}\n',
+
+    'P_FXDoG-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+
     'refractionMapping-frag':
         'precision mediump float;\n\n'                                        +
 
@@ -2098,11 +2578,6 @@ var Shaders = {
         'uniform float hCoef[9];\n'                                                        +
         'uniform float vCoef[9];\n'                                                        +
         'varying vec2 vTexCoord;\n\n'                                                      +
-
-        'const float redScale   = 0.298912;\n'                                             +
-        'const float greenScale = 0.586611;\n'                                             +
-        'const float blueScale  = 0.114478;\n'                                             +
-        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n'         +
 
         'void main(void){\n'                                                               +
         '    vec3 destColor = vec3(0.0);\n'                                                +
@@ -2387,41 +2862,82 @@ var Shaders = {
         '}\n',
 
     'TF-frag':
-        '// Tangent Field\n'                                               +
-        'precision mediump float;\n\n'                                     +
+        '// Tangent Field\n'                                                               +
+        'precision mediump float;\n\n'                                                     +
 
-        'uniform sampler2D src;\n'                                         +
-        'uniform float cvsHeight;\n'                                       +
-        'uniform float cvsWidth;\n\n'                                      +
+        'uniform sampler2D src;\n'                                                         +
+        'uniform float cvsHeight;\n'                                                       +
+        'uniform float cvsWidth;\n'                                                        +
+        'uniform float hCoef[9];\n'                                                        +
+        'uniform float vCoef[9];\n\n'                                                      +
 
-        'void main (void) {\n'                                             +
-        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n'                 +
-        '    vec2 uv = gl_FragCoord.xy / src_size;\n'                      +
-        '    vec2 d = 1.0 / src_size;\n'                                   +
-        '    vec3 u = (\n'                                                 +
-        '        -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz +\n'     +
-        '        -2.0 * texture2D(src, uv + vec2(-d.x,  0.0)).xyz + \n'    +
-        '        -1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +\n'     +
-        '        +1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +\n'     +
-        '        +2.0 * texture2D(src, uv + vec2( d.x,  0.0)).xyz + \n'    +
-        '        +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz\n'       +
-        '        ) / 4.0;\n\n'                                             +
+        'const float redScale   = 0.298912;\n'                                             +
+        'const float greenScale = 0.586611;\n'                                             +
+        'const float blueScale  = 0.114478;\n'                                             +
+        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n'         +
 
-        '    vec3 v = (\n'                                                 +
-        '           -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz + \n' +
-        '           -2.0 * texture2D(src, uv + vec2( 0.0, -d.y)).xyz + \n' +
-        '           -1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +\n'  +
-        '           +1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +\n'  +
-        '           +2.0 * texture2D(src, uv + vec2( 0.0,  d.y)).xyz + \n' +
-        '           +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz\n'    +
-        '           ) / 4.0;\n'                                            +
-        '    float gu = (u.x + u.y + u.z)/3.0;\n'                          +
-        '    float gv = (v.x + v.y + v.z)/3.0;\n\n'                        +
+        'void main (void) {\n'                                                             +
+        '    vec2 offset[9];\n'                                                            +
+        '    offset[0] = vec2(-1.0, -1.0);\n'                                              +
+        '    offset[1] = vec2( 0.0, -1.0);\n'                                              +
+        '    offset[2] = vec2( 1.0, -1.0);\n'                                              +
+        '    offset[3] = vec2(-1.0,  0.0);\n'                                              +
+        '    offset[4] = vec2( 0.0,  0.0);\n'                                              +
+        '    offset[5] = vec2( 1.0,  0.0);\n'                                              +
+        '    offset[6] = vec2(-1.0,  1.0);\n'                                              +
+        '    offset[7] = vec2( 0.0,  1.0);\n'                                              +
+        '    offset[8] = vec2( 1.0,  1.0);\n'                                              +
+        '    float tFrag = 1.0 / cvsHeight;\n'                                             +
+        '    float sFrag = 1.0 / cvsWidth;\n'                                              +
+        '    vec2  Frag = vec2(sFrag,tFrag);\n'                                            +
+        '    vec2  uv = vec2(gl_FragCoord.s, gl_FragCoord.t);\n'                           +
+        '    float  horizonColor = 0.0;\n'                                                 +
+        '    float  verticalColor = 0.0;\n\n'                                              +
 
-        '    float mag = sqrt(gu*gu+gv*gv);\n'                             +
-        '    float vx = gu/mag;\n'                                         +
-        '    float vy = gv/mag;\n'                                         +
-        '    gl_FragColor = vec4(-vy, vx, mag, 1.0);\n'                    +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[0]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * hCoef[0];\n'   +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[1]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * hCoef[1];\n'   +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[2]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * hCoef[2];\n'   +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[3]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * hCoef[3];\n'   +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[4]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * hCoef[4];\n'   +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[5]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * hCoef[5];\n'   +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[6]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * hCoef[6];\n'   +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[7]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * hCoef[7];\n'   +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[8]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * hCoef[8];\n\n' +
+
+        '    verticalColor += dot(texture2D(src, (uv + offset[0]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * vCoef[0];\n'   +
+        '    verticalColor += dot(texture2D(src, (uv + offset[1]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * vCoef[1];\n'   +
+        '    verticalColor += dot(texture2D(src, (uv + offset[2]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * vCoef[2];\n'   +
+        '    verticalColor += dot(texture2D(src, (uv + offset[3]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * vCoef[3];\n'   +
+        '    verticalColor += dot(texture2D(src, (uv + offset[4]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * vCoef[4];\n'   +
+        '    verticalColor += dot(texture2D(src, (uv + offset[5]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * vCoef[5];\n'   +
+        '    verticalColor += dot(texture2D(src, (uv + offset[6]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * vCoef[6];\n'   +
+        '    verticalColor += dot(texture2D(src, (uv + offset[7]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * vCoef[7];\n'   +
+        '    verticalColor += dot(texture2D(src, (uv + offset[8]) * Frag).rgb, monochrome' +
+                                                                  'Scale) * vCoef[8];\n\n' +
+
+        '    float mag = sqrt(horizonColor * horizonColor + verticalColor * verticalColor' +
+                                                                                  ');\n'   +
+        '    float vx = verticalColor/mag;\n'                                              +
+        '    float vy = horizonColor/mag;\n\n'                                             +
+
+        '    gl_FragColor = vec4(vx, vy, mag, 1.0);\n'                                     +
         '}\n',
 
     'TF-vert':
@@ -2516,5 +3032,96 @@ var Shaders = {
         '	vNormal     = normal;\n'                     +
         '	vColor      = color;\n'                      +
         '	gl_Position = mvpMatrix * vec4(pos, 1.0);\n' +
+        '}\n',
+
+    'XDoG-frag':
+        'precision mediump float;\n\n'                                                     +
+
+        'uniform sampler2D src;\n\n'                                                       +
+
+        'uniform bool b_XDoG;\n'                                                           +
+        'uniform float cvsHeight;\n'                                                       +
+        'uniform float cvsWidth;\n\n'                                                      +
+
+        'uniform float sigma;\n'                                                           +
+        'uniform float k;\n'                                                               +
+        'uniform float p;\n'                                                               +
+        'uniform float epsilon;\n'                                                         +
+        'uniform float phi;\n'                                                             +
+        'varying vec2 vTexCoord;\n\n'                                                      +
+
+        'float cosh(float val)\n'                                                          +
+        '{\n'                                                                              +
+        '    float tmp = exp(val);\n'                                                      +
+        '    float cosH = (tmp + 1.0 / tmp) / 2.0;\n'                                      +
+        '    return cosH;\n'                                                               +
+        '}\n\n'                                                                            +
+
+        'float tanh(float val)\n'                                                          +
+        '{\n'                                                                              +
+        '    float tmp = exp(val);\n'                                                      +
+        '    float tanH = (tmp - 1.0 / tmp) / (tmp + 1.0 / tmp);\n'                        +
+        '    return tanH;\n'                                                               +
+        '}\n\n'                                                                            +
+
+        'float sinh(float val)\n'                                                          +
+        '{\n'                                                                              +
+        '    float tmp = exp(val);\n'                                                      +
+        '    float sinH = (tmp - 1.0 / tmp) / 2.0;\n'                                      +
+        '    return sinH;\n'                                                               +
+        '}\n\n'                                                                            +
+
+        'void main(void){\n'                                                               +
+        '    vec3 destColor = vec3(0.0);\n'                                                +
+        '    if(b_XDoG){\n'                                                                +
+        '        float tFrag = 1.0 / cvsHeight;\n'                                         +
+        '        float sFrag = 1.0 / cvsWidth;\n'                                          +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n'                                        +
+        '        vec2 uv = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n'            +
+        '        float twoSigmaESquared = 2.0 * sigma * sigma;\n'                          +
+        '        float twoSigmaRSquared = twoSigmaESquared * k * k;\n'                     +
+        '        int halfWidth = int(ceil( 1.0 * sigma * k ));\n\n'                        +
+
+        '        const int MAX_NUM_ITERATION = 99999;\n'                                   +
+        '        vec2 sum = vec2(0.0);\n'                                                  +
+        '        vec2 norm = vec2(0.0);\n\n'                                               +
+
+        '        for(int cnt=0;cnt<MAX_NUM_ITERATION;cnt++){\n'                            +
+        '            if(cnt > (2*halfWidth+1)*(2*halfWidth+1)){break;}\n'                  +
+        '            int i = int(cnt / (2*halfWidth+1)) - halfWidth;\n'                    +
+        '            int j = cnt - halfWidth - int(cnt / (2*halfWidth+1)) * (2*halfWidth+' +
+                                                                                 '1);\n\n' +
+
+        '            float d = length(vec2(i,j));\n'                                       +
+        '            vec2 kernel = vec2( exp( -d * d / twoSigmaESquared ), \n'             +
+        '                                exp( -d * d / twoSigmaRSquared ));\n\n'           +
+
+        '            vec2 L = texture2D(src, (uv + vec2(i,j)) * Frag).xx;\n\n'             +
+
+        '            norm += kernel;\n'                                                    +
+        '            sum += kernel * L;\n'                                                 +
+        '        }\n\n'                                                                    +
+
+        '        sum /= norm;\n\n'                                                         +
+
+        '        float H = 100.0 * ((1.0 + p) * sum.x - p * sum.y);\n'                     +
+        '        float edge = ( H > epsilon )? 1.0 : 1.0 + tanh( phi * (H - epsilon));\n'  +
+        '        destColor = vec3(edge);\n'                                                +
+        '    }else{\n'                                                                     +
+        '        destColor = texture2D(src, vTexCoord).rgb;\n'                             +
+        '    }\n\n'                                                                        +
+
+        '    gl_FragColor = vec4(destColor, 1.0);\n'                                       +
+        '}\n',
+
+    'XDoG-vert':
+        'attribute vec3 position;\n'                        +
+        'attribute vec2 texCoord;\n'                        +
+        'uniform   mat4 mvpMatrix;\n'                       +
+        'varying   vec2 vTexCoord;\n\n'                     +
+
+        'void main(void){\n'                                +
+        '	vTexCoord   = texCoord;\n'                        +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n'
 }

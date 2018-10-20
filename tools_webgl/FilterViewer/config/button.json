@@ -1,64 +1,93 @@
 {
-  "buttonList": [
-    {
-      "name": "f_LaplacianFilter",
-      "pipline": "CONVOLUTION_FILTER",
-      "filter": "LAPLACIAN",
-      "shader": "laplacianFilter"
-    },
-    {
-      "name": "f_SobelFilter",
-      "pipline": "CONVOLUTION_FILTER",
-      "filter": "SOBEL",
-      "shader": "sobelFilter"
-    },
-    {
-      "name": "f_BloomEffect",
-      "pipline": "BLOOM_EFFECT",
-      "filter": "GAUSSIAN",
-      "shader": "gaussianFilter"
-    },
-    {
-      "name": "f_GaussianFilter",
-      "pipline": "CONVOLUTION_TWICE",
-      "filter": "GAUSSIAN",
-      "shader": "gaussianFilter"
-    },
-    {
-      "name": "f_KuwaharaFilter",
-      "pipline": "CONVOLUTION_FILTER",
-      "filter": "KUWAHARA",
-      "shader": "kuwaharaFilter"
-    },
-    {
-      "name": "f_GeneralizedKuwaharaFilter",
-      "pipline": "CONVOLUTION_FILTER",
-      "filter": "GKUWAHARA",
-      "shader": "gkuwaharaFilter"
-    },
-    {
-      "name": "f_AnisotropicKuwahara",
-      "pipline": "ANISTROPIC",
-      "filter": "AKUWAHARA",
-      "shader": "AKF"
-    },
-    {
-      "name": "f_VisualAnisotropic",
-      "pipline": "ANISTROPIC",
-      "filter": "ANISTROPIC",
-      "shader": "Anisotropic"
-    },
-    {
-      "name": "f_LIC",
-      "pipline": "ANISTROPIC",
-      "filter": "LIC",
-      "shader": "LIC"
-    },
-    {
-      "name": "f_NoiseLIC",
-      "pipline": "ANISTROPIC",
-      "filter": "NOISELIC",
-      "shader": "LIC"
-    }
-  ]
+    "buttonList": [{
+            "name": "f_LaplacianFilter",
+            "pipline": "CONVOLUTION_FILTER",
+            "filter": "LAPLACIAN",
+            "shader": "laplacianFilter"
+        },
+        {
+            "name": "f_SobelFilter",
+            "pipline": "CONVOLUTION_FILTER",
+            "filter": "SOBEL",
+            "shader": "sobelFilter"
+        },
+        {
+            "name": "f_BloomEffect",
+            "pipline": "BLOOM_EFFECT",
+            "filter": "GAUSSIAN",
+            "shader": "gaussianFilter"
+        },
+        {
+            "name": "f_GaussianFilter",
+            "pipline": "CONVOLUTION_TWICE",
+            "filter": "GAUSSIAN",
+            "shader": "gaussianFilter"
+        },
+        {
+            "name": "f_KuwaharaFilter",
+            "pipline": "CONVOLUTION_FILTER",
+            "filter": "KUWAHARA",
+            "shader": "kuwaharaFilter"
+        },
+        {
+            "name": "f_GeneralizedKuwaharaFilter",
+            "pipline": "CONVOLUTION_FILTER",
+            "filter": "GKUWAHARA",
+            "shader": "gkuwaharaFilter"
+        },
+        {
+            "name": "f_AnisotropicKuwahara",
+            "pipline": "ANISTROPIC",
+            "filter": "AKUWAHARA",
+            "shader": "AKF"
+        },
+        {
+            "name": "f_VisualAnisotropic",
+            "pipline": "ANISTROPIC",
+            "filter": "ANISTROPIC",
+            "shader": "Anisotropic"
+        },
+        {
+            "name": "f_LIC",
+            "pipline": "ANISTROPIC",
+            "filter": "LIC",
+            "shader": "LIC"
+        },
+        {
+            "name": "f_NoiseLIC",
+            "pipline": "ANISTROPIC",
+            "filter": "NOISELIC",
+            "shader": "LIC"
+        },
+        {
+            "name": "f_DoG",
+            "pipline": "CONVOLUTION_FILTER",
+            "filter": "DoG",
+            "shader": "DoG"
+        },
+        {
+            "name": "f_FDoG",
+            "pipline": "ANISTROPIC",
+            "filter": "FDoG",
+            "shader": "FDoG"
+        },
+        {
+            "name": "f_XDoG",
+            "pipline": "CONVOLUTION_FILTER",
+            "filter": "XDoG",
+            "shader": "XDoG"
+        },
+        {
+            "name": "f_FXDoG",
+            "pipline": "ANISTROPIC",
+            "filter": "FXDoG",
+            "shader": "FXDoG"
+        },
+        {
+            "name": "f_Abstraction",
+            "pipline": "ABSTRACTION",
+            "filter": "ABSTRACTION",
+            "shader": "Abstraction"
+        }
+    ]
 }

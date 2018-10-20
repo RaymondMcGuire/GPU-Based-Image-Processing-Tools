@@ -8,7 +8,12 @@
     "f_LaplacianFilter": false,
     "f_GaussianFilter": false,
     "f_SobelFilter": false,
+    "f_DoG": false,
+    "f_XDoG": false,
+    "f_FDoG": false,
+    "f_FXDoG": false,
     "f_KuwaharaFilter": false,
     "f_GeneralizedKuwaharaFilter": false,
-    "f_AnisotropicKuwahara": false
+    "f_AnisotropicKuwahara": false,
+    "f_Abstraction": false
 }
