@@ -32,6 +32,17 @@ module EcognitaWeb3D {
 
         }
 
+        loadAssets() {
+            //load demo texture
+            this.loadTexture("./image/k0.png", true, gl.CLAMP_TO_BORDER, gl.NEAREST, false);
+            this.loadTexture("./image/visual_rgb.png");
+            this.loadTexture("./image/lion.png", false);
+            this.loadTexture("./image/anim.png", false);
+            this.loadTexture("./image/cat.jpg", false);
+            this.loadTexture("./image/man.png", false);
+            this.loadTexture("./image/woman.png", false, gl.CLAMP_TO_EDGE, gl.LINEAR,false);
+            this.loadTexture("./image/noise.png", false);
+        }
 
         getReqQuery() {
             if (window.location.href.split('?').length == 1) {
@@ -301,19 +312,6 @@ module EcognitaWeb3D {
             }
         }
 
-        settingFrameBuffer(frameBufferName: string) {
-            //frame buffer
-            var fBufferWidth = this.canvas.width;
-            var fBufferHeight = this.canvas.height;
-            var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
-            frameBuffer.bindFrameBuffer();
-            frameBuffer.bindDepthBuffer();
-            //frameBuffer.renderToShadowTexure();
-            frameBuffer.renderToFloatTexure();
-            frameBuffer.release();
-            this.framebuffers.set(frameBufferName, frameBuffer);
-        }
-
         settingUniform(shaderName: string, uniformIndexArray: Array<string>) {
 
             var uniLocArray = this.uniLocations.get(shaderName);
@@ -351,6 +349,9 @@ module EcognitaWeb3D {
         }
 
         regisEvent() {  
+            //show tool tip for canvas
+            $('[data-toggle="tooltip"]').tooltip(); 
+            
             //select event
             $("select").imagepicker({
                 hide_select: true,
@@ -358,7 +359,30 @@ module EcognitaWeb3D {
                 selected: ()=> {
                     this.usrSelected = $("select").val();
                 }
-            })
+            });
+
+            //drop image event 
+            this.canvas.addEventListener('dragover', function(event) {
+                event.preventDefault();
+            });
+
+            this.canvas.addEventListener('drop', (event)=> {
+                event.preventDefault();
+                
+                var fileData = event.dataTransfer.files[0];
+
+                if(!fileData.type.match('image.*')) {
+                    alert('you should upload a image!');
+                    return;
+                }
+            
+                var reader = new FileReader();
+                reader.onload = (() =>{
+                        this.loadTexture(reader.result, false, gl.CLAMP_TO_EDGE, gl.LINEAR,false);
+                        this.usrSelected = reader.result;
+                });
+                reader.readAsDataURL(fileData);
+            });
 
             //touch event
             var lastPosX = 0;
@@ -398,13 +422,21 @@ module EcognitaWeb3D {
             hammer.enablePan();
         }
 
+        regisFrameBuffer(num:number){
+            let fArray = Array<any>(num);
+            for (let i = 0; i < num; i++) {
+                this.settingFrameBuffer("frameBuffer" + i);
+                let fb = this.framebuffers.get("frameBuffer" + i);
+                fArray[i] = fb;
+            }
+            return fArray;
+        }
+
         regisAnimeFunc() {
 
             //fundmental setting and variables
             var cnt = 0;
             var cnt1 = 0;
-
-
 
             var lightDirection = [-0.577, 0.577, 0.577];
             var m = this.matUtil;
@@ -465,17 +497,9 @@ module EcognitaWeb3D {
             var AKFShader = this.shaders.get("AKF");
             var AKFUniformLoc = this.uniLocations.get("AKF");
             //-----------------------------------------------
+            //get framebuffer
+            var fb = this.regisFrameBuffer(5);
 
-            this.settingFrameBuffer("frameBuffer1");
-            var frameBuffer1 = this.framebuffers.get("frameBuffer1");
-            this.settingFrameBuffer("frameBuffer2");
-            var frameBuffer2 = this.framebuffers.get("frameBuffer2");
-            this.settingFrameBuffer("frameBuffer3");
-            var frameBuffer3 = this.framebuffers.get("frameBuffer3");
-            this.settingFrameBuffer("frameBuffer4");
-            var frameBuffer4 = this.framebuffers.get("frameBuffer4");
-            this.settingFrameBuffer("frameBuffer5");
-            var frameBuffer5 = this.framebuffers.get("frameBuffer5");
 
             var loop = () => {
                 //--------------------------------------animation global variables
@@ -507,124 +531,67 @@ module EcognitaWeb3D {
                 var inTex = this.Texture.get(this.usrSelected);
                 if (this.usrPipeLine == RenderPipeLine.CONVOLUTION_FILTER) {
                     //---------------------using framebuffer1 to render scene and save result to texture0
-                    frameBuffer1.bindFrameBuffer();
-                    RenderSimpleScene();
-                    gl.activeTexture(gl.TEXTURE0);
+                
                     if (inTex != undefined && this.ui_data.useTexture) {
+                        gl.activeTexture(gl.TEXTURE0);
                         inTex.bind(inTex.texture);
                     } else {
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        this.renderSceneByFrameBuffer(fb[0],RenderSimpleScene);
                     }
 
-                    //---------------------using framebuffer1 to render scene and save result to texture0
+                    this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{this.renderFilter();});
+                 } else if (this.usrPipeLine == RenderPipeLine.BLOOM_EFFECT) {
 
-
-                    //---------------------rendering texture0 to a board and show it in screen
-                    this.filterShader.bind();
-                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    //draw filter image into board
-                    vbo_board.bind(this.filterShader);
-                    ibo_board.bind();
-                    this.renderFilter();
-                    ibo_board.draw(gl.TRIANGLES);
-                    //---------------------rendering texture0 to a board and show it in screen
-                } else if (this.usrPipeLine == RenderPipeLine.BLOOM_EFFECT) {
-                    //render torus specular component, save to frame1  
-                    specCptShader.bind();
-                    frameBuffer1.bindFrameBuffer();
-                    RenderSimpleSceneSpecularParts();
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    this.renderSceneByFrameBuffer(fb[0],RenderSimpleSceneSpecularParts);
 
                     //horizontal blur, save to frame2
-                    this.filterShader.bind();
-                    frameBuffer2.bindFrameBuffer();
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    vbo_board.bind(this.filterShader);
-                    ibo_board.bind();
-                    this.renderGaussianFilter(true, this.btnStatusList.get("f_BloomEffect"));
-                    ibo_board.draw(gl.TRIANGLES);
-
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+                    this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
+                        this.renderGaussianFilter(true, this.btnStatusList.get("f_BloomEffect"));
+                    },true,gl.TEXTURE0,fb[1]);
 
                     //vertical blur,save to frame1 and render to texture1
-                    frameBuffer1.bindFrameBuffer();
-                    this.renderGaussianFilter(false, this.btnStatusList.get("f_BloomEffect"));
-                    ibo_board.draw(gl.TRIANGLES);
-
-                    gl.activeTexture(gl.TEXTURE1);
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
+                        this.renderGaussianFilter(false, this.btnStatusList.get("f_BloomEffect"));
+                    },true,gl.TEXTURE1,fb[0]);
 
                     //render scene, save to texture0
-                    frameBuffer2.bindFrameBuffer();
-                    RenderSimpleScene();
-                    gl.activeTexture(gl.TEXTURE0);
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+                    this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
+                        RenderSimpleScene();
+                    },true,gl.TEXTURE0,fb[1]);
 
                     //synthsis texture0 and texture1
-                    synthShader.bind();
-                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                    this.renderBoardByFrameBuffer(synthShader,vbo_board,ibo_board,()=>{
+                        gl.uniformMatrix4fv(uniLocation_synth[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_synth[1], 0);
+                        gl.uniform1i(uniLocation_synth[2], 1);
+                        gl.uniform1i(uniLocation_synth[3], this.btnStatusList.get("f_BloomEffect"));
+                    });
 
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-                    //render texture to board and show this board to user		
-                    vbo_board.bind(synthShader);
-                    ibo_board.bind();
-                    gl.uniformMatrix4fv(uniLocation_synth[0], false, this.filterMvpMatrix);
-                    gl.uniform1i(uniLocation_synth[1], 0);
-                    gl.uniform1i(uniLocation_synth[2], 1);
-                    gl.uniform1i(uniLocation_synth[3], this.btnStatusList.get("f_BloomEffect"));
-                    ibo_board.draw(gl.TRIANGLES);
                 } else if (this.usrPipeLine == RenderPipeLine.CONVOLUTION_TWICE) {
                     //---------------------using framebuffer1 to render scene and save result to texture0
-
-                    frameBuffer1.bindFrameBuffer();
-                    RenderSimpleScene();
-                    gl.activeTexture(gl.TEXTURE0);
                     if (inTex != undefined && this.ui_data.useTexture) {
+                        gl.activeTexture(gl.TEXTURE0);
                         inTex.bind(inTex.texture);
                     } else {
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        this.renderSceneByFrameBuffer(fb[0],RenderSimpleScene);
                     }
 
                     //horizontal blur, save to frame2
-                    this.filterShader.bind();
                     if (this.btnStatusList.get("f_GaussianFilter")) {
-                        frameBuffer2.bindFrameBuffer();
-                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                        vbo_board.bind(this.filterShader);
-                        ibo_board.bind();
-                        this.renderGaussianFilter(true, this.btnStatusList.get("f_GaussianFilter"));
-                        ibo_board.draw(gl.TRIANGLES);
 
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
-                        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                        this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
+                            this.renderGaussianFilter(true, this.btnStatusList.get("f_GaussianFilter"));
+                        },true,gl.TEXTURE0,fb[1]);
 
-                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                        vbo_board.bind(this.filterShader);
-                        ibo_board.bind();
-                        this.renderGaussianFilter(false, this.btnStatusList.get("f_GaussianFilter"));
+                        this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
+                            this.renderGaussianFilter(false, this.btnStatusList.get("f_GaussianFilter"));
+                        });
+   
                     } else {
-                        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                        vbo_board.bind(this.filterShader);
-                        ibo_board.bind();
-                        this.renderGaussianFilter(false, this.btnStatusList.get("f_GaussianFilter"));
+                        this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
+                            this.renderGaussianFilter(false, this.btnStatusList.get("f_GaussianFilter"));
+                        });
                     }
-                    ibo_board.draw(gl.TRIANGLES);
 
                 } else if (this.usrPipeLine == RenderPipeLine.ANISTROPIC) {
 
@@ -644,181 +611,88 @@ module EcognitaWeb3D {
                         }
                     }
 
-
-
                     //render SRC
-                    frameBuffer1.bindFrameBuffer();
-                    RenderSimpleScene();
-
-                    //render anisotropic save to tex0
-                    gl.activeTexture(gl.TEXTURE0);
                     if (inTex != undefined && this.ui_data.useTexture) {
+                        gl.activeTexture(gl.TEXTURE0);
                         inTex.bind(inTex.texture);
                     } else {
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        this.renderSceneByFrameBuffer(fb[0],RenderSimpleScene);
                     }
 
-                    // //render TF
-                    // TFShader.bind();
-                    // frameBuffer2.bindFrameBuffer();
-
-                    // gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    // gl.clearDepth(1.0);
-                    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    // vbo_board.bind(TFShader);
-                    // ibo_board.bind();
-                    // gl.uniformMatrix4fv(uniLocation_TF[0], false, this.filterMvpMatrix);
-                    // gl.uniform1i(uniLocation_TF[1], 0);
-                    // gl.uniform1fv(uniLocation_TF[2], this.usrParams.sobelHorCoef);
-                    // gl.uniform1fv(uniLocation_TF[3], this.usrParams.sobelVerCoef);
-                    // gl.uniform1f(uniLocation_TF[4], this.canvas.height);
-                    // gl.uniform1f(uniLocation_TF[5], this.canvas.width);
-                    // ibo_board.draw(gl.TRIANGLES);
-
-                    // gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
-
-                    // //render ETF
-                    // ETFShader.bind();
-                    // frameBuffer1.bindFrameBuffer();
-                    // gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    // gl.clearDepth(1.0);
-                    // gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    // vbo_board.bind(ETFShader);
-                    // ibo_board.bind();
-                    // gl.uniformMatrix4fv(uniLocation_ETF[0], false, this.filterMvpMatrix);
-                    // gl.uniform1i(uniLocation_ETF[1], 0);
-                    // gl.uniform1f(uniLocation_ETF[2], this.canvas.height);
-                    // gl.uniform1f(uniLocation_ETF[3], this.canvas.width);
-                    // ibo_board.draw(gl.TRIANGLES);
-
-                    // gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
-
-
                     //render SST
-                    SSTShader.bind();
-                    frameBuffer2.bindFrameBuffer();
-
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    vbo_board.bind(SSTShader);
-                    ibo_board.bind();
-                    gl.uniformMatrix4fv(uniLocation_SST[0], false, this.filterMvpMatrix);
-                    gl.uniform1i(uniLocation_SST[1], 0);
-                    gl.uniform1f(uniLocation_SST[2], this.canvas.height);
-                    gl.uniform1f(uniLocation_SST[3], this.canvas.width);
-                    ibo_board.draw(gl.TRIANGLES);
-
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+                    this.renderBoardByFrameBuffer(SSTShader,vbo_board,ibo_board,()=>{
+                        gl.uniformMatrix4fv(uniLocation_SST[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_SST[1], 0);
+                        gl.uniform1f(uniLocation_SST[2], this.canvas.height);
+                        gl.uniform1f(uniLocation_SST[3], this.canvas.width);
+                    },true,gl.TEXTURE0,fb[1]);
 
                     //render Gaussian
-                    GAUShader.bind();
-                    frameBuffer1.bindFrameBuffer();
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    vbo_board.bind(GAUShader);
-                    ibo_board.bind();
-                    gl.uniformMatrix4fv(uniLocation_GAU[0], false, this.filterMvpMatrix);
-                    gl.uniform1i(uniLocation_GAU[1], 0);
-                    gl.uniform1f(uniLocation_GAU[2], 2.0);
-                    gl.uniform1f(uniLocation_GAU[3], this.canvas.height);
-                    gl.uniform1f(uniLocation_GAU[4], this.canvas.width);
-                    ibo_board.draw(gl.TRIANGLES);
-
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    this.renderBoardByFrameBuffer(GAUShader,vbo_board,ibo_board,()=>{
+                        gl.uniformMatrix4fv(uniLocation_GAU[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_GAU[1], 0);
+                        gl.uniform1f(uniLocation_GAU[2], 2.0);
+                        gl.uniform1f(uniLocation_GAU[3], this.canvas.height);
+                        gl.uniform1f(uniLocation_GAU[4], this.canvas.width);
+                    },true,gl.TEXTURE0,fb[0]);
 
                     //render TFM
-                    TFMShader.bind();
-                    frameBuffer2.bindFrameBuffer();
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    vbo_board.bind(TFMShader);
-                    ibo_board.bind();
-                    gl.uniformMatrix4fv(uniLocation_TFM[0], false, this.filterMvpMatrix);
-                    gl.uniform1i(uniLocation_TFM[1], 0);
-                    gl.uniform1f(uniLocation_TFM[2], this.canvas.height);
-                    gl.uniform1f(uniLocation_TFM[3], this.canvas.width);
-                    ibo_board.draw(gl.TRIANGLES);
-
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
-
-                    //render original image to texture1
-                    frameBuffer1.bindFrameBuffer();
-                    RenderSimpleScene();
-                    //save original texture to tex1
-                    gl.activeTexture(gl.TEXTURE1);
+                    this.renderBoardByFrameBuffer(TFMShader,vbo_board,ibo_board,()=>{
+                        gl.uniformMatrix4fv(uniLocation_TFM[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_TFM[1], 0);
+                        gl.uniform1f(uniLocation_TFM[2], this.canvas.height);
+                        gl.uniform1f(uniLocation_TFM[3], this.canvas.width);
+                    },true,gl.TEXTURE0,fb[1]);
 
                     if(this.usrFilter == Filter.NOISELIC){
-
+                        gl.activeTexture(gl.TEXTURE1);
                         var noiseTex = this.Texture.get("./image/noise.png");
                         if (noiseTex != undefined) {
                             noiseTex.bind(noiseTex.texture);
                         }
                     }else{
+
                         if (inTex != undefined && this.ui_data.useTexture) {
+                            gl.activeTexture(gl.TEXTURE1);
                             inTex.bind(inTex.texture);
                         } else {
-                            gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                            this.renderSceneByFrameBuffer(fb[0],RenderSimpleScene,gl.TEXTURE1);
                         }
                     }
 
                     //FDoG pre-calculation
                     if(this.usrFilter == Filter.FDoG){
-                        PFDoGShader.bind();
-                        frameBuffer3.bindFrameBuffer();
-                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                        vbo_board.bind(PFDoGShader);
-                        ibo_board.bind();
-                        gl.uniformMatrix4fv(uniLocation_PFDoG[0], false, this.filterMvpMatrix);
-                        gl.uniform1i(uniLocation_PFDoG[1], 0);
-                        gl.uniform1i(uniLocation_PFDoG[2], 1);
-                        gl.uniform1f(uniLocation_PFDoG[3], 1.0);
-                        gl.uniform1f(uniLocation_PFDoG[4], 1.6);
-                        gl.uniform1f(uniLocation_PFDoG[5], 0.99);
-                        gl.uniform1f(uniLocation_PFDoG[6], this.canvas.height);
-                        gl.uniform1f(uniLocation_PFDoG[7], this.canvas.width);
-                        gl.uniform1i(uniLocation_PFDoG[8], this.btnStatusList.get("f_FDoG"));
-                        
-                        ibo_board.draw(gl.TRIANGLES);
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer3.targetTexture);
+                        this.renderBoardByFrameBuffer(PFDoGShader,vbo_board,ibo_board,()=>{
+                            gl.uniformMatrix4fv(uniLocation_PFDoG[0], false, this.filterMvpMatrix);
+                            gl.uniform1i(uniLocation_PFDoG[1], 0);
+                            gl.uniform1i(uniLocation_PFDoG[2], 1);
+                            gl.uniform1f(uniLocation_PFDoG[3], 1.0);
+                            gl.uniform1f(uniLocation_PFDoG[4], 1.6);
+                            gl.uniform1f(uniLocation_PFDoG[5], 0.99);
+                            gl.uniform1f(uniLocation_PFDoG[6], this.canvas.height);
+                            gl.uniform1f(uniLocation_PFDoG[7], this.canvas.width);
+                            gl.uniform1i(uniLocation_PFDoG[8], this.btnStatusList.get("f_FDoG"));
+                        },true,gl.TEXTURE1,fb[2]);
 
                     }else if(this.usrFilter == Filter.FXDoG){
-                        PFXDoGShader.bind();
-                        frameBuffer3.bindFrameBuffer();
-                        gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                        gl.clearDepth(1.0);
-                        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                        vbo_board.bind(PFXDoGShader);
-                        ibo_board.bind();
-                        gl.uniformMatrix4fv(uniLocation_PFXDoG[0], false, this.filterMvpMatrix);
-                        gl.uniform1i(uniLocation_PFXDoG[1], 0);
-                        gl.uniform1i(uniLocation_PFXDoG[2], 1);
-                        gl.uniform1f(uniLocation_PFXDoG[3], 1.4);
-                        gl.uniform1f(uniLocation_PFXDoG[4], 1.6);
-                        gl.uniform1f(uniLocation_PFXDoG[5], 21.7);
-                        gl.uniform1f(uniLocation_PFXDoG[6], this.canvas.height);
-                        gl.uniform1f(uniLocation_PFXDoG[7], this.canvas.width);
-                        gl.uniform1i(uniLocation_PFXDoG[8], this.btnStatusList.get("f_FXDoG"));
-                        
-                        ibo_board.draw(gl.TRIANGLES);
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer3.targetTexture);
+                        this.renderBoardByFrameBuffer(PFXDoGShader,vbo_board,ibo_board,()=>{
+                            gl.uniformMatrix4fv(uniLocation_PFXDoG[0], false, this.filterMvpMatrix);
+                            gl.uniform1i(uniLocation_PFXDoG[1], 0);
+                            gl.uniform1i(uniLocation_PFXDoG[2], 1);
+                            gl.uniform1f(uniLocation_PFXDoG[3], 1.4);
+                            gl.uniform1f(uniLocation_PFXDoG[4], 1.6);
+                            gl.uniform1f(uniLocation_PFXDoG[5], 21.7);
+                            gl.uniform1f(uniLocation_PFXDoG[6], this.canvas.height);
+                            gl.uniform1f(uniLocation_PFXDoG[7], this.canvas.width);
+                            gl.uniform1i(uniLocation_PFXDoG[8], this.btnStatusList.get("f_FXDoG"));
+                        },true,gl.TEXTURE1,fb[2]);
                     }
 
-
                     //render Filter
-                    this.filterShader.bind();
-                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    vbo_board.bind(this.filterShader);
-                    ibo_board.bind();
-                    this.renderFilter();
-                    ibo_board.draw(gl.TRIANGLES);
+                    this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
+                        this.renderFilter();
+                    });
+
                 } else if (this.usrPipeLine == RenderPipeLine.ABSTRACTION) {
 
                     //get k0 texture
@@ -829,151 +703,89 @@ module EcognitaWeb3D {
                     }
 
                     //tex0/f2: render TFM
-                    frameBuffer1.bindFrameBuffer();
-                    RenderSimpleScene();
-
-                    //render anisotropic 
-                    gl.activeTexture(gl.TEXTURE0);
                     if (inTex != undefined && this.ui_data.useTexture) {
+                        gl.activeTexture(gl.TEXTURE0);
                         inTex.bind(inTex.texture);
                     } else {
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        this.renderSceneByFrameBuffer(fb[0],RenderSimpleScene);
                     }
 
                     //render SST
-                    SSTShader.bind();
-                    frameBuffer2.bindFrameBuffer();
-
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    vbo_board.bind(SSTShader);
-                    ibo_board.bind();
-                    gl.uniformMatrix4fv(uniLocation_SST[0], false, this.filterMvpMatrix);
-                    gl.uniform1i(uniLocation_SST[1], 0);
-                    gl.uniform1f(uniLocation_SST[2], this.canvas.height);
-                    gl.uniform1f(uniLocation_SST[3], this.canvas.width);
-                    ibo_board.draw(gl.TRIANGLES);
-
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+                    this.renderBoardByFrameBuffer(SSTShader,vbo_board,ibo_board,()=>{
+                        gl.uniformMatrix4fv(uniLocation_SST[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_SST[1], 0);
+                        gl.uniform1f(uniLocation_SST[2], this.canvas.height);
+                        gl.uniform1f(uniLocation_SST[3], this.canvas.width);
+                    },true,gl.TEXTURE0,fb[1]);
 
                     //render Gaussian
-                    GAUShader.bind();
-                    frameBuffer1.bindFrameBuffer();
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    vbo_board.bind(GAUShader);
-                    ibo_board.bind();
-                    gl.uniformMatrix4fv(uniLocation_GAU[0], false, this.filterMvpMatrix);
-                    gl.uniform1i(uniLocation_GAU[1], 0);
-                    gl.uniform1f(uniLocation_GAU[2], 2.0);
-                    gl.uniform1f(uniLocation_GAU[3], this.canvas.height);
-                    gl.uniform1f(uniLocation_GAU[4], this.canvas.width);
-                    ibo_board.draw(gl.TRIANGLES);
-
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                    this.renderBoardByFrameBuffer(GAUShader,vbo_board,ibo_board,()=>{
+                        gl.uniformMatrix4fv(uniLocation_GAU[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_GAU[1], 0);
+                        gl.uniform1f(uniLocation_GAU[2], 2.0);
+                        gl.uniform1f(uniLocation_GAU[3], this.canvas.height);
+                        gl.uniform1f(uniLocation_GAU[4], this.canvas.width);
+                    },true,gl.TEXTURE0,fb[0]);
 
                     //render TFM
-                    TFMShader.bind();
-                    frameBuffer2.bindFrameBuffer();
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    vbo_board.bind(TFMShader);
-                    ibo_board.bind();
-                    gl.uniformMatrix4fv(uniLocation_TFM[0], false, this.filterMvpMatrix);
-                    gl.uniform1i(uniLocation_TFM[1], 0);
-                    gl.uniform1f(uniLocation_TFM[2], this.canvas.height);
-                    gl.uniform1f(uniLocation_TFM[3], this.canvas.width);
-                    ibo_board.draw(gl.TRIANGLES);
-
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.targetTexture);
+                    this.renderBoardByFrameBuffer(TFMShader,vbo_board,ibo_board,()=>{
+                        gl.uniformMatrix4fv(uniLocation_TFM[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_TFM[1], 0);
+                        gl.uniform1f(uniLocation_TFM[2], this.canvas.height);
+                        gl.uniform1f(uniLocation_TFM[3], this.canvas.width);
+                    },true,gl.TEXTURE0,fb[1]);
 
                     //tex1/f1:src
-                    frameBuffer1.bindFrameBuffer();
-                    RenderSimpleScene();
-                    //save original texture to tex1
-                    gl.activeTexture(gl.TEXTURE1);
                     if (inTex != undefined && this.ui_data.useTexture) {
+                        gl.activeTexture(gl.TEXTURE1);
                         inTex.bind(inTex.texture);
                     } else {
-                        gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
+                        this.renderSceneByFrameBuffer(fb[0],RenderSimpleScene,gl.TEXTURE1);
                     }
 
                     //tex3/f3:akf
-                    AKFShader.bind();
-                    frameBuffer3.bindFrameBuffer();
-                    gl.activeTexture(gl.TEXTURE3);
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    vbo_board.bind(AKFShader);
-                    ibo_board.bind();
-                    gl.uniformMatrix4fv(AKFUniformLoc[0], false, this.filterMvpMatrix);
-                    gl.uniform1i(AKFUniformLoc[1], 0);
-                    gl.uniform1i(AKFUniformLoc[2], 1);
-                    gl.uniform1i(AKFUniformLoc[3], 2);
-                    gl.uniform1f(AKFUniformLoc[4], 6.0);
-                    gl.uniform1f(AKFUniformLoc[5], 8.0);
-                    gl.uniform1f(AKFUniformLoc[6], 1.0);
-                    gl.uniform1f(AKFUniformLoc[7], this.canvas.height);
-                    gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
-                    gl.uniform1i(AKFUniformLoc[9], this.btnStatusList.get("f_Abstraction"));
-                    ibo_board.draw(gl.TRIANGLES);
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer3.targetTexture);
+                    this.renderBoardByFrameBuffer(AKFShader,vbo_board,ibo_board,()=>{
+                        gl.uniformMatrix4fv(AKFUniformLoc[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(AKFUniformLoc[1], 0);
+                        gl.uniform1i(AKFUniformLoc[2], 1);
+                        gl.uniform1i(AKFUniformLoc[3], 2);
+                        gl.uniform1f(AKFUniformLoc[4], 6.0);
+                        gl.uniform1f(AKFUniformLoc[5], 8.0);
+                        gl.uniform1f(AKFUniformLoc[6], 1.0);
+                        gl.uniform1f(AKFUniformLoc[7], this.canvas.height);
+                        gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
+                        gl.uniform1i(AKFUniformLoc[9], this.btnStatusList.get("f_Abstraction"));
+                    },true,gl.TEXTURE3,fb[2]);
 
                     //tex4/f4:fxdog
-                    PFXDoGShader.bind();
-                    frameBuffer4.bindFrameBuffer();
-                    gl.activeTexture(gl.TEXTURE4);
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    vbo_board.bind(PFXDoGShader);
-                    ibo_board.bind();
-                    gl.uniformMatrix4fv(uniLocation_PFXDoG[0], false, this.filterMvpMatrix);
-                    gl.uniform1i(uniLocation_PFXDoG[1], 0);
-                    gl.uniform1i(uniLocation_PFXDoG[2], 1);
-                    gl.uniform1f(uniLocation_PFXDoG[3], 1.4);
-                    gl.uniform1f(uniLocation_PFXDoG[4], 1.6);
-                    gl.uniform1f(uniLocation_PFXDoG[5], 21.7);
-                    gl.uniform1f(uniLocation_PFXDoG[6], this.canvas.height);
-                    gl.uniform1f(uniLocation_PFXDoG[7], this.canvas.width);
-                    gl.uniform1i(uniLocation_PFXDoG[8], this.btnStatusList.get("f_Abstraction"));
-                    
-                    ibo_board.draw(gl.TRIANGLES);
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer4.targetTexture);
-                    
-                    FXDoGShader.bind();
-                    frameBuffer5.bindFrameBuffer();
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    vbo_board.bind(FXDoGShader);
-                    ibo_board.bind();
-                    gl.uniformMatrix4fv(uniLocation_FXDoG[0], false, this.filterMvpMatrix);
-                    gl.uniform1i(uniLocation_FXDoG[1], 0);
-                    gl.uniform1i(uniLocation_FXDoG[2], 4);
-                    gl.uniform1f(uniLocation_FXDoG[3], 4.4);
-                    gl.uniform1f(uniLocation_FXDoG[4], 0.017);
-                    gl.uniform1f(uniLocation_FXDoG[5], 79.5);
-                    gl.uniform1f(uniLocation_FXDoG[6], this.canvas.height);
-                    gl.uniform1f(uniLocation_FXDoG[7], this.canvas.width);
-                    gl.uniform1i(uniLocation_FXDoG[8], this.btnStatusList.get("f_Abstraction"));  
-                    ibo_board.draw(gl.TRIANGLES);
-                    gl.bindTexture(gl.TEXTURE_2D, frameBuffer5.targetTexture);
+                    this.renderBoardByFrameBuffer(PFXDoGShader,vbo_board,ibo_board,()=>{
+                        gl.uniformMatrix4fv(uniLocation_PFXDoG[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_PFXDoG[1], 0);
+                        gl.uniform1i(uniLocation_PFXDoG[2], 1);
+                        gl.uniform1f(uniLocation_PFXDoG[3], 1.4);
+                        gl.uniform1f(uniLocation_PFXDoG[4], 1.6);
+                        gl.uniform1f(uniLocation_PFXDoG[5], 21.7);
+                        gl.uniform1f(uniLocation_PFXDoG[6], this.canvas.height);
+                        gl.uniform1f(uniLocation_PFXDoG[7], this.canvas.width);
+                        gl.uniform1i(uniLocation_PFXDoG[8], this.btnStatusList.get("f_Abstraction"));
+                    },true,gl.TEXTURE4,fb[3]);
+         
+                    this.renderBoardByFrameBuffer(FXDoGShader,vbo_board,ibo_board,()=>{
+                        gl.uniformMatrix4fv(uniLocation_FXDoG[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_FXDoG[1], 0);
+                        gl.uniform1i(uniLocation_FXDoG[2], 4);
+                        gl.uniform1f(uniLocation_FXDoG[3], 4.4);
+                        gl.uniform1f(uniLocation_FXDoG[4], 0.017);
+                        gl.uniform1f(uniLocation_FXDoG[5], 79.5);
+                        gl.uniform1f(uniLocation_FXDoG[6], this.canvas.height);
+                        gl.uniform1f(uniLocation_FXDoG[7], this.canvas.width);
+                        gl.uniform1i(uniLocation_FXDoG[8], this.btnStatusList.get("f_Abstraction"));  
+                    },true,gl.TEXTURE4,fb[4]);
 
                     //render Abstratcion Filter
-                    this.filterShader.bind();
-                    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                    gl.clearDepth(1.0);
-                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-                    vbo_board.bind(this.filterShader);
-                    ibo_board.bind();
-                    this.renderFilter();
-                    ibo_board.draw(gl.TRIANGLES);
+                    this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
+                        this.renderFilter();
+                    });
                 }
 
                 //rendering parts----------------------------------------------------------------------------------
@@ -1011,6 +823,7 @@ module EcognitaWeb3D {
                 }
 
                 function RenderSimpleSceneSpecularParts() {
+                    specCptShader.bind();
                     gl.clearColor(0.0, 0.0, 0.0, 1.0);
                     gl.clearDepth(1.0);
                     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);

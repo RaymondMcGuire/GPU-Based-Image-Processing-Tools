@@ -87,19 +87,6 @@ module EcognitaWeb3D {
             this.MATRIX.set("invMatrix", m.identity(m.create()));
         }
 
-        loadAssets() {
-            //load demo texture
-            this.loadTexture("./image/k0.png", true, gl.CLAMP_TO_BORDER, gl.NEAREST, false);
-            this.loadTexture("./image/visual_rgb.png");
-            this.loadTexture("./image/lion.png", false);
-            this.loadTexture("./image/anim.png", false);
-            this.loadTexture("./image/cat.jpg", false);
-            this.loadTexture("./image/man.png", false);
-            this.loadTexture("./image/woman.png", false, gl.CLAMP_TO_EDGE, gl.LINEAR,false);
-            this.loadTexture("./image/noise.png", false);
-
-        }
-
         loadExtraLibrary(ui_data: any) {
             this.ui_data = ui_data;
             //load extral library
@@ -119,6 +106,49 @@ module EcognitaWeb3D {
                 this.shaders.set(s.name, shader);
                 this.uniLocations.set(s.name, new Array<any>());
             });
+        }
+
+        settingFrameBuffer(frameBufferName: string) {
+            //frame buffer
+            var fBufferWidth = this.canvas.width;
+            var fBufferHeight = this.canvas.height;
+            var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
+            frameBuffer.bindFrameBuffer();
+            frameBuffer.bindDepthBuffer();
+            //frameBuffer.renderToShadowTexure();
+            frameBuffer.renderToFloatTexure();
+            frameBuffer.release();
+            this.framebuffers.set(frameBufferName, frameBuffer);
+        }
+
+        renderSceneByFrameBuffer(framebuffer:any,func:any,texid:any=gl.TEXTURE0){
+            framebuffer.bindFrameBuffer();
+            func();
+            gl.activeTexture(texid);
+            gl.bindTexture(gl.TEXTURE_2D, framebuffer.targetTexture);
+        }
+
+        renderBoardByFrameBuffer(shader:any,vbo:any,ibo:any,func:any,use_fb:boolean=false,texid:any=gl.TEXTURE0,fb:any=undefined){
+            shader.bind();
+
+            if(use_fb){
+                fb.bindFrameBuffer();
+            }else{
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            }
+
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            gl.clearDepth(1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            vbo.bind(shader);
+            ibo.bind();
+            func();
+            ibo.draw(gl.TRIANGLES);
+
+            if(use_fb){
+                gl.activeTexture(texid);
+                gl.bindTexture(gl.TEXTURE_2D, fb.targetTexture);
+            }
         }
     }
 
