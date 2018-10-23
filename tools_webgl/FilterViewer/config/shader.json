@@ -1,0 +1,271 @@
+{
+    "shaderList": [{
+            "name": "DoG",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "sigma_e",
+                "sigma_r",
+                "tau",
+                "phi",
+                "cvsHeight",
+                "cvsWidth",
+                "b_DoG"
+            ]
+        },
+        {
+            "name": "XDoG",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "sigma",
+                "k",
+                "p",
+                "epsilon",
+                "phi",
+                "cvsHeight",
+                "cvsWidth",
+                "b_XDoG"
+            ]
+        },
+        {
+            "name": "P_FXDoG",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "sigma",
+                "k",
+                "p",
+                "cvsHeight",
+                "cvsWidth",
+                "b_FXDoG"
+            ]
+        },
+        {
+            "name": "FXDoG",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "sigma_m",
+                "phi",
+                "epsilon",
+                "cvsHeight",
+                "cvsWidth",
+                "b_FXDoG"
+            ]
+        },
+        {
+            "name": "P_FDoG",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "sigma_e",
+                "sigma_r",
+                "tau",
+                "cvsHeight",
+                "cvsWidth",
+                "b_FDoG"
+            ]
+        },
+        {
+            "name": "FDoG",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "sigma_m",
+                "phi",
+                "cvsHeight",
+                "cvsWidth",
+                "b_FDoG"
+            ]
+        },
+        {
+            "name": "Abstraction",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "akf",
+                "fxdog",
+                "edge_color",
+                "cvsHeight",
+                "cvsWidth",
+                "b_Abstraction"
+            ]
+        },
+        {
+            "name": "SST",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "cvsHeight",
+                "cvsWidth"
+            ]
+        },
+        {
+            "name": "ETF",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "cvsHeight",
+                "cvsWidth"
+            ]
+        },
+        {
+            "name": "TF",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "hCoef",
+                "vCoef",
+                "cvsHeight",
+                "cvsWidth"
+            ]
+        },
+        {
+            "name": "Gaussian_K",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "sigma",
+                "cvsHeight",
+                "cvsWidth"
+            ]
+        },
+        {
+            "name": "TFM",
+            "uniforms": [
+                "mvpMatrix",
+                "src",
+                "cvsHeight",
+                "cvsWidth"
+            ]
+        },
+        {
+            "name": "Anisotropic",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "visual",
+                "cvsHeight",
+                "cvsWidth",
+                "anisotropic"
+            ]
+        },
+        {
+            "name": "AKF",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "k0",
+                "radius",
+                "q",
+                "alpha",
+                "cvsHeight",
+                "cvsWidth",
+                "anisotropic"
+            ]
+        },
+        {
+            "name": "filterScene",
+            "uniforms": [
+                "mvpMatrix",
+                "invMatrix",
+                "lightDirection",
+                "eyeDirection",
+                "ambientColor"
+            ]
+        },
+        {
+            "name": "specCpt",
+            "uniforms": [
+                "mvpMatrix",
+                "invMatrix",
+                "lightDirection",
+                "eyeDirection"
+            ]
+        },
+        {
+            "name": "synth",
+            "uniforms": [
+                "mvpMatrix",
+                "texture1",
+                "texture2",
+                "glare"
+            ]
+        },
+        {
+            "name": "laplacianFilter",
+            "uniforms": [
+                "mvpMatrix",
+                "texture",
+                "coef",
+                "cvsHeight",
+                "cvsWidth",
+                "b_laplacian"
+            ]
+        },
+        {
+            "name": "sobelFilter",
+            "uniforms": [
+                "mvpMatrix",
+                "texture",
+                "hCoef",
+                "vCoef",
+                "cvsHeight",
+                "cvsWidth",
+                "b_sobel"
+            ]
+        },
+        {
+            "name": "gaussianFilter",
+            "uniforms": [
+                "mvpMatrix",
+                "texture",
+                "weight",
+                "horizontal",
+                "cvsHeight",
+                "cvsWidth",
+                "b_gaussian"
+            ]
+        },
+        {
+            "name": "kuwaharaFilter",
+            "uniforms": [
+                "mvpMatrix",
+                "texture",
+                "cvsHeight",
+                "cvsWidth",
+                "b_kuwahara"
+            ]
+        },
+        {
+            "name": "gkuwaharaFilter",
+            "uniforms": [
+                "mvpMatrix",
+                "texture",
+                "weight",
+                "cvsHeight",
+                "cvsWidth",
+                "b_gkuwahara"
+            ]
+        },
+        {
+            "name": "LIC",
+            "uniforms": [
+                "mvpMatrix",
+                "tfm",
+                "src",
+                "sigma",
+                "cvsHeight",
+                "cvsWidth",
+                "b_lic"
+            ]
+        }
+    ]
+}

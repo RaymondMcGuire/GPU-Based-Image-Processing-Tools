@@ -1,0 +1,37 @@
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 60px;
+    /* Margin bottom by footer height */
+    background-image: url("../image/back.png")
+}
+
+#canvas_viewer {
+    box-shadow: 0 15px 30px 0 rgba(0, 0, 0, 0.8), 0 15px 30px 0 rgba(0, 0, 0, 0.7);
+    text-align: center;
+}
+
+.container {
+    width: auto;
+    padding: 0 15px;
+    position: relative;
+    top: 30%;
+    max-width: 512px;
+}
+
+#select_gallery {
+    position: fixed;
+    top: 15%;
+}
+
+.image_picker_selector img {
+    height: 75px;
+    width: 75px;
+}
+
+.image_picker_selector li {
+    box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.4);
+}

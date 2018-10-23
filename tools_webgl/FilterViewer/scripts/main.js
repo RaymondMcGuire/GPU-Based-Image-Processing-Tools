@@ -8,82 +8,41 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var Utils;
-(function (Utils) {
-    ;
-    var HashSet = /** @class */ (function () {
-        function HashSet() {
-            this.items = {};
-        }
-        HashSet.prototype.set = function (key, value) {
-            this.items[key] = value;
-        };
-        HashSet.prototype["delete"] = function (key) {
-            return delete this.items[key];
-        };
-        HashSet.prototype.has = function (key) {
-            return key in this.items;
-        };
-        HashSet.prototype.get = function (key) {
-            return this.items[key];
-        };
-        HashSet.prototype.len = function () {
-            return Object.keys(this.items).length;
-        };
-        HashSet.prototype.forEach = function (f) {
-            for (var k in this.items) {
-                f(k, this.items[k]);
-            }
-        };
-        return HashSet;
-    }());
-    Utils.HashSet = HashSet;
-})(Utils || (Utils = {}));
-/// <reference path="../lib/HashSet.ts" />
-var Utils;
-(function (Utils) {
-    var FilterViewerUI = /** @class */ (function () {
-        function FilterViewerUI(data) {
-            var _this = this;
-            this.gui = new dat.gui.GUI();
-            this.data = data;
-            this.gui.remember(data);
-            this.uiController = new Utils.HashSet();
-            this.folderHashSet = new Utils.HashSet();
-            this.folderHashSet.set("f", "Filter");
-            //get all folder name
-            this.folderName = [];
-            this.folderHashSet.forEach(function (k, v) {
-                _this.folderName.push(k);
-            });
-            this.initData();
-            this.initFolder();
-        }
-        FilterViewerUI.prototype.initFolder = function () {
-            var _this = this;
-            this.folderName.forEach(function (fn) {
-                var f = _this.gui.addFolder(_this.folderHashSet.get(fn));
-                for (var key in _this.data) {
-                    //judge this key is in folder or not
-                    var f_name = key.split("_");
-                    if (key.includes('_') && f_name[0] == fn) {
-                        var c = f.add(_this.data, key).listen();
-                        _this.uiController.set(key, c);
-                    }
-                }
-            });
-        };
-        FilterViewerUI.prototype.initData = function () {
-            for (var key in this.data) {
-                if (!key.includes('_')) {
-                    this.gui.add(this.data, key);
-                }
-            }
-        };
-        return FilterViewerUI;
-    }());
-    Utils.FilterViewerUI = FilterViewerUI;
-})(Utils || (Utils = {}));
+/* =========================================================================
+ *
+ *  EgnType.ts
+ *  static type
+ *  v0.1
+ *
+ * ========================================================================= */
+var EcognitaWeb3D;
+(function (EcognitaWeb3D) {
+    var Filter;
+    (function (Filter) {
+        Filter[Filter["LAPLACIAN"] = 0] = "LAPLACIAN";
+        Filter[Filter["SOBEL"] = 1] = "SOBEL";
+        Filter[Filter["GAUSSIAN"] = 2] = "GAUSSIAN";
+        Filter[Filter["KUWAHARA"] = 3] = "KUWAHARA";
+        Filter[Filter["GKUWAHARA"] = 4] = "GKUWAHARA";
+        Filter[Filter["AKUWAHARA"] = 5] = "AKUWAHARA";
+        Filter[Filter["ANISTROPIC"] = 6] = "ANISTROPIC";
+        Filter[Filter["LIC"] = 7] = "LIC";
+        Filter[Filter["NOISELIC"] = 8] = "NOISELIC";
+        Filter[Filter["DoG"] = 9] = "DoG";
+        Filter[Filter["XDoG"] = 10] = "XDoG";
+        Filter[Filter["FDoG"] = 11] = "FDoG";
+        Filter[Filter["FXDoG"] = 12] = "FXDoG";
+        Filter[Filter["ABSTRACTION"] = 13] = "ABSTRACTION";
+    })(Filter = EcognitaWeb3D.Filter || (EcognitaWeb3D.Filter = {}));
+    var RenderPipeLine;
+    (function (RenderPipeLine) {
+        RenderPipeLine[RenderPipeLine["CONVOLUTION_FILTER"] = 0] = "CONVOLUTION_FILTER";
+        RenderPipeLine[RenderPipeLine["ANISTROPIC"] = 1] = "ANISTROPIC";
+        RenderPipeLine[RenderPipeLine["BLOOM_EFFECT"] = 2] = "BLOOM_EFFECT";
+        RenderPipeLine[RenderPipeLine["CONVOLUTION_TWICE"] = 3] = "CONVOLUTION_TWICE";
+        RenderPipeLine[RenderPipeLine["ABSTRACTION"] = 4] = "ABSTRACTION";
+    })(RenderPipeLine = EcognitaWeb3D.RenderPipeLine || (EcognitaWeb3D.RenderPipeLine = {}));
+})(EcognitaWeb3D || (EcognitaWeb3D = {}));
 /* =========================================================================
  *
  *  cv_imread.ts
@@ -631,16 +590,20 @@ var EcognitaMathLib;
     }
     EcognitaMathLib.GetGLTypeSize = GetGLTypeSize;
     var WebGL_Texture = /** @class */ (function () {
-        function WebGL_Texture(channels, isFloat, texels, texType) {
+        function WebGL_Texture(channels, isFloat, texels, texType, texInterpolation, useMipmap) {
             if (texType === void 0) { texType = gl.REPEAT; }
+            if (texInterpolation === void 0) { texInterpolation = gl.LINEAR; }
+            if (useMipmap === void 0) { useMipmap = true; }
             this.type = isFloat ? gl.FLOAT : gl.UNSIGNED_BYTE;
             this.format = [gl.LUMINANCE, gl.RG, gl.RGB, gl.RGBA][channels - 1];
             this.glName = gl.createTexture();
             this.bind(this.glName);
             gl.texImage2D(gl.TEXTURE_2D, 0, this.format, this.format, this.type, texels);
-            gl.generateMipmap(gl.TEXTURE_2D);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            if (useMipmap) {
+                gl.generateMipmap(gl.TEXTURE_2D);
+            }
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, texInterpolation);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, texInterpolation);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, texType);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, texType);
             this.texture = this.glName;
@@ -908,6 +871,18 @@ var EcognitaMathLib;
             //attach framebuff to texture
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
         };
+        WebGL_FrameBuffer.prototype.renderToFloatTexure = function () {
+            gl.bindTexture(gl.TEXTURE_2D, this.targetTexture);
+            //make sure we have enought memory to render the width x height size texture
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, this.width, this.height, 0, gl.RGBA, gl.FLOAT, null);
+            //texture settings
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            //attach framebuff to texture
+            gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.targetTexture, 0);
+        };
         WebGL_FrameBuffer.prototype.renderToCubeTexture = function (cubeTarget) {
             gl.bindTexture(gl.TEXTURE_CUBE_MAP, this.targetTexture);
             for (var i = 0; i < cubeTarget.length; i++) {
@@ -933,6 +908,137 @@ var EcognitaMathLib;
     EcognitaMathLib.WebGL_FrameBuffer = WebGL_FrameBuffer;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
 var Shaders = {
+    'Abstraction-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform sampler2D akf;\n' +
+        'uniform sampler2D fxdog;\n' +
+        'uniform vec3 edge_color;\n\n' +
+        'uniform bool b_Abstraction;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '	vec2 uv = gl_FragCoord.xy / src_size ; \n' +
+        '    vec2 uv_src = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y' +
+        ') / src_size.y);\n' +
+        '    if(b_Abstraction){\n' +
+        '        vec2 d = 1.0 / src_size;\n' +
+        '        vec3 c = texture2D(akf, uv).xyz;\n' +
+        '        float e = texture2D(fxdog, uv).x;\n' +
+        '        gl_FragColor = vec4(mix(edge_color, c, e), 1.0);\n' +
+        '    }else{\n' +
+        '        gl_FragColor = texture2D(src, uv_src);\n' +
+        '    }\n' +
+        '}\n',
+    'Abstraction-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'AKF-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform sampler2D k0;\n' +
+        'uniform sampler2D tfm;\n' +
+        'uniform float radius;\n' +
+        'uniform float q;\n' +
+        'uniform float alpha;\n\n' +
+        'uniform bool anisotropic;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'const float PI = 3.14159265358979323846;\n' +
+        'const int N = 8;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '	vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / src' +
+        '_size.y);\n\n' +
+        '    if(anisotropic){\n' +
+        '        vec4 m[8];\n' +
+        '        vec3 s[8];\n' +
+        '        for (int k = 0; k < N; ++k) {\n' +
+        '            m[k] = vec4(0.0);\n' +
+        '            s[k] = vec3(0.0);\n' +
+        '        }\n\n' +
+        '        float piN = 2.0 * PI / float(N);\n' +
+        '        mat2 X = mat2(cos(piN), sin(piN), -sin(piN), cos(piN));\n\n' +
+        '        vec4 t = texture2D(tfm, uv);\n' +
+        '        float a = radius * clamp((alpha + t.w) / alpha, 0.1, 2.0); \n' +
+        '        float b = radius * clamp(alpha / (alpha + t.w), 0.1, 2.0);\n\n' +
+        '        float cos_phi = cos(t.z);\n' +
+        '        float sin_phi = sin(t.z);\n\n' +
+        '        mat2 R = mat2(cos_phi, -sin_phi, sin_phi, cos_phi);\n' +
+        '        mat2 S = mat2(0.5/a, 0.0, 0.0, 0.5/b);\n' +
+        '        mat2 SR = S * R;\n\n' +
+        '        const int max_x = 6;\n' +
+        '        const int max_y = 6;\n\n' +
+        '        for (int j = -max_y; j <= max_y; ++j) {\n' +
+        '            for (int i = -max_x; i <= max_x; ++i) {\n' +
+        '                vec2 v = SR * vec2(i,j);\n' +
+        '                if (dot(v,v) <= 0.25) {\n' +
+        '                vec4 c_fix = texture2D(src, uv + vec2(i,j) / src_size);\n' +
+        '                vec3 c = c_fix.rgb;\n' +
+        '                for (int k = 0; k < N; ++k) {\n' +
+        '                    float w = texture2D(k0, vec2(0.5, 0.5) + v).x;\n\n' +
+        '                    m[k] += vec4(c * w, w);\n' +
+        '                    s[k] += c * c * w;\n\n' +
+        '                    v *= X;\n' +
+        '                    }\n' +
+        '                }\n' +
+        '            }\n' +
+        '        }\n\n' +
+        '        vec4 o = vec4(0.0);\n' +
+        '        for (int k = 0; k < N; ++k) {\n' +
+        '            m[k].rgb /= m[k].w;\n' +
+        '            s[k] = abs(s[k] / m[k].w - m[k].rgb * m[k].rgb);\n\n' +
+        '            float sigma2 = s[k].r + s[k].g + s[k].b;\n' +
+        '            float w = 1.0 / (1.0 + pow(255.0 * sigma2, 0.5 * q));\n\n' +
+        '            o += vec4(m[k].rgb * w, w);\n' +
+        '        }\n\n' +
+        '        gl_FragColor = vec4(o.rgb / o.w, 1.0);\n' +
+        '    }else{\n' +
+        '        gl_FragColor = texture2D(src, uv);\n' +
+        '    }\n\n' +
+        '}\n',
+    'AKF-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'Anisotropic-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform sampler2D tfm;\n' +
+        'uniform sampler2D visual;\n' +
+        'uniform bool anisotropic;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'void main (void) {\n' +
+        '	vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '	vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / src' +
+        '_size.y);\n' +
+        '	vec4 t = texture2D( tfm, uv );\n\n' +
+        '	if(anisotropic){\n' +
+        '		gl_FragColor = texture2D(visual, vec2(t.w,0.5));\n' +
+        '	}else{\n' +
+        '		gl_FragColor = texture2D(src, uv);\n' +
+        '	}\n' +
+        '}\n',
+    'Anisotropic-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'blurEffect-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
         'varying vec4      vColor;\n\n' +
@@ -1194,6 +1300,183 @@ var Shaders = {
         '    vColor = color*vec4(vec3(diffuse),1.0) +ambientColor;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'DoG-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n\n' +
+        'uniform bool b_DoG;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'uniform float sigma_e;\n' +
+        'uniform float sigma_r;\n' +
+        'uniform float tau;\n' +
+        'uniform float phi;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '    vec3 destColor = vec3(0.0);\n' +
+        '    if(b_DoG){\n' +
+        '        float tFrag = 1.0 / cvsHeight;\n' +
+        '        float sFrag = 1.0 / cvsWidth;\n' +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '        vec2 uv = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n' +
+        '        float twoSigmaESquared = 2.0 * sigma_e * sigma_e;\n' +
+        '        float twoSigmaRSquared = 2.0 * sigma_r * sigma_r;\n' +
+        '        int halfWidth = int(ceil( 2.0 * sigma_r ));\n\n' +
+        '        const int MAX_NUM_ITERATION = 99999;\n' +
+        '        vec2 sum = vec2(0.0);\n' +
+        '        vec2 norm = vec2(0.0);\n\n' +
+        '        for(int cnt=0;cnt<MAX_NUM_ITERATION;cnt++){\n' +
+        '            if(cnt > (2*halfWidth+1)*(2*halfWidth+1)){break;}\n' +
+        '            int i = int(cnt / (2*halfWidth+1)) - halfWidth;\n' +
+        '            int j = cnt - halfWidth - int(cnt / (2*halfWidth+1)) * (2*halfWidth+' +
+        '1);\n\n' +
+        '            float d = length(vec2(i,j));\n' +
+        '            vec2 kernel = vec2( exp( -d * d / twoSigmaESquared ), \n' +
+        '                                exp( -d * d / twoSigmaRSquared ));\n\n' +
+        '            vec2 L = texture2D(src, (uv + vec2(i,j)) * Frag).xx;\n\n' +
+        '            norm += 2.0 * kernel;\n' +
+        '            sum += kernel * L;\n' +
+        '        }\n\n' +
+        '        sum /= norm;\n\n' +
+        '        float H = 100.0 * (sum.x - tau * sum.y);\n' +
+        '        float edge = ( H > 0.0 )? 1.0 : 2.0 * smoothstep(-2.0, 2.0, phi * H );\n' +
+        '        destColor = vec3(edge);\n' +
+        '    }else{\n' +
+        '        destColor = texture2D(src, vTexCoord).rgb;\n' +
+        '    }\n\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'DoG-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'ETF-frag': '// Edge Tangent Flow\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n' +
+        '    vec2 d = 1.0 / src_size;\n' +
+        '    vec3 c = texture2D(src, uv).xyz;\n' +
+        '    float gx = c.z;\n' +
+        '    vec2 tx = c.xy;\n' +
+        '    const float KERNEL = 5.0;\n' +
+        '    vec2 etf = vec2(0.0);\n' +
+        '    vec2 sum = vec2(0,0);\n' +
+        '    float weight = 0.0;\n\n' +
+        '    for(float j = -KERNEL ; j<KERNEL;j++){\n' +
+        '        for(float i=-KERNEL ; i<KERNEL;i++){\n' +
+        '            vec2 ty = texture2D(src, uv + vec2(i * d.x, j * d.y)).xy;\n' +
+        '            float gy = texture2D(src, uv + vec2(i * d.x, j * d.y)).z;\n\n' +
+        '            float wd = abs(dot(tx,ty));\n' +
+        '            float wm = (gy - gx + 1.0)/2.0;\n' +
+        '            float phi = dot(gx,gy)>0.0?1.0:-1.0;\n' +
+        '            float ws = sqrt(j*j+i*i) < KERNEL?1.0:0.0;\n\n' +
+        '            sum += ty * (wm * wd );\n' +
+        '            weight += wm * wd ;\n' +
+        '        }\n' +
+        '    }\n\n' +
+        '    if(weight != 0.0){\n' +
+        '        etf = sum / weight;\n' +
+        '    }else{\n' +
+        '        etf = vec2(0.0);\n' +
+        '    }\n\n' +
+        '    float mag = sqrt(etf.x*etf.x + etf.y*etf.y);\n' +
+        '    float vx = etf.x/mag;\n' +
+        '    float vy = etf.y/mag;\n' +
+        '    gl_FragColor = vec4(vx,vy,mag, 1.0);\n' +
+        '}\n',
+    'ETF-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'FDoG-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform sampler2D tfm;\n\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'uniform float sigma_m;\n' +
+        'uniform float phi;\n\n' +
+        'uniform bool b_FDoG;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'struct lic_t { \n' +
+        '    vec2 p; \n' +
+        '    vec2 t;\n' +
+        '    float w;\n' +
+        '    float dw;\n' +
+        '};\n\n' +
+        'void step(inout lic_t s) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 t = texture2D(tfm, s.p).xy;\n' +
+        '    if (dot(t, s.t) < 0.0) t = -t;\n' +
+        '    s.t = t;\n\n' +
+        '    s.dw = (abs(t.x) > abs(t.y))? \n' +
+        '        abs((fract(s.p.x) - 0.5 - sign(t.x)) / t.x) : \n' +
+        '        abs((fract(s.p.y) - 0.5 - sign(t.y)) / t.y);\n\n' +
+        '    s.p += t * s.dw / src_size;\n' +
+        '    s.w += s.dw;\n' +
+        '}\n\n' +
+        'void main (void) {\n\n' +
+        '    vec3 destColor = vec3(0.0);\n' +
+        '    if(b_FDoG){\n' +
+        '        vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '        vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y' +
+        ') / src_size.y);\n\n' +
+        '        float twoSigmaMSquared = 2.0 * sigma_m * sigma_m;\n' +
+        '        float halfWidth = 2.0 * sigma_m;\n\n' +
+        '        float H = texture2D( src, uv ).x;\n' +
+        '        float w = 1.0;\n\n' +
+        '        lic_t a, b;\n' +
+        '        a.p = b.p = uv;\n' +
+        '        a.t = texture2D( tfm, uv ).xy / src_size;\n' +
+        '        b.t = -a.t;\n' +
+        '        a.w = b.w = 0.0;\n\n' +
+        '        const int MAX_NUM_ITERATION = 99999;\n' +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n' +
+        '            if (a.w < halfWidth) {\n' +
+        '                step(a);\n' +
+        '                float k = a.dw * exp(-a.w * a.w / twoSigmaMSquared);\n' +
+        '                H += k * texture2D(src, a.p).x;\n' +
+        '                w += k;\n' +
+        '            }else{\n' +
+        '                break;\n' +
+        '            }\n' +
+        '        }\n' +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n' +
+        '            if (b.w < halfWidth) {\n' +
+        '                step(b);\n' +
+        '                float k = b.dw * exp(-b.w * b.w / twoSigmaMSquared);\n' +
+        '                H += k * texture2D(src, b.p).x;\n' +
+        '                w += k;\n' +
+        '            }else{\n' +
+        '                break;\n' +
+        '            }\n' +
+        '        }\n' +
+        '        H /= w;\n' +
+        '        float edge = ( H > 0.0 )? 1.0 : 2.0 * smoothstep(-2.0, 2.0, phi * H );\n' +
+        '        destColor = vec3(edge);\n' +
+        '    }\n' +
+        '    else{\n' +
+        '        destColor = texture2D(src, vTexCoord).rgb;\n' +
+        '    }\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'FDoG-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'filterScene-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +
         'void main(void){\n' +
@@ -1248,6 +1531,691 @@ var Shaders = {
         '	vTextureCoord  = textureCoord;\n' +
         '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'FXDoG-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform sampler2D tfm;\n\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'uniform float sigma_m;\n' +
+        'uniform float phi;\n' +
+        'uniform float epsilon;\n\n' +
+        'uniform bool b_FXDoG;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'float cosh(float val)\n' +
+        '{\n' +
+        '    float tmp = exp(val);\n' +
+        '    float cosH = (tmp + 1.0 / tmp) / 2.0;\n' +
+        '    return cosH;\n' +
+        '}\n\n' +
+        'float tanh(float val)\n' +
+        '{\n' +
+        '    float tmp = exp(val);\n' +
+        '    float tanH = (tmp - 1.0 / tmp) / (tmp + 1.0 / tmp);\n' +
+        '    return tanH;\n' +
+        '}\n\n' +
+        'float sinh(float val)\n' +
+        '{\n' +
+        '    float tmp = exp(val);\n' +
+        '    float sinH = (tmp - 1.0 / tmp) / 2.0;\n' +
+        '    return sinH;\n' +
+        '}\n\n' +
+        'struct lic_t { \n' +
+        '    vec2 p; \n' +
+        '    vec2 t;\n' +
+        '    float w;\n' +
+        '    float dw;\n' +
+        '};\n\n' +
+        'void step(inout lic_t s) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 t = texture2D(tfm, s.p).xy;\n' +
+        '    if (dot(t, s.t) < 0.0) t = -t;\n' +
+        '    s.t = t;\n\n' +
+        '    s.dw = (abs(t.x) > abs(t.y))? \n' +
+        '        abs((fract(s.p.x) - 0.5 - sign(t.x)) / t.x) : \n' +
+        '        abs((fract(s.p.y) - 0.5 - sign(t.y)) / t.y);\n\n' +
+        '    s.p += t * s.dw / src_size;\n' +
+        '    s.w += s.dw;\n' +
+        '}\n\n' +
+        'void main (void) {\n\n' +
+        '    vec3 destColor = vec3(0.0);\n' +
+        '    if(b_FXDoG){\n' +
+        '        vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '        vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y' +
+        ') / src_size.y);\n\n' +
+        '        float twoSigmaMSquared = 2.0 * sigma_m * sigma_m;\n' +
+        '        float halfWidth = 2.0 * sigma_m;\n\n' +
+        '        float H = texture2D( src, uv ).x;\n' +
+        '        float w = 1.0;\n\n' +
+        '        lic_t a, b;\n' +
+        '        a.p = b.p = uv;\n' +
+        '        a.t = texture2D( tfm, uv ).xy / src_size;\n' +
+        '        b.t = -a.t;\n' +
+        '        a.w = b.w = 0.0;\n\n' +
+        '        const int MAX_NUM_ITERATION = 99999;\n' +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n' +
+        '            if (a.w < halfWidth) {\n' +
+        '                step(a);\n' +
+        '                float k = a.dw * exp(-a.w * a.w / twoSigmaMSquared);\n' +
+        '                H += k * texture2D(src, a.p).x;\n' +
+        '                w += k;\n' +
+        '            }else{\n' +
+        '                break;\n' +
+        '            }\n' +
+        '        }\n' +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n' +
+        '            if (b.w < halfWidth) {\n' +
+        '                step(b);\n' +
+        '                float k = b.dw * exp(-b.w * b.w / twoSigmaMSquared);\n' +
+        '                H += k * texture2D(src, b.p).x;\n' +
+        '                w += k;\n' +
+        '            }else{\n' +
+        '                break;\n' +
+        '            }\n' +
+        '        }\n' +
+        '        H /= w;\n' +
+        '        float edge = ( H > epsilon )? 1.0 : 1.0 + tanh( phi * (H - epsilon));\n' +
+        '        destColor = vec3(edge);\n' +
+        '    }\n' +
+        '    else{\n' +
+        '        destColor = texture2D(src, vTexCoord).rgb;\n' +
+        '    }\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'FXDoG-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'gaussianFilter-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'uniform bool b_gaussian;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'uniform float weight[10];\n' +
+        'uniform bool horizontal;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '    vec3  destColor = vec3(0.0);\n' +
+        '	if(b_gaussian){\n' +
+        '		float tFrag = 1.0 / cvsHeight;\n' +
+        '		float sFrag = 1.0 / cvsWidth;\n' +
+        '		vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '		vec2 fc;\n' +
+        '		if(horizontal){\n' +
+        '			fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-9.0, 0.0)) * Frag).rgb * weight[9' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-8.0, 0.0)) * Frag).rgb * weight[8' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-7.0, 0.0)) * Frag).rgb * weight[7' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-6.0, 0.0)) * Frag).rgb * weight[6' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-5.0, 0.0)) * Frag).rgb * weight[5' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-4.0, 0.0)) * Frag).rgb * weight[4' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-3.0, 0.0)) * Frag).rgb * weight[3' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-2.0, 0.0)) * Frag).rgb * weight[2' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(-1.0, 0.0)) * Frag).rgb * weight[1' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 0.0, 0.0)) * Frag).rgb * weight[0' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 1.0, 0.0)) * Frag).rgb * weight[1' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 2.0, 0.0)) * Frag).rgb * weight[2' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 3.0, 0.0)) * Frag).rgb * weight[3' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 4.0, 0.0)) * Frag).rgb * weight[4' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 5.0, 0.0)) * Frag).rgb * weight[5' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 6.0, 0.0)) * Frag).rgb * weight[6' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 7.0, 0.0)) * Frag).rgb * weight[7' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 8.0, 0.0)) * Frag).rgb * weight[8' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2( 9.0, 0.0)) * Frag).rgb * weight[9' +
+        '];\n' +
+        '		}else{\n' +
+        '			fc = gl_FragCoord.st;\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -9.0)) * Frag).rgb * weight[9' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -8.0)) * Frag).rgb * weight[8' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -7.0)) * Frag).rgb * weight[7' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -6.0)) * Frag).rgb * weight[6' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -5.0)) * Frag).rgb * weight[5' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -4.0)) * Frag).rgb * weight[4' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -3.0)) * Frag).rgb * weight[3' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -2.0)) * Frag).rgb * weight[2' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0, -1.0)) * Frag).rgb * weight[1' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  0.0)) * Frag).rgb * weight[0' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  1.0)) * Frag).rgb * weight[1' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  2.0)) * Frag).rgb * weight[2' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  3.0)) * Frag).rgb * weight[3' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  4.0)) * Frag).rgb * weight[4' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  5.0)) * Frag).rgb * weight[5' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  6.0)) * Frag).rgb * weight[6' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  7.0)) * Frag).rgb * weight[7' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  8.0)) * Frag).rgb * weight[8' +
+        '];\n' +
+        '			destColor += texture2D(texture, (fc + vec2(0.0,  9.0)) * Frag).rgb * weight[9' +
+        '];\n' +
+        '		}\n' +
+        '	}else{\n' +
+        ' 		destColor = texture2D(texture, vTexCoord).rgb;\n' +
+        '	}\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'gaussianFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'Gaussian_K-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float sigma;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n\n' +
+        '    float twoSigma2 = 2.0 * 2.0 * 2.0;\n' +
+        '    const int halfWidth = 4;//int(ceil( 2.0 * sigma ));\n\n' +
+        '    vec3 sum = vec3(0.0);\n' +
+        '    float norm = 0.0;\n' +
+        '    for ( int i = -halfWidth; i <= halfWidth; ++i ) {\n' +
+        '        for ( int j = -halfWidth; j <= halfWidth; ++j ) {\n' +
+        '            float d = length(vec2(i,j));\n' +
+        '            float kernel = exp( -d *d / twoSigma2 );\n' +
+        '            vec3 c = texture2D(src, uv + vec2(i,j) / src_size ).rgb;\n' +
+        '            sum += kernel * c;\n' +
+        '            norm += kernel;\n' +
+        '        }\n' +
+        '    }\n' +
+        '    gl_FragColor = vec4(sum / norm, 1.0);\n' +
+        '}\n',
+    'Gaussian_K-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'gkuwaharaFilter-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n\n' +
+        'uniform float weight[49];\n' +
+        'uniform bool b_gkuwahara;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '    vec3  destColor = vec3(0.0);\n' +
+        '    if(b_gkuwahara){\n' +
+        '        float q = 3.0;\n' +
+        '        vec3 mean[8];\n' +
+        '        vec3 sigma[8];\n' +
+        '        vec2 offset[49];\n' +
+        '        offset[0] = vec2(-3.0, -3.0);\n' +
+        '        offset[1] = vec2(-2.0, -3.0);\n' +
+        '        offset[2] = vec2(-1.0, -3.0);\n' +
+        '        offset[3] = vec2( 0.0, -3.0);\n' +
+        '        offset[4] = vec2( 1.0, -3.0);\n' +
+        '        offset[5] = vec2( 2.0, -3.0);\n' +
+        '        offset[6] = vec2( 3.0, -3.0);\n\n' +
+        '        offset[7]  = vec2(-3.0, -2.0);\n' +
+        '        offset[8]  = vec2(-2.0, -2.0);\n' +
+        '        offset[9]  = vec2(-1.0, -2.0);\n' +
+        '        offset[10] = vec2( 0.0, -2.0);\n' +
+        '        offset[11] = vec2( 1.0, -2.0);\n' +
+        '        offset[12] = vec2( 2.0, -2.0);\n' +
+        '        offset[13] = vec2( 3.0, -2.0);\n\n' +
+        '        offset[14] = vec2(-3.0, -1.0);\n' +
+        '        offset[15] = vec2(-2.0, -1.0);\n' +
+        '        offset[16] = vec2(-1.0, -1.0);\n' +
+        '        offset[17] = vec2( 0.0, -1.0);\n' +
+        '        offset[18] = vec2( 1.0, -1.0);\n' +
+        '        offset[19] = vec2( 2.0, -1.0);\n' +
+        '        offset[20] = vec2( 3.0, -1.0);\n\n' +
+        '        offset[21] = vec2(-3.0,  0.0);\n' +
+        '        offset[22] = vec2(-2.0,  0.0);\n' +
+        '        offset[23] = vec2(-1.0,  0.0);\n' +
+        '        offset[24] = vec2( 0.0,  0.0);\n' +
+        '        offset[25] = vec2( 1.0,  0.0);\n' +
+        '        offset[26] = vec2( 2.0,  0.0);\n' +
+        '        offset[27] = vec2( 3.0,  0.0);\n\n' +
+        '        offset[28] = vec2(-3.0,  1.0);\n' +
+        '        offset[29] = vec2(-2.0,  1.0);\n' +
+        '        offset[30] = vec2(-1.0,  1.0);\n' +
+        '        offset[31] = vec2( 0.0,  1.0);\n' +
+        '        offset[32] = vec2( 1.0,  1.0);\n' +
+        '        offset[33] = vec2( 2.0,  1.0);\n' +
+        '        offset[34] = vec2( 3.0,  1.0);\n\n' +
+        '        offset[35] = vec2(-3.0,  2.0);\n' +
+        '        offset[36] = vec2(-2.0,  2.0);\n' +
+        '        offset[37] = vec2(-1.0,  2.0);\n' +
+        '        offset[38] = vec2( 0.0,  2.0);\n' +
+        '        offset[39] = vec2( 1.0,  2.0);\n' +
+        '        offset[40] = vec2( 2.0,  2.0);\n' +
+        '        offset[41] = vec2( 3.0,  2.0);\n\n' +
+        '        offset[42] = vec2(-3.0,  3.0);\n' +
+        '        offset[43] = vec2(-2.0,  3.0);\n' +
+        '        offset[44] = vec2(-1.0,  3.0);\n' +
+        '        offset[45] = vec2( 0.0,  3.0);\n' +
+        '        offset[46] = vec2( 1.0,  3.0);\n' +
+        '        offset[47] = vec2( 2.0,  3.0);\n' +
+        '        offset[48] = vec2( 3.0,  3.0);\n\n' +
+        '        float tFrag = 1.0 / cvsHeight;\n' +
+        '        float sFrag = 1.0 / cvsWidth;\n' +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '        vec2  fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n' +
+        '        vec3 cur_std = vec3(0.0);\n' +
+        '        float cur_weight = 0.0;\n' +
+        '        vec3 total_ms = vec3(0.0);\n' +
+        '        vec3 total_s = vec3(0.0);\n\n' +
+        '        mean[0]=vec3(0.0);\n' +
+        '        sigma[0]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[24]) * Frag).rgb * weight[24' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[24]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[24]) * Frag).rgb * weight[24];\n' +
+        '        cur_weight+= weight[24];\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[31]) * Frag).rgb * weight[31' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[31]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[31]) * Frag).rgb * weight[31];\n' +
+        '        cur_weight+= weight[31];\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[38]) * Frag).rgb * weight[38' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[38]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[38]) * Frag).rgb * weight[38];\n' +
+        '        cur_weight+= weight[38];\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[45]) * Frag).rgb * weight[45' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[45]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[45]) * Frag).rgb * weight[45];\n' +
+        '        cur_weight+= weight[45];\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[39]) * Frag).rgb * weight[39' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[39]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[39]) * Frag).rgb * weight[39];\n' +
+        '        cur_weight+= weight[39];\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[46]) * Frag).rgb * weight[46' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[46]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[46]) * Frag).rgb * weight[46];\n' +
+        '        cur_weight+= weight[46];\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[47]) * Frag).rgb * weight[47' +
+        '];\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[47]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[47]) * Frag).rgb * weight[47];\n' +
+        '        cur_weight+= weight[47];\n\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[0] /= cur_weight;\n' +
+        '            sigma[0] /= cur_weight;\n' +
+        '        }\n\n' +
+        '        cur_std = sigma[0] - mean[0] * mean[0];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[0] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[1]=vec3(0.0);\n' +
+        '        sigma[1]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[32]) * Frag).rgb * weight[32' +
+        '];\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[32]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[32]) * Frag).rgb * weight[32];\n' +
+        '        cur_weight+= weight[32];\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[33]) * Frag).rgb * weight[33' +
+        '];\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[33]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[33]) * Frag).rgb * weight[33];\n' +
+        '        cur_weight+= weight[33];\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[40]) * Frag).rgb * weight[40' +
+        '];\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[40]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[40]) * Frag).rgb * weight[40];\n' +
+        '        cur_weight+= weight[40];\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[34]) * Frag).rgb * weight[34' +
+        '];\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[34]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[34]) * Frag).rgb * weight[34];\n' +
+        '        cur_weight+= weight[34];\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[41]) * Frag).rgb * weight[41' +
+        '];\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[41]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[41]) * Frag).rgb * weight[41];\n' +
+        '        cur_weight+= weight[41];\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[48]) * Frag).rgb * weight[48' +
+        '];\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[48]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[48]) * Frag).rgb * weight[48];\n' +
+        '        cur_weight+= weight[48];\n\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[1] /= cur_weight;\n' +
+        '            sigma[1] /= cur_weight;\n' +
+        '        }\n\n' +
+        '        cur_std = sigma[1] - mean[1] * mean[1];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[1] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[2]=vec3(0.0);\n' +
+        '        sigma[2]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[25]) * Frag).rgb * weight[25' +
+        '];\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[25]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[25]) * Frag).rgb * weight[25];\n' +
+        '        cur_weight+= weight[25];\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[19]) * Frag).rgb * weight[19' +
+        '];\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[19]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[19]) * Frag).rgb * weight[19];\n' +
+        '        cur_weight+= weight[19];\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[26]) * Frag).rgb * weight[26' +
+        '];\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[26]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[26]) * Frag).rgb * weight[26];\n' +
+        '        cur_weight+= weight[26];\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[13]) * Frag).rgb * weight[13' +
+        '];\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[13]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[13]) * Frag).rgb * weight[13];\n' +
+        '        cur_weight+= weight[13];\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[20]) * Frag).rgb * weight[20' +
+        '];\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[20]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[20]) * Frag).rgb * weight[20];\n' +
+        '        cur_weight+= weight[20];\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[27]) * Frag).rgb * weight[27' +
+        '];\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[27]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[27]) * Frag).rgb * weight[27];\n' +
+        '        cur_weight+= weight[27];\n\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[2] /= cur_weight;\n' +
+        '            sigma[2] /= cur_weight;\n' +
+        '        }\n\n' +
+        '        cur_std = sigma[2] - mean[2] * mean[2];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[2] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[3]=vec3(0.0);\n' +
+        '        sigma[3]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[4]) * Frag).rgb * weight[4];\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[4]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[4]) * Frag).rgb * weight[4];\n' +
+        '        cur_weight+= weight[4];\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[11]) * Frag).rgb * weight[11' +
+        '];\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[11]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[11]) * Frag).rgb * weight[11];\n' +
+        '        cur_weight+= weight[11];\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[18]) * Frag).rgb * weight[18' +
+        '];\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[18]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[18]) * Frag).rgb * weight[18];\n' +
+        '        cur_weight+= weight[18];\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[5]) * Frag).rgb * weight[5];\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[5]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[5]) * Frag).rgb * weight[5];\n' +
+        '        cur_weight+= weight[5];\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[12]) * Frag).rgb * weight[12' +
+        '];\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[12]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[12]) * Frag).rgb * weight[12];\n' +
+        '        cur_weight+= weight[12];\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[6]) * Frag).rgb * weight[6];\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[6]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[6]) * Frag).rgb * weight[6];\n' +
+        '        cur_weight+= weight[6];\n\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[3] /= cur_weight;\n' +
+        '            sigma[3] /= cur_weight;\n' +
+        '        }\n\n' +
+        '        cur_std = sigma[3] - mean[3] * mean[3];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[3] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[4]=vec3(0.0);\n' +
+        '        sigma[4]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[4]  += texture2D(texture, (fc + offset[1]) * Frag).rgb * weight[1];\n' +
+        '        sigma[4]  += texture2D(texture, (fc + offset[1]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[1]) * Frag).rgb * weight[1];\n' +
+        '        cur_weight+= weight[1];\n' +
+        '        mean[4]  += texture2D(texture, (fc + offset[2]) * Frag).rgb * weight[2];\n' +
+        '        sigma[4]  += texture2D(texture, (fc + offset[2]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[2]) * Frag).rgb * weight[2];\n' +
+        '        cur_weight+= weight[2];\n' +
+        '        mean[4]  += texture2D(texture, (fc + offset[9]) * Frag).rgb * weight[9];\n' +
+        '        sigma[4]  += texture2D(texture, (fc + offset[9]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[9]) * Frag).rgb * weight[9];\n' +
+        '        cur_weight+= weight[9];\n' +
+        '        mean[4]  += texture2D(texture, (fc + offset[3]) * Frag).rgb * weight[3];\n' +
+        '        sigma[4]  += texture2D(texture, (fc + offset[3]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[3]) * Frag).rgb * weight[3];\n' +
+        '        cur_weight+= weight[3];\n' +
+        '        mean[4]  += texture2D(texture, (fc + offset[10]) * Frag).rgb * weight[10' +
+        '];\n' +
+        '        sigma[4]  += texture2D(texture, (fc + offset[10]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[10]) * Frag).rgb * weight[10];\n' +
+        '        cur_weight+= weight[10];\n' +
+        '        mean[4]  += texture2D(texture, (fc + offset[17]) * Frag).rgb * weight[17' +
+        '];\n' +
+        '        sigma[4]  += texture2D(texture, (fc + offset[17]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[17]) * Frag).rgb * weight[17];\n' +
+        '        cur_weight+= weight[17];\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[4] /= cur_weight;\n' +
+        '            sigma[4] /= cur_weight;\n' +
+        '        }\n' +
+        '        cur_std = sigma[4] - mean[4] * mean[4];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[4] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[5]=vec3(0.0);\n' +
+        '        sigma[5]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[5]  += texture2D(texture, (fc + offset[0]) * Frag).rgb * weight[0];\n' +
+        '        sigma[5]  += texture2D(texture, (fc + offset[0]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[0]) * Frag).rgb * weight[0];\n' +
+        '        cur_weight+= weight[0];\n' +
+        '        mean[5]  += texture2D(texture, (fc + offset[7]) * Frag).rgb * weight[7];\n' +
+        '        sigma[5]  += texture2D(texture, (fc + offset[7]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[7]) * Frag).rgb * weight[7];\n' +
+        '        cur_weight+= weight[7];\n' +
+        '        mean[5]  += texture2D(texture, (fc + offset[14]) * Frag).rgb * weight[14' +
+        '];\n' +
+        '        sigma[5]  += texture2D(texture, (fc + offset[14]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[14]) * Frag).rgb * weight[14];\n' +
+        '        cur_weight+= weight[14];\n' +
+        '        mean[5]  += texture2D(texture, (fc + offset[8]) * Frag).rgb * weight[8];\n' +
+        '        sigma[5]  += texture2D(texture, (fc + offset[8]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[8]) * Frag).rgb * weight[8];\n' +
+        '        cur_weight+= weight[8];\n' +
+        '        mean[5]  += texture2D(texture, (fc + offset[15]) * Frag).rgb * weight[15' +
+        '];\n' +
+        '        sigma[5]  += texture2D(texture, (fc + offset[15]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[15]) * Frag).rgb * weight[15];\n' +
+        '        cur_weight+= weight[15];\n' +
+        '        mean[5]  += texture2D(texture, (fc + offset[16]) * Frag).rgb * weight[16' +
+        '];\n' +
+        '        sigma[5]  += texture2D(texture, (fc + offset[16]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[16]) * Frag).rgb * weight[16];\n' +
+        '        cur_weight+= weight[16];\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[5] /= cur_weight;\n' +
+        '            sigma[5] /= cur_weight;\n' +
+        '        }\n' +
+        '        cur_std = sigma[5] - mean[5] * mean[5];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[5] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[6]=vec3(0.0);\n' +
+        '        sigma[6]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[6]  += texture2D(texture, (fc + offset[21]) * Frag).rgb * weight[21' +
+        '];\n' +
+        '        sigma[6]  += texture2D(texture, (fc + offset[21]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[21]) * Frag).rgb * weight[21];\n' +
+        '        cur_weight+= weight[21];\n' +
+        '        mean[6]  += texture2D(texture, (fc + offset[28]) * Frag).rgb * weight[28' +
+        '];\n' +
+        '        sigma[6]  += texture2D(texture, (fc + offset[28]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[28]) * Frag).rgb * weight[28];\n' +
+        '        cur_weight+= weight[28];\n' +
+        '        mean[6]  += texture2D(texture, (fc + offset[35]) * Frag).rgb * weight[35' +
+        '];\n' +
+        '        sigma[6]  += texture2D(texture, (fc + offset[35]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[35]) * Frag).rgb * weight[35];\n' +
+        '        cur_weight+= weight[35];\n' +
+        '        mean[6]  += texture2D(texture, (fc + offset[22]) * Frag).rgb * weight[22' +
+        '];\n' +
+        '        sigma[6]  += texture2D(texture, (fc + offset[22]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[22]) * Frag).rgb * weight[22];\n' +
+        '        cur_weight+= weight[22];\n' +
+        '        mean[6]  += texture2D(texture, (fc + offset[29]) * Frag).rgb * weight[29' +
+        '];\n' +
+        '        sigma[6]  += texture2D(texture, (fc + offset[29]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[29]) * Frag).rgb * weight[29];\n' +
+        '        cur_weight+= weight[29];\n' +
+        '        mean[6]  += texture2D(texture, (fc + offset[23]) * Frag).rgb * weight[23' +
+        '];\n' +
+        '        sigma[6]  += texture2D(texture, (fc + offset[23]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[23]) * Frag).rgb * weight[23];\n' +
+        '        cur_weight+= weight[23];\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[6] /= cur_weight;\n' +
+        '            sigma[6] /= cur_weight;\n' +
+        '        }\n' +
+        '        cur_std = sigma[6] - mean[6] * mean[6];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n' +
+        '        total_ms += mean[6] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n' +
+        '        mean[7]=vec3(0.0);\n' +
+        '        sigma[7]=vec3(0.0);\n' +
+        '        cur_weight = 0.0;\n' +
+        '        mean[7]  += texture2D(texture, (fc + offset[42]) * Frag).rgb * weight[42' +
+        '];\n' +
+        '        sigma[7]  += texture2D(texture, (fc + offset[42]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[42]) * Frag).rgb * weight[42];\n' +
+        '        cur_weight+= weight[42];\n' +
+        '        mean[7]  += texture2D(texture, (fc + offset[36]) * Frag).rgb * weight[36' +
+        '];\n' +
+        '        sigma[7]  += texture2D(texture, (fc + offset[36]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[36]) * Frag).rgb * weight[36];\n' +
+        '        cur_weight+= weight[36];\n' +
+        '        mean[7]  += texture2D(texture, (fc + offset[43]) * Frag).rgb * weight[43' +
+        '];\n' +
+        '        sigma[7]  += texture2D(texture, (fc + offset[43]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[43]) * Frag).rgb * weight[43];\n' +
+        '        cur_weight+= weight[43];\n' +
+        '        mean[7]  += texture2D(texture, (fc + offset[30]) * Frag).rgb * weight[30' +
+        '];\n' +
+        '        sigma[7]  += texture2D(texture, (fc + offset[30]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[30]) * Frag).rgb * weight[30];\n' +
+        '        cur_weight+= weight[30];\n' +
+        '        mean[7]  += texture2D(texture, (fc + offset[37]) * Frag).rgb * weight[37' +
+        '];\n' +
+        '        sigma[7]  += texture2D(texture, (fc + offset[37]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[37]) * Frag).rgb * weight[37];\n' +
+        '        cur_weight+= weight[37];\n' +
+        '        mean[7]  += texture2D(texture, (fc + offset[44]) * Frag).rgb * weight[44' +
+        '];\n' +
+        '        sigma[7]  += texture2D(texture, (fc + offset[44]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[44]) * Frag).rgb * weight[44];\n' +
+        '        cur_weight+= weight[44];\n' +
+        '        if(cur_weight!=0.0){\n' +
+        '            mean[7] /= cur_weight;\n' +
+        '            sigma[7] /= cur_weight;\n' +
+        '        }\n' +
+        '        cur_std = sigma[7] - mean[7] * mean[7];\n' +
+        '        if(cur_std.r > 1e-10 && cur_std.g > 1e-10 && cur_std.b > 1e-10){\n' +
+        '            cur_std = sqrt(cur_std);\n' +
+        '        }else{\n' +
+        '            cur_std = vec3(1e-10);\n' +
+        '        }\n\n' +
+        '        total_ms += mean[7] * pow(cur_std,vec3(-q));\n' +
+        '        total_s  += pow(cur_std,vec3(-q));\n\n' +
+        '        if(total_s.r> 1e-10 && total_s.g> 1e-10 && total_s.b> 1e-10){\n' +
+        '            destColor = (total_ms/total_s).rgb;\n' +
+        '            destColor = max(destColor, 0.0);\n' +
+        '            destColor = min(destColor, 1.0);\n' +
+        '        }else{\n' +
+        '            destColor = texture2D(texture, vTexCoord).rgb;\n' +
+        '        }\n\n' +
+        '    }else{\n' +
+        '        destColor = texture2D(texture, vTexCoord).rgb;\n' +
+        '    }\n\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'gkuwaharaFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'grayScaleFilter-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
         'uniform bool      grayScale;\n' +
@@ -1265,6 +2233,312 @@ var Shaders = {
         '	gl_FragColor = smpColor;\n' +
         '}\n',
     'grayScaleFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'kuwaharaFilter-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n\n' +
+        'uniform bool b_kuwahara;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '    vec3  destColor = vec3(0.0);\n' +
+        '    if(b_kuwahara){\n' +
+        '        float minVal =0.0;\n' +
+        '        vec3 mean[4];\n' +
+        '        vec3 sigma[4];\n' +
+        '        vec2 offset[49];\n' +
+        '        offset[0] = vec2(-3.0, -3.0);\n' +
+        '        offset[1] = vec2(-2.0, -3.0);\n' +
+        '        offset[2] = vec2(-1.0, -3.0);\n' +
+        '        offset[3] = vec2( 0.0, -3.0);\n' +
+        '        offset[4] = vec2( 1.0, -3.0);\n' +
+        '        offset[5] = vec2( 2.0, -3.0);\n' +
+        '        offset[6] = vec2( 3.0, -3.0);\n\n' +
+        '        offset[7]  = vec2(-3.0, -2.0);\n' +
+        '        offset[8]  = vec2(-2.0, -2.0);\n' +
+        '        offset[9]  = vec2(-1.0, -2.0);\n' +
+        '        offset[10] = vec2( 0.0, -2.0);\n' +
+        '        offset[11] = vec2( 1.0, -2.0);\n' +
+        '        offset[12] = vec2( 2.0, -2.0);\n' +
+        '        offset[13] = vec2( 3.0, -2.0);\n\n' +
+        '        offset[14] = vec2(-3.0, -1.0);\n' +
+        '        offset[15] = vec2(-2.0, -1.0);\n' +
+        '        offset[16] = vec2(-1.0, -1.0);\n' +
+        '        offset[17] = vec2( 0.0, -1.0);\n' +
+        '        offset[18] = vec2( 1.0, -1.0);\n' +
+        '        offset[19] = vec2( 2.0, -1.0);\n' +
+        '        offset[20] = vec2( 3.0, -1.0);\n\n' +
+        '        offset[21] = vec2(-3.0,  0.0);\n' +
+        '        offset[22] = vec2(-2.0,  0.0);\n' +
+        '        offset[23] = vec2(-1.0,  0.0);\n' +
+        '        offset[24] = vec2( 0.0,  0.0);\n' +
+        '        offset[25] = vec2( 1.0,  0.0);\n' +
+        '        offset[26] = vec2( 2.0,  0.0);\n' +
+        '        offset[27] = vec2( 3.0,  0.0);\n\n' +
+        '        offset[28] = vec2(-3.0,  1.0);\n' +
+        '        offset[29] = vec2(-2.0,  1.0);\n' +
+        '        offset[30] = vec2(-1.0,  1.0);\n' +
+        '        offset[31] = vec2( 0.0,  1.0);\n' +
+        '        offset[32] = vec2( 1.0,  1.0);\n' +
+        '        offset[33] = vec2( 2.0,  1.0);\n' +
+        '        offset[34] = vec2( 3.0,  1.0);\n\n' +
+        '        offset[35] = vec2(-3.0,  2.0);\n' +
+        '        offset[36] = vec2(-2.0,  2.0);\n' +
+        '        offset[37] = vec2(-1.0,  2.0);\n' +
+        '        offset[38] = vec2( 0.0,  2.0);\n' +
+        '        offset[39] = vec2( 1.0,  2.0);\n' +
+        '        offset[40] = vec2( 2.0,  2.0);\n' +
+        '        offset[41] = vec2( 3.0,  2.0);\n\n' +
+        '        offset[42] = vec2(-3.0,  3.0);\n' +
+        '        offset[43] = vec2(-2.0,  3.0);\n' +
+        '        offset[44] = vec2(-1.0,  3.0);\n' +
+        '        offset[45] = vec2( 0.0,  3.0);\n' +
+        '        offset[46] = vec2( 1.0,  3.0);\n' +
+        '        offset[47] = vec2( 2.0,  3.0);\n' +
+        '        offset[48] = vec2( 3.0,  3.0);\n\n' +
+        '        float tFrag = 1.0 / cvsHeight;\n' +
+        '        float sFrag = 1.0 / cvsWidth;\n' +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '        vec2  fc = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n\n' +
+        '        //calculate mean\n' +
+        '        mean[0] = vec3(0.0);\n' +
+        '        sigma[0] = vec3(0.0);\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[3]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[4]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[5]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[6]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[10]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[11]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[12]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[13]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[17]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[18]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[19]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[20]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[24]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[25]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[26]) * Frag).rgb;\n' +
+        '        mean[0]  += texture2D(texture, (fc + offset[27]) * Frag).rgb;\n\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[3]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[3]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[4]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[4]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[5]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[5]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[6]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[6]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[10]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[10]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[11]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[11]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[12]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[12]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[13]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[13]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[17]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[17]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[18]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[18]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[19]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[19]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[20]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[20]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[24]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[24]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[25]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[25]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[26]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[26]) * Frag).rgb;\n' +
+        '        sigma[0]  += texture2D(texture, (fc + offset[27]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[27]) * Frag).rgb;\n\n' +
+        '        mean[0] /= 16.0;\n' +
+        '        sigma[0] = abs(sigma[0]/16.0 -  mean[0]* mean[0]);\n' +
+        '        minVal = sigma[0].r + sigma[0].g + sigma[0].b;\n\n' +
+        '        mean[1] = vec3(0.0);\n' +
+        '        sigma[1] = vec3(0.0);\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[0]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[1]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[2]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[3]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[7]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[8]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[9]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[10]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[14]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[15]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[16]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[17]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[21]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[22]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[23]) * Frag).rgb;\n' +
+        '        mean[1]  += texture2D(texture, (fc + offset[24]) * Frag).rgb;\n\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[0]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[0]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[1]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[1]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[2]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[2]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[3]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[3]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[7]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[7]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[8]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[8]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[9]) * Frag).rgb * texture2D' +
+        '(texture, (fc + offset[9]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[10]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[10]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[14]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[14]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[15]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[15]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[16]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[16]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[17]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[17]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[21]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[21]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[22]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[22]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[23]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[23]) * Frag).rgb;\n' +
+        '        sigma[1]  += texture2D(texture, (fc + offset[24]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[24]) * Frag).rgb;\n\n' +
+        '        mean[1] /= 16.0;\n' +
+        '        sigma[1] = abs(sigma[1]/16.0 -  mean[1]* mean[1]);\n' +
+        '        float sigmaVal = sigma[1].r + sigma[1].g + sigma[1].b;\n' +
+        '        if(sigmaVal<minVal){\n' +
+        '            destColor = mean[1].rgb;\n' +
+        '            minVal = sigmaVal;\n' +
+        '        }else{\n' +
+        '            destColor = mean[0].rgb;\n' +
+        '        }\n\n' +
+        '        mean[2] = vec3(0.0);\n' +
+        '        sigma[2] = vec3(0.0);\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[21]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[22]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[23]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[24]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[28]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[29]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[30]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[31]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[35]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[36]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[37]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[38]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[42]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[43]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[44]) * Frag).rgb;\n' +
+        '        mean[2]  += texture2D(texture, (fc + offset[45]) * Frag).rgb;\n\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[21]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[21]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[22]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[22]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[23]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[23]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[24]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[24]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[28]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[28]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[29]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[29]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[30]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[30]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[31]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[31]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[35]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[35]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[36]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[36]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[37]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[37]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[38]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[38]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[42]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[42]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[43]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[43]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[44]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[44]) * Frag).rgb;\n' +
+        '        sigma[2]  += texture2D(texture, (fc + offset[45]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[45]) * Frag).rgb;\n\n' +
+        '        mean[2] /= 16.0;\n' +
+        '        sigma[2] = abs(sigma[2]/16.0 -  mean[2]* mean[2]);\n' +
+        '        sigmaVal = sigma[2].r + sigma[2].g + sigma[2].b;\n' +
+        '        if(sigmaVal<minVal){\n' +
+        '            destColor = mean[2].rgb;\n' +
+        '            minVal = sigmaVal;\n' +
+        '        }\n\n' +
+        '        mean[3] = vec3(0.0);\n' +
+        '        sigma[3] = vec3(0.0);\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[24]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[25]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[26]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[27]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[31]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[32]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[33]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[34]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[38]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[39]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[40]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[41]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[45]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[46]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[47]) * Frag).rgb;\n' +
+        '        mean[3]  += texture2D(texture, (fc + offset[48]) * Frag).rgb;\n\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[24]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[24]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[25]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[25]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[26]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[26]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[27]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[27]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[31]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[31]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[32]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[32]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[33]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[33]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[34]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[34]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[38]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[38]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[39]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[39]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[40]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[40]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[41]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[41]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[45]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[45]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[46]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[46]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[47]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[47]) * Frag).rgb;\n' +
+        '        sigma[3]  += texture2D(texture, (fc + offset[48]) * Frag).rgb * texture2' +
+        'D(texture, (fc + offset[48]) * Frag).rgb;\n\n' +
+        '        mean[3] /= 16.0;\n' +
+        '        sigma[3] = abs(sigma[3]/16.0 -  mean[3]* mean[3]);\n' +
+        '        sigmaVal = sigma[3].r + sigma[3].g + sigma[3].b;\n' +
+        '        if(sigmaVal<minVal){\n' +
+        '            destColor = mean[3].rgb;\n' +
+        '            minVal = sigmaVal;\n' +
+        '        }  \n\n' +
+        '    }else{\n' +
+        '        destColor = texture2D(texture, vTexCoord).rgb;\n' +
+        '    }\n\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'kuwaharaFilter-vert': 'attribute vec3 position;\n' +
         'attribute vec2 texCoord;\n' +
         'uniform   mat4 mvpMatrix;\n' +
         'varying   vec2 vTexCoord;\n\n' +
@@ -1316,6 +2590,79 @@ var Shaders = {
         '    gl_FragColor = vec4(destColor, 1.0);\n' +
         '}\n',
     'laplacianFilter-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'LIC-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform sampler2D tfm;\n\n' +
+        'uniform bool b_lic;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'uniform float sigma;\n\n' +
+        'struct lic_t { \n' +
+        '    vec2 p; \n' +
+        '    vec2 t;\n' +
+        '    float w;\n' +
+        '    float dw;\n' +
+        '};\n\n' +
+        'void step(inout lic_t s) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 t = texture2D(tfm, s.p).xy;\n' +
+        '    if (dot(t, s.t) < 0.0) t = -t;\n' +
+        '    s.t = t;\n\n' +
+        '    s.dw = (abs(t.x) > abs(t.y))? \n' +
+        '        abs((fract(s.p.x) - 0.5 - sign(t.x)) / t.x) : \n' +
+        '        abs((fract(s.p.y) - 0.5 - sign(t.y)) / t.y);\n\n' +
+        '    s.p += t * s.dw / src_size;\n' +
+        '    s.w += s.dw;\n' +
+        '}\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    float twoSigma2 = 2.0 * sigma * sigma;\n' +
+        '    float halfWidth = 2.0 * sigma;\n' +
+        '    vec2 uv = vec2(gl_FragCoord.x / src_size.x, (src_size.y - gl_FragCoord.y) / ' +
+        'src_size.y);\n\n' +
+        '    if(b_lic){\n' +
+        '        const int MAX_NUM_ITERATION = 99999;\n' +
+        '        vec3 c = texture2D( src, uv ).xyz;\n' +
+        '        float w = 1.0;\n\n' +
+        '        lic_t a, b;\n' +
+        '        a.p = b.p = uv;\n' +
+        '        a.t = texture2D( tfm, uv ).xy / src_size;\n' +
+        '        b.t = -a.t;\n' +
+        '        a.w = b.w = 0.0;\n\n' +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n' +
+        '            if (a.w < halfWidth) {\n' +
+        '                step(a);\n' +
+        '                float k = a.dw * exp(-a.w * a.w / twoSigma2);\n' +
+        '                c += k * texture2D(src, a.p).xyz;\n' +
+        '                w += k;\n' +
+        '            }else{\n' +
+        '                break;\n' +
+        '            }\n' +
+        '        }\n\n' +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n' +
+        '            if (b.w < halfWidth) {\n' +
+        '                step(b);\n' +
+        '                float k = b.dw * exp(-b.w * b.w / twoSigma2);\n' +
+        '                c += k * texture2D(src, b.p).xyz;\n' +
+        '                w += k;\n' +
+        '            }else{\n' +
+        '                break;\n' +
+        '            }\n' +
+        '        }\n\n' +
+        '        gl_FragColor = vec4(c / w, 1.0);\n' +
+        '    }else{\n' +
+        '        gl_FragColor = texture2D(src, uv);\n' +
+        '    }\n\n' +
+        '}\n',
+    'LIC-vert': 'attribute vec3 position;\n' +
         'attribute vec2 texCoord;\n' +
         'uniform   mat4 mvpMatrix;\n' +
         'varying   vec2 vTexCoord;\n\n' +
@@ -1451,6 +2798,118 @@ var Shaders = {
         '	vNormal     = normal;\n' +
         '	vColor      = color;\n' +
         '	vTexCoord   = tMatrix * vec4(vPosition, 1.0);\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'P_FDoG-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform sampler2D tfm;\n\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'uniform float sigma_e;\n' +
+        'uniform float sigma_r;\n' +
+        'uniform float tau;\n\n' +
+        'uniform bool b_FDoG;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'void main(void){\n\n' +
+        '    vec3 destColor = vec3(0.0);\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = gl_FragCoord.xy /src_size;\n' +
+        '    if(b_FDoG){\n' +
+        '        float twoSigmaESquared = 2.0 * sigma_e * sigma_e;\n' +
+        '        float twoSigmaRSquared = 2.0 * sigma_r * sigma_r;\n\n' +
+        '        vec2 t = texture2D(tfm, uv).xy;\n' +
+        '        vec2 n = vec2(t.y, -t.x);\n' +
+        '        vec2 nabs = abs(n);\n' +
+        '        float ds = 1.0 / ((nabs.x > nabs.y)? nabs.x : nabs.y);\n' +
+        '        n /= src_size;\n\n' +
+        '        vec2 sum = texture2D( src, uv ).xx;\n' +
+        '        vec2 norm = vec2(1.0, 1.0);\n\n' +
+        '        float halfWidth = 2.0 * sigma_r;\n' +
+        '        float d = ds;\n' +
+        '        const int MAX_NUM_ITERATION = 99999;\n' +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n\n' +
+        '            if( d <= halfWidth) {\n' +
+        '                vec2 kernel = vec2( exp( -d * d / twoSigmaESquared ), \n' +
+        '                                    exp( -d * d / twoSigmaRSquared ));\n' +
+        '                norm += 2.0 * kernel;\n\n' +
+        '                vec2 L0 = texture2D( src, uv - d*n ).xx;\n' +
+        '                vec2 L1 = texture2D( src, uv + d*n ).xx;\n' +
+        '                sum += kernel * ( L0 + L1 );\n' +
+        '            }else{\n' +
+        '                break;\n' +
+        '            }\n' +
+        '            d+=ds;\n' +
+        '        }\n\n' +
+        '        sum /= norm;\n\n' +
+        '        float diff = 100.0 * (sum.x - tau * sum.y);\n' +
+        '        destColor= vec3(diff);\n' +
+        '    }else{\n' +
+        '        destColor = texture2D(src, uv).rgb;\n' +
+        '    }\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'P_FDoG-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'P_FXDoG-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform sampler2D tfm;\n\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'uniform float sigma;\n' +
+        'uniform float k;\n' +
+        'uniform float p;\n\n' +
+        'uniform bool b_FXDoG;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'void main(void){\n\n' +
+        '    vec3 destColor = vec3(0.0);\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = gl_FragCoord.xy /src_size;\n' +
+        '    if(b_FXDoG){\n' +
+        '        float twoSigmaESquared = 2.0 * sigma * sigma;\n' +
+        '        float twoSigmaRSquared = twoSigmaESquared * k * k;\n\n' +
+        '        vec2 t = texture2D(tfm, uv).xy;\n' +
+        '        vec2 n = vec2(t.y, -t.x);\n' +
+        '        vec2 nabs = abs(n);\n' +
+        '        float ds = 1.0 / ((nabs.x > nabs.y)? nabs.x : nabs.y);\n' +
+        '        n /= src_size;\n\n' +
+        '        vec2 sum = texture2D( src, uv ).xx;\n' +
+        '        vec2 norm = vec2(1.0, 1.0);\n\n' +
+        '        float halfWidth = 2.0 * sigma;\n' +
+        '        float d = ds;\n' +
+        '        const int MAX_NUM_ITERATION = 99999;\n' +
+        '        for(int i = 0;i<MAX_NUM_ITERATION ;i++){\n\n' +
+        '            if( d <= halfWidth) {\n' +
+        '                vec2 kernel = vec2( exp( -d * d / twoSigmaESquared ), \n' +
+        '                                    exp( -d * d / twoSigmaRSquared ));\n' +
+        '                norm += 2.0 * kernel;\n\n' +
+        '                vec2 L0 = texture2D( src, uv - d*n ).xx;\n' +
+        '                vec2 L1 = texture2D( src, uv + d*n ).xx;\n' +
+        '                sum += kernel * ( L0 + L1 );\n' +
+        '            }else{\n' +
+        '                break;\n' +
+        '            }\n' +
+        '            d+=ds;\n' +
+        '        }\n\n' +
+        '        sum /= norm;\n\n' +
+        '        float diff = 100.0 * ((1.0 + p) * sum.x - p * sum.y);\n' +
+        '        destColor= vec3(diff);\n' +
+        '    }else{\n' +
+        '        destColor = texture2D(src, uv).rgb;\n' +
+        '    }\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'P_FXDoG-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
         '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'refractionMapping-frag': 'precision mediump float;\n\n' +
@@ -1619,10 +3078,6 @@ var Shaders = {
         'uniform float hCoef[9];\n' +
         'uniform float vCoef[9];\n' +
         'varying vec2 vTexCoord;\n\n' +
-        'const float redScale   = 0.298912;\n' +
-        'const float greenScale = 0.586611;\n' +
-        'const float blueScale  = 0.114478;\n' +
-        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
         'void main(void){\n' +
         '    vec3 destColor = vec3(0.0);\n' +
         '    if(b_sobel){\n' +
@@ -1693,6 +3148,27 @@ var Shaders = {
         '	vTexCoord   = texCoord;\n' +
         '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'specCpt-frag': 'precision mediump float;\n\n' +
+        'varying vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	gl_FragColor = vColor;\n' +
+        '}\n',
+    'specCpt-vert': 'attribute vec3 position;\n' +
+        'attribute vec3 normal;\n' +
+        'attribute vec4 color;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'uniform   mat4 invMatrix;\n' +
+        'uniform   vec3 lightDirection;\n' +
+        'uniform   vec3 eyeDirection;\n' +
+        'varying   vec4 vColor;\n\n' +
+        'void main(void){\n' +
+        '	vec3  invLight = normalize(invMatrix * vec4(lightDirection, 0.0)).xyz;\n' +
+        '	vec3  invEye   = normalize(invMatrix * vec4(eyeDirection, 0.0)).xyz;\n' +
+        '	vec3  halfLE   = normalize(invLight + invEye);\n' +
+        '	float specular = pow(clamp(dot(normal, halfLE), 0.0, 1.0), 50.0);\n' +
+        '	vColor         = color * vec4(vec3(specular), 1.0);\n' +
+        '	gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'specular-frag': 'precision mediump float;\n\n' +
         'varying vec4 vColor;\n\n' +
         'void main(void){\n' +
@@ -1716,6 +3192,41 @@ var Shaders = {
         '    vec4 light = color*vec4(vec3(diffuse),1.0)+vec4(vec3(specular),1.0);\n' +
         '    vColor = light + ambientColor;\n' +
         '    gl_Position    = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'SST-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 src_size = vec2(cvsWidth, cvsHeight);\n' +
+        '    vec2 uv = gl_FragCoord.xy / src_size;\n' +
+        '    vec2 d = 1.0 / src_size;\n' +
+        '    vec3 u = (\n' +
+        '        -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz +\n' +
+        '        -2.0 * texture2D(src, uv + vec2(-d.x,  0.0)).xyz + \n' +
+        '        -1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +\n' +
+        '        +1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +\n' +
+        '        +2.0 * texture2D(src, uv + vec2( d.x,  0.0)).xyz + \n' +
+        '        +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz\n' +
+        '        ) / 4.0;\n\n' +
+        '    vec3 v = (\n' +
+        '           -1.0 * texture2D(src, uv + vec2(-d.x, -d.y)).xyz + \n' +
+        '           -2.0 * texture2D(src, uv + vec2( 0.0, -d.y)).xyz + \n' +
+        '           -1.0 * texture2D(src, uv + vec2( d.x, -d.y)).xyz +\n' +
+        '           +1.0 * texture2D(src, uv + vec2(-d.x,  d.y)).xyz +\n' +
+        '           +2.0 * texture2D(src, uv + vec2( 0.0,  d.y)).xyz + \n' +
+        '           +1.0 * texture2D(src, uv + vec2( d.x,  d.y)).xyz\n' +
+        '           ) / 4.0;\n\n' +
+        '    gl_FragColor = vec4(dot(u, u), dot(v, v), dot(u, v), 1.0);\n' +
+        '}\n',
+    'SST-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'stencilBufferOutline-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
@@ -1755,6 +3266,27 @@ var Shaders = {
         '	}\n' +
         '	gl_Position = mvpMatrix * vec4(oPosition, 1.0);\n' +
         '}\n',
+    'synth-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture1;\n' +
+        'uniform sampler2D texture2;\n' +
+        'uniform bool      glare;\n' +
+        'varying vec2      vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vec4  destColor = texture2D(texture1, vTexCoord);\n' +
+        '	vec4  smpColor  = texture2D(texture2, vec2(vTexCoord.s, 1.0 - vTexCoord.t));\n' +
+        '	if(glare){\n' +
+        '		destColor += smpColor * 2.0;\n' +
+        '	}\n' +
+        '	gl_FragColor = destColor;\n' +
+        '}\n',
+    'synth-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'texture-frag': 'precision mediump float;\n\n' +
         'uniform sampler2D texture;\n' +
         'varying vec4      vColor;\n' +
@@ -1773,6 +3305,116 @@ var Shaders = {
         '    vColor        = color;\n' +
         '    vTextureCoord = textureCoord;\n' +
         '    gl_Position   = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'TF-frag': '// Tangent Field\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n' +
+        'uniform float hCoef[9];\n' +
+        'uniform float vCoef[9];\n\n' +
+        'const float redScale   = 0.298912;\n' +
+        'const float greenScale = 0.586611;\n' +
+        'const float blueScale  = 0.114478;\n' +
+        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
+        'void main (void) {\n' +
+        '    vec2 offset[9];\n' +
+        '    offset[0] = vec2(-1.0, -1.0);\n' +
+        '    offset[1] = vec2( 0.0, -1.0);\n' +
+        '    offset[2] = vec2( 1.0, -1.0);\n' +
+        '    offset[3] = vec2(-1.0,  0.0);\n' +
+        '    offset[4] = vec2( 0.0,  0.0);\n' +
+        '    offset[5] = vec2( 1.0,  0.0);\n' +
+        '    offset[6] = vec2(-1.0,  1.0);\n' +
+        '    offset[7] = vec2( 0.0,  1.0);\n' +
+        '    offset[8] = vec2( 1.0,  1.0);\n' +
+        '    float tFrag = 1.0 / cvsHeight;\n' +
+        '    float sFrag = 1.0 / cvsWidth;\n' +
+        '    vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '    vec2  uv = vec2(gl_FragCoord.s, gl_FragCoord.t);\n' +
+        '    float  horizonColor = 0.0;\n' +
+        '    float  verticalColor = 0.0;\n\n' +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[0]) * Frag).rgb, monochrome' +
+        'Scale) * hCoef[0];\n' +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[1]) * Frag).rgb, monochrome' +
+        'Scale) * hCoef[1];\n' +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[2]) * Frag).rgb, monochrome' +
+        'Scale) * hCoef[2];\n' +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[3]) * Frag).rgb, monochrome' +
+        'Scale) * hCoef[3];\n' +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[4]) * Frag).rgb, monochrome' +
+        'Scale) * hCoef[4];\n' +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[5]) * Frag).rgb, monochrome' +
+        'Scale) * hCoef[5];\n' +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[6]) * Frag).rgb, monochrome' +
+        'Scale) * hCoef[6];\n' +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[7]) * Frag).rgb, monochrome' +
+        'Scale) * hCoef[7];\n' +
+        '    horizonColor  += dot(texture2D(src, (uv + offset[8]) * Frag).rgb, monochrome' +
+        'Scale) * hCoef[8];\n\n' +
+        '    verticalColor += dot(texture2D(src, (uv + offset[0]) * Frag).rgb, monochrome' +
+        'Scale) * vCoef[0];\n' +
+        '    verticalColor += dot(texture2D(src, (uv + offset[1]) * Frag).rgb, monochrome' +
+        'Scale) * vCoef[1];\n' +
+        '    verticalColor += dot(texture2D(src, (uv + offset[2]) * Frag).rgb, monochrome' +
+        'Scale) * vCoef[2];\n' +
+        '    verticalColor += dot(texture2D(src, (uv + offset[3]) * Frag).rgb, monochrome' +
+        'Scale) * vCoef[3];\n' +
+        '    verticalColor += dot(texture2D(src, (uv + offset[4]) * Frag).rgb, monochrome' +
+        'Scale) * vCoef[4];\n' +
+        '    verticalColor += dot(texture2D(src, (uv + offset[5]) * Frag).rgb, monochrome' +
+        'Scale) * vCoef[5];\n' +
+        '    verticalColor += dot(texture2D(src, (uv + offset[6]) * Frag).rgb, monochrome' +
+        'Scale) * vCoef[6];\n' +
+        '    verticalColor += dot(texture2D(src, (uv + offset[7]) * Frag).rgb, monochrome' +
+        'Scale) * vCoef[7];\n' +
+        '    verticalColor += dot(texture2D(src, (uv + offset[8]) * Frag).rgb, monochrome' +
+        'Scale) * vCoef[8];\n\n' +
+        '    float mag = sqrt(horizonColor * horizonColor + verticalColor * verticalColor' +
+        ');\n' +
+        '    float vx = verticalColor/mag;\n' +
+        '    float vy = horizonColor/mag;\n\n' +
+        '    gl_FragColor = vec4(vx, vy, mag, 1.0);\n' +
+        '}\n',
+    'TF-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
+    'TFM-frag': '// by Jan Eric Kyprianidis <www.kyprianidis.com>\n' +
+        'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'void main (void) {\n' +
+        '    vec2 uv = gl_FragCoord.xy / vec2(cvsWidth, cvsHeight);\n' +
+        '    vec3 g = texture2D(src, uv).xyz;\n\n' +
+        '    float lambda1 = 0.5 * (g.y + g.x + sqrt(g.y*g.y - 2.0*g.x*g.y + g.x*g.x + 4.' +
+        '0*g.z*g.z));\n' +
+        '    float lambda2 = 0.5 * (g.y + g.x - sqrt(g.y*g.y - 2.0*g.x*g.y + g.x*g.x + 4.' +
+        '0*g.z*g.z));\n\n' +
+        '    vec2 v = vec2(lambda1 - g.x, -g.z);\n' +
+        '    vec2 t;\n' +
+        '    if (length(v) > 0.0) { \n' +
+        '        t = normalize(v);\n' +
+        '    } else {\n' +
+        '        t = vec2(0.0, 1.0);\n' +
+        '    }\n\n' +
+        '    float phi = atan(t.y, t.x);\n\n' +
+        '    float A = (lambda1 + lambda2 > 0.0)?(lambda1 - lambda2) / (lambda1 + lambda2' +
+        ') : 0.0;\n' +
+        '    gl_FragColor = vec4(t, phi, A);\n' +
+        '}\n',
+    'TFM-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
     'toonShading-frag': 'precision mediump float;\n\n' +
         'uniform mat4      invMatrix;\n' +
@@ -1806,6 +3448,77 @@ var Shaders = {
         '	vNormal     = normal;\n' +
         '	vColor      = color;\n' +
         '	gl_Position = mvpMatrix * vec4(pos, 1.0);\n' +
+        '}\n',
+    'XDoG-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D src;\n\n' +
+        'uniform bool b_XDoG;\n' +
+        'uniform float cvsHeight;\n' +
+        'uniform float cvsWidth;\n\n' +
+        'uniform float sigma;\n' +
+        'uniform float k;\n' +
+        'uniform float p;\n' +
+        'uniform float epsilon;\n' +
+        'uniform float phi;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'float cosh(float val)\n' +
+        '{\n' +
+        '    float tmp = exp(val);\n' +
+        '    float cosH = (tmp + 1.0 / tmp) / 2.0;\n' +
+        '    return cosH;\n' +
+        '}\n\n' +
+        'float tanh(float val)\n' +
+        '{\n' +
+        '    float tmp = exp(val);\n' +
+        '    float tanH = (tmp - 1.0 / tmp) / (tmp + 1.0 / tmp);\n' +
+        '    return tanH;\n' +
+        '}\n\n' +
+        'float sinh(float val)\n' +
+        '{\n' +
+        '    float tmp = exp(val);\n' +
+        '    float sinH = (tmp - 1.0 / tmp) / 2.0;\n' +
+        '    return sinH;\n' +
+        '}\n\n' +
+        'void main(void){\n' +
+        '    vec3 destColor = vec3(0.0);\n' +
+        '    if(b_XDoG){\n' +
+        '        float tFrag = 1.0 / cvsHeight;\n' +
+        '        float sFrag = 1.0 / cvsWidth;\n' +
+        '        vec2  Frag = vec2(sFrag,tFrag);\n' +
+        '        vec2 uv = vec2(gl_FragCoord.s, cvsHeight - gl_FragCoord.t);\n' +
+        '        float twoSigmaESquared = 2.0 * sigma * sigma;\n' +
+        '        float twoSigmaRSquared = twoSigmaESquared * k * k;\n' +
+        '        int halfWidth = int(ceil( 1.0 * sigma * k ));\n\n' +
+        '        const int MAX_NUM_ITERATION = 99999;\n' +
+        '        vec2 sum = vec2(0.0);\n' +
+        '        vec2 norm = vec2(0.0);\n\n' +
+        '        for(int cnt=0;cnt<MAX_NUM_ITERATION;cnt++){\n' +
+        '            if(cnt > (2*halfWidth+1)*(2*halfWidth+1)){break;}\n' +
+        '            int i = int(cnt / (2*halfWidth+1)) - halfWidth;\n' +
+        '            int j = cnt - halfWidth - int(cnt / (2*halfWidth+1)) * (2*halfWidth+' +
+        '1);\n\n' +
+        '            float d = length(vec2(i,j));\n' +
+        '            vec2 kernel = vec2( exp( -d * d / twoSigmaESquared ), \n' +
+        '                                exp( -d * d / twoSigmaRSquared ));\n\n' +
+        '            vec2 L = texture2D(src, (uv + vec2(i,j)) * Frag).xx;\n\n' +
+        '            norm += kernel;\n' +
+        '            sum += kernel * L;\n' +
+        '        }\n\n' +
+        '        sum /= norm;\n\n' +
+        '        float H = 100.0 * ((1.0 + p) * sum.x - p * sum.y);\n' +
+        '        float edge = ( H > epsilon )? 1.0 : 1.0 + tanh( phi * (H - epsilon));\n' +
+        '        destColor = vec3(edge);\n' +
+        '    }else{\n' +
+        '        destColor = texture2D(src, vTexCoord).rgb;\n' +
+        '    }\n\n' +
+        '    gl_FragColor = vec4(destColor, 1.0);\n' +
+        '}\n',
+    'XDoG-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n'
 };
 /* =========================================================================
@@ -2058,15 +3771,89 @@ var EcognitaMathLib;
     }());
     EcognitaMathLib.CubeModel = CubeModel;
 })(EcognitaMathLib || (EcognitaMathLib = {}));
+var Utils;
+(function (Utils) {
+    ;
+    var HashSet = /** @class */ (function () {
+        function HashSet() {
+            this.items = {};
+        }
+        HashSet.prototype.set = function (key, value) {
+            this.items[key] = value;
+        };
+        HashSet.prototype["delete"] = function (key) {
+            return delete this.items[key];
+        };
+        HashSet.prototype.has = function (key) {
+            return key in this.items;
+        };
+        HashSet.prototype.get = function (key) {
+            return this.items[key];
+        };
+        HashSet.prototype.len = function () {
+            return Object.keys(this.items).length;
+        };
+        HashSet.prototype.forEach = function (f) {
+            for (var k in this.items) {
+                f(k, this.items[k]);
+            }
+        };
+        return HashSet;
+    }());
+    Utils.HashSet = HashSet;
+})(Utils || (Utils = {}));
+/// <reference path="../lib/HashSet.ts" />
+var Utils;
+(function (Utils) {
+    var FilterViewerUI = /** @class */ (function () {
+        function FilterViewerUI(data) {
+            var _this = this;
+            this.gui = new dat.gui.GUI();
+            this.data = data;
+            this.gui.remember(data);
+            this.uiController = new Utils.HashSet();
+            this.folderHashSet = new Utils.HashSet();
+            this.folderHashSet.set("f", "Filter");
+            //get all folder name
+            this.folderName = [];
+            this.folderHashSet.forEach(function (k, v) {
+                _this.folderName.push(k);
+            });
+            this.initData();
+            this.initFolder();
+        }
+        FilterViewerUI.prototype.initFolder = function () {
+            var _this = this;
+            this.folderName.forEach(function (fn) {
+                var f = _this.gui.addFolder(_this.folderHashSet.get(fn));
+                for (var key in _this.data) {
+                    //judge this key is in folder or not
+                    var f_name = key.split("_");
+                    if (key.includes('_') && f_name[0] == fn) {
+                        var c = f.add(_this.data, key).listen();
+                        _this.uiController.set(key, c);
+                    }
+                }
+            });
+        };
+        FilterViewerUI.prototype.initData = function () {
+            for (var key in this.data) {
+                if (!key.includes('_')) {
+                    this.gui.add(this.data, key);
+                }
+            }
+        };
+        return FilterViewerUI;
+    }());
+    Utils.FilterViewerUI = FilterViewerUI;
+})(Utils || (Utils = {}));
 /* =========================================================================
  *
- *  FilterViewHub.ts
- *  pkg for filter viewer
+ *  EgnWebGL.ts
+ *  construct a webgl environment
  *  v0.1
  *
  * ========================================================================= */
-/// <reference path="../lib/HashSet.ts" />
-/// <reference path="../lib/FilterViewerUi.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/cv_imread.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/cv_colorSpace.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/extra_utils.ts" />
@@ -2075,48 +3862,30 @@ var EcognitaMathLib;
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_utils.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_shaders.ts" />
 /// <reference path="../../../../lib_webgl/ts_scripts/lib/webgl_model.ts" />
-var EcognitaWeb3DFunction;
-(function (EcognitaWeb3DFunction) {
-    var Filter;
-    (function (Filter) {
-        Filter[Filter["LAPLACIAN"] = 0] = "LAPLACIAN";
-        Filter[Filter["SOBEL"] = 1] = "SOBEL";
-    })(Filter = EcognitaWeb3DFunction.Filter || (EcognitaWeb3DFunction.Filter = {}));
-    var InitWeb3DEnv = /** @class */ (function () {
-        function InitWeb3DEnv(cvs, shaderlist) {
-            var _this = this;
-            this.canvas = cvs;
-            this.chkWebGLEnvi();
-            this.vbo = new Array();
-            this.ibo = new Array();
-            this.Texture = new Array();
-            this.matUtil = new EcognitaMathLib.WebGLMatrix();
-            this.quatUtil = new EcognitaMathLib.WebGLQuaternion();
-            this.ui_data = {
-                name: 'Filter Viewer',
-                f_LaplacianFilter: false,
-                f_SobelFilter: true
-            };
-            this.uiUtil = new Utils.FilterViewerUI(this.ui_data);
-            this.extHammer = new EcognitaMathLib.Hammer_Utils(this.canvas);
-            this.shaders = new Utils.HashSet();
-            this.uniLocations = new Utils.HashSet();
-            shaderlist.forEach(function (shaderName) {
-                var shader = new EcognitaMathLib.WebGL_Shader(Shaders, shaderName + "-vert", shaderName + "-frag");
-                _this.shaders.set(shaderName, shader);
-                _this.uniLocations.set(shaderName, new Array());
-            });
+/// <reference path="../lib/HashSet.ts" />
+/// <reference path="../lib/EgnFilterViewerUI.ts" />
+var EcognitaWeb3D;
+(function (EcognitaWeb3D) {
+    var WebGLEnv = /** @class */ (function () {
+        function WebGLEnv(cvs) {
+            this.chkWebGLEnv(cvs);
         }
-        InitWeb3DEnv.prototype.loadTexture = function (file_name) {
+        WebGLEnv.prototype.loadTexture = function (file_name, isFloat, glType, glInterType, useMipmap, channel) {
             var _this = this;
+            if (isFloat === void 0) { isFloat = false; }
+            if (glType === void 0) { glType = gl.CLAMP_TO_EDGE; }
+            if (glInterType === void 0) { glInterType = gl.LINEAR; }
+            if (useMipmap === void 0) { useMipmap = true; }
+            if (channel === void 0) { channel = 4; }
             var tex = null;
             var image = EcognitaMathLib.imread(file_name);
             image.onload = (function () {
-                tex = new EcognitaMathLib.WebGL_Texture(4, false, image);
-                _this.Texture.push(tex);
+                tex = new EcognitaMathLib.WebGL_Texture(channel, isFloat, image, glType, glInterType, useMipmap);
+                _this.Texture.set(file_name, tex);
             });
         };
-        InitWeb3DEnv.prototype.chkWebGLEnvi = function () {
+        WebGLEnv.prototype.chkWebGLEnv = function (cvs) {
+            this.canvas = cvs;
             try {
                 gl = this.canvas.getContext("webgl") || this.canvas.getContext("experimental-webgl");
                 this.stats = new Stats();
@@ -2125,66 +3894,194 @@ var EcognitaWeb3DFunction;
             catch (e) { }
             if (!gl)
                 throw new Error("Could not initialise WebGL");
+            //check extension
+            var ext = gl.getExtension('OES_texture_float');
+            if (ext == null) {
+                throw new Error("float texture not supported");
+            }
         };
-        return InitWeb3DEnv;
+        WebGLEnv.prototype.initGlobalVariables = function () {
+            this.vbo = new Array();
+            this.ibo = new Array();
+            this.Texture = new Utils.HashSet();
+            this.matUtil = new EcognitaMathLib.WebGLMatrix();
+            this.quatUtil = new EcognitaMathLib.WebGLQuaternion();
+        };
+        WebGLEnv.prototype.initGlobalMatrix = function () {
+            this.MATRIX = new Utils.HashSet();
+            var m = this.matUtil;
+            this.MATRIX.set("mMatrix", m.identity(m.create()));
+            this.MATRIX.set("vMatrix", m.identity(m.create()));
+            this.MATRIX.set("pMatrix", m.identity(m.create()));
+            this.MATRIX.set("vpMatrix", m.identity(m.create()));
+            this.MATRIX.set("mvpMatrix", m.identity(m.create()));
+            this.MATRIX.set("invMatrix", m.identity(m.create()));
+        };
+        WebGLEnv.prototype.loadExtraLibrary = function (ui_data) {
+            this.ui_data = ui_data;
+            //load extral library
+            this.uiUtil = new Utils.FilterViewerUI(this.ui_data);
+            this.extHammer = new EcognitaMathLib.Hammer_Utils(this.canvas);
+        };
+        WebGLEnv.prototype.loadInternalLibrary = function (shaderlist) {
+            var _this = this;
+            //load internal library
+            this.framebuffers = new Utils.HashSet();
+            //init shaders and uniLocations
+            this.shaders = new Utils.HashSet();
+            this.uniLocations = new Utils.HashSet();
+            shaderlist.forEach(function (s) {
+                var shader = new EcognitaMathLib.WebGL_Shader(Shaders, s.name + "-vert", s.name + "-frag");
+                _this.shaders.set(s.name, shader);
+                _this.uniLocations.set(s.name, new Array());
+            });
+        };
+        WebGLEnv.prototype.settingFrameBuffer = function (frameBufferName) {
+            //frame buffer
+            var fBufferWidth = this.canvas.width;
+            var fBufferHeight = this.canvas.height;
+            var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
+            frameBuffer.bindFrameBuffer();
+            frameBuffer.bindDepthBuffer();
+            //frameBuffer.renderToShadowTexure();
+            frameBuffer.renderToFloatTexure();
+            frameBuffer.release();
+            this.framebuffers.set(frameBufferName, frameBuffer);
+        };
+        WebGLEnv.prototype.renderSceneByFrameBuffer = function (framebuffer, func, texid) {
+            if (texid === void 0) { texid = gl.TEXTURE0; }
+            framebuffer.bindFrameBuffer();
+            func();
+            gl.activeTexture(texid);
+            gl.bindTexture(gl.TEXTURE_2D, framebuffer.targetTexture);
+        };
+        WebGLEnv.prototype.renderBoardByFrameBuffer = function (shader, vbo, ibo, func, use_fb, texid, fb) {
+            if (use_fb === void 0) { use_fb = false; }
+            if (texid === void 0) { texid = gl.TEXTURE0; }
+            if (fb === void 0) { fb = undefined; }
+            shader.bind();
+            if (use_fb) {
+                fb.bindFrameBuffer();
+            }
+            else {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            }
+            gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            gl.clearDepth(1.0);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            vbo.bind(shader);
+            ibo.bind();
+            func();
+            ibo.draw(gl.TRIANGLES);
+            if (use_fb) {
+                gl.activeTexture(texid);
+                gl.bindTexture(gl.TEXTURE_2D, fb.targetTexture);
+            }
+        };
+        return WebGLEnv;
     }());
-    EcognitaWeb3DFunction.InitWeb3DEnv = InitWeb3DEnv;
+    EcognitaWeb3D.WebGLEnv = WebGLEnv;
+})(EcognitaWeb3D || (EcognitaWeb3D = {}));
+/* =========================================================================
+ *
+ *  FilterViewHub.ts
+ *  pkg for filter viewer
+ *  v0.1
+ *
+ * ========================================================================= */
+/// <reference path="../lib/EgnType.ts" />
+/// <reference path="../lib/EgnWebGL.ts" />
+var EcognitaWeb3D;
+(function (EcognitaWeb3D) {
     var FilterViewer = /** @class */ (function (_super) {
         __extends(FilterViewer, _super);
         function FilterViewer(cvs) {
-            var _this = this;
-            var shaderList = ["filterScene", "laplacianFilter", "sobelFilter"];
-            _this = _super.call(this, cvs, shaderList) || this;
-            //init gobal variable
-            _this.filterMvpMatrix = _this.matUtil.identity(_this.matUtil.create());
-            _this.usrFilter = Filter.SOBEL;
-            _this.filterShader = _this.shaders.get("sobelFilter");
-            _this.b_laplacian = _this.ui_data.f_LaplacianFilter;
-            _this.b_sobel = _this.ui_data.f_SobelFilter;
-            //user config param (load params from file is better TODO)
-            _this.usrParams = {
-                laplacianCoef: [1.0, 1.0, 1.0,
-                    1.0, -8.0, 1.0,
-                    1.0, 1.0, 1.0],
-                sobelHorCoef: [1.0, 0.0, -1.0,
-                    2.0, 0.0, -2.0,
-                    1.0, 0.0, -1.0],
-                sobelVerCoef: [1.0, 2.0, 1.0,
-                    0.0, 0.0, 0.0,
-                    -1.0, -2.0, -1.0]
-            };
-            var laplacianFilterArray = new Array();
-            laplacianFilterArray.push("mvpMatrix");
-            laplacianFilterArray.push("texture");
-            laplacianFilterArray.push("coef");
-            laplacianFilterArray.push("cvsHeight");
-            laplacianFilterArray.push("cvsWidth");
-            laplacianFilterArray.push("b_laplacian");
-            _this.settingUniform("laplacianFilter", laplacianFilterArray);
-            var sobelFilterArray = new Array();
-            sobelFilterArray.push("mvpMatrix");
-            sobelFilterArray.push("texture");
-            sobelFilterArray.push("hCoef");
-            sobelFilterArray.push("vCoef");
-            sobelFilterArray.push("cvsHeight");
-            sobelFilterArray.push("cvsWidth");
-            sobelFilterArray.push("b_sobel");
-            _this.settingUniform("sobelFilter", sobelFilterArray);
-            //init System
-            _this.initModel();
-            var filterSceneArray = new Array();
-            filterSceneArray.push("mvpMatrix");
-            filterSceneArray.push("invMatrix");
-            filterSceneArray.push("lightDirection");
-            filterSceneArray.push("eyeDirection");
-            filterSceneArray.push("ambientColor");
-            _this.settingUniform("filterScene", filterSceneArray);
-            _this.regisEvent();
-            _this.regisUIEvent();
-            _this.settingRenderPipeline();
-            _this.regisAnimeFunc();
-            return _this;
+            return _super.call(this, cvs) || this;
         }
+        FilterViewer.prototype.loadAssets = function () {
+            //load demo texture
+            this.loadTexture("./image/k0.png", true, gl.CLAMP_TO_BORDER, gl.NEAREST, false);
+            this.loadTexture("./image/visual_rgb.png");
+            this.loadTexture("./image/lion.png", false);
+            this.loadTexture("./image/anim.png", false);
+            this.loadTexture("./image/cat.jpg", false);
+            this.loadTexture("./image/man.png", false);
+            this.loadTexture("./image/woman.png", false, gl.CLAMP_TO_EDGE, gl.LINEAR, false);
+            this.loadTexture("./image/noise.png", false);
+        };
+        FilterViewer.prototype.getReqQuery = function () {
+            if (window.location.href.split('?').length == 1) {
+                return {};
+            }
+            var queryString = window.location.href.split('?')[1];
+            var queryObj = {};
+            if (queryString != '') {
+                var querys = queryString.split("&");
+                for (var i = 0; i < querys.length; i++) {
+                    var key = querys[i].split('=')[0];
+                    var value = querys[i].split('=')[1];
+                    queryObj[key] = value;
+                }
+            }
+            return queryObj;
+        };
+        FilterViewer.prototype.regisButton = function (btn_data) {
+            var _this = this;
+            this.btnStatusList = new Utils.HashSet();
+            //init button
+            btn_data.forEach(function (btn) {
+                _this.btnStatusList.set(btn.name, _this.ui_data[btn.name]);
+                //register button event
+                _this.uiUtil.uiController.get(btn.name).onChange(function (val) {
+                    _this.usrSelectChange(btn.name, val, EcognitaWeb3D.RenderPipeLine[btn.pipline], EcognitaWeb3D.Filter[btn.filter], btn.shader);
+                });
+            });
+        };
+        FilterViewer.prototype.regisUniforms = function (shader_data) {
+            var _this = this;
+            shader_data.forEach(function (shader) {
+                var uniform_array = new Array();
+                var shaderUniforms = shader.uniforms;
+                shaderUniforms.forEach(function (uniform) {
+                    uniform_array.push(uniform);
+                });
+                _this.settingUniform(shader.name, uniform_array);
+            });
+        };
+        FilterViewer.prototype.regisUserParam = function (user_config) {
+            this.filterMvpMatrix = this.matUtil.identity(this.matUtil.create());
+            this.usrParams = user_config.user_params;
+            this.usrSelected = user_config.user_selected;
+            var default_btn_name = user_config.default_btn;
+            var params = this.getReqQuery();
+            if (params.p == null || params.f == null || params.s == null || params.b == null) {
+                this.usrPipeLine = EcognitaWeb3D.RenderPipeLine[user_config.default_pipline];
+                this.usrFilter = EcognitaWeb3D.Filter[user_config.default_filter];
+                this.filterShader = this.shaders.get(user_config.default_shader);
+            }
+            else {
+                this.usrPipeLine = EcognitaWeb3D.RenderPipeLine[params.p];
+                this.usrFilter = EcognitaWeb3D.Filter[params.f];
+                this.filterShader = this.shaders.get(params.s);
+                default_btn_name = params.b;
+            }
+            this.uiData[default_btn_name] = true;
+        };
+        FilterViewer.prototype.initialize = function (ui_data, shader_data, button_data, user_config) {
+            this.uiData = ui_data;
+            this.initGlobalVariables();
+            this.loadAssets();
+            this.loadInternalLibrary(shader_data.shaderList);
+            this.regisUniforms(shader_data.shaderList);
+            this.regisUserParam(user_config);
+            this.loadExtraLibrary(ui_data);
+            this.initGlobalMatrix();
+            this.regisButton(button_data.buttonList);
+            this.initModel();
+            this.regisEvent();
+            this.settingRenderPipeline();
+            this.regisAnimeFunc();
+        };
         FilterViewer.prototype.initModel = function () {
             //scene model : torus
             var torusData = new EcognitaMathLib.TorusModel(64, 64, 1.0, 2.0, [1.0, 1.0, 1.0, 1.0], true, false);
@@ -2219,18 +4116,28 @@ var EcognitaWeb3DFunction;
             vbo_board.copy(boardData.data);
             ibo_board.init(boardData.index);
         };
+        FilterViewer.prototype.renderGaussianFilter = function (horizontal, b_gaussian) {
+            var GaussianFilterUniformLoc = this.uniLocations.get("gaussianFilter");
+            gl.uniformMatrix4fv(GaussianFilterUniformLoc[0], false, this.filterMvpMatrix);
+            gl.uniform1i(GaussianFilterUniformLoc[1], 0);
+            gl.uniform1fv(GaussianFilterUniformLoc[2], this.usrParams.gaussianWeight);
+            gl.uniform1i(GaussianFilterUniformLoc[3], horizontal);
+            gl.uniform1f(GaussianFilterUniformLoc[4], this.canvas.height);
+            gl.uniform1f(GaussianFilterUniformLoc[5], this.canvas.width);
+            gl.uniform1i(GaussianFilterUniformLoc[6], b_gaussian);
+        };
         //user config
         FilterViewer.prototype.renderFilter = function () {
-            if (this.usrFilter == Filter.LAPLACIAN) {
+            if (this.usrFilter == EcognitaWeb3D.Filter.LAPLACIAN) {
                 var LapFilterUniformLoc = this.uniLocations.get("laplacianFilter");
                 gl.uniformMatrix4fv(LapFilterUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(LapFilterUniformLoc[1], 0);
                 gl.uniform1fv(LapFilterUniformLoc[2], this.usrParams.laplacianCoef);
                 gl.uniform1f(LapFilterUniformLoc[3], this.canvas.height);
                 gl.uniform1f(LapFilterUniformLoc[4], this.canvas.width);
-                gl.uniform1i(LapFilterUniformLoc[5], this.b_laplacian);
+                gl.uniform1i(LapFilterUniformLoc[5], this.btnStatusList.get("f_LaplacianFilter"));
             }
-            else if (this.usrFilter == Filter.SOBEL) {
+            else if (this.usrFilter == EcognitaWeb3D.Filter.SOBEL) {
                 var SobelFilterUniformLoc = this.uniLocations.get("sobelFilter");
                 gl.uniformMatrix4fv(SobelFilterUniformLoc[0], false, this.filterMvpMatrix);
                 gl.uniform1i(SobelFilterUniformLoc[1], 0);
@@ -2238,7 +4145,121 @@ var EcognitaWeb3DFunction;
                 gl.uniform1fv(SobelFilterUniformLoc[3], this.usrParams.sobelVerCoef);
                 gl.uniform1f(SobelFilterUniformLoc[4], this.canvas.height);
                 gl.uniform1f(SobelFilterUniformLoc[5], this.canvas.width);
-                gl.uniform1i(SobelFilterUniformLoc[6], this.b_sobel);
+                gl.uniform1i(SobelFilterUniformLoc[6], this.btnStatusList.get("f_SobelFilter"));
+            }
+            else if (this.usrFilter == EcognitaWeb3D.Filter.DoG) {
+                var DoGFilterUniformLoc = this.uniLocations.get("DoG");
+                gl.uniformMatrix4fv(DoGFilterUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(DoGFilterUniformLoc[1], 0);
+                gl.uniform1f(DoGFilterUniformLoc[2], 1.0);
+                gl.uniform1f(DoGFilterUniformLoc[3], 1.6);
+                gl.uniform1f(DoGFilterUniformLoc[4], 0.99);
+                gl.uniform1f(DoGFilterUniformLoc[5], 2.0);
+                gl.uniform1f(DoGFilterUniformLoc[6], this.canvas.height);
+                gl.uniform1f(DoGFilterUniformLoc[7], this.canvas.width);
+                gl.uniform1i(DoGFilterUniformLoc[8], this.btnStatusList.get("f_DoG"));
+            }
+            else if (this.usrFilter == EcognitaWeb3D.Filter.XDoG) {
+                var XDoGFilterUniformLoc = this.uniLocations.get("XDoG");
+                gl.uniformMatrix4fv(XDoGFilterUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(XDoGFilterUniformLoc[1], 0);
+                gl.uniform1f(XDoGFilterUniformLoc[2], 1.4);
+                gl.uniform1f(XDoGFilterUniformLoc[3], 1.6);
+                gl.uniform1f(XDoGFilterUniformLoc[4], 21.7);
+                gl.uniform1f(XDoGFilterUniformLoc[5], 79.5);
+                gl.uniform1f(XDoGFilterUniformLoc[6], 0.017);
+                gl.uniform1f(XDoGFilterUniformLoc[7], this.canvas.height);
+                gl.uniform1f(XDoGFilterUniformLoc[8], this.canvas.width);
+                gl.uniform1i(XDoGFilterUniformLoc[9], this.btnStatusList.get("f_XDoG"));
+            }
+            else if (this.usrFilter == EcognitaWeb3D.Filter.KUWAHARA) {
+                var KuwaharaFilterUniformLoc = this.uniLocations.get("kuwaharaFilter");
+                gl.uniformMatrix4fv(KuwaharaFilterUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(KuwaharaFilterUniformLoc[1], 0);
+                gl.uniform1f(KuwaharaFilterUniformLoc[2], this.canvas.height);
+                gl.uniform1f(KuwaharaFilterUniformLoc[3], this.canvas.width);
+                gl.uniform1i(KuwaharaFilterUniformLoc[4], this.btnStatusList.get("f_KuwaharaFilter"));
+            }
+            else if (this.usrFilter == EcognitaWeb3D.Filter.GKUWAHARA) {
+                var GKuwaharaFilterUniformLoc = this.uniLocations.get("gkuwaharaFilter");
+                gl.uniformMatrix4fv(GKuwaharaFilterUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(GKuwaharaFilterUniformLoc[1], 0);
+                gl.uniform1fv(GKuwaharaFilterUniformLoc[2], this.usrParams.gkweight);
+                gl.uniform1f(GKuwaharaFilterUniformLoc[3], this.canvas.height);
+                gl.uniform1f(GKuwaharaFilterUniformLoc[4], this.canvas.width);
+                gl.uniform1i(GKuwaharaFilterUniformLoc[5], this.btnStatusList.get("f_GeneralizedKuwaharaFilter"));
+            }
+            else if (this.usrFilter == EcognitaWeb3D.Filter.ANISTROPIC) {
+                var AnisotropicFilterUniformLoc = this.uniLocations.get("Anisotropic");
+                gl.uniformMatrix4fv(AnisotropicFilterUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(AnisotropicFilterUniformLoc[1], 0);
+                gl.uniform1i(AnisotropicFilterUniformLoc[2], 1);
+                gl.uniform1i(AnisotropicFilterUniformLoc[3], 2);
+                gl.uniform1f(AnisotropicFilterUniformLoc[4], this.canvas.height);
+                gl.uniform1f(AnisotropicFilterUniformLoc[5], this.canvas.width);
+                gl.uniform1i(AnisotropicFilterUniformLoc[6], this.btnStatusList.get("f_VisualAnisotropic"));
+            }
+            else if (this.usrFilter == EcognitaWeb3D.Filter.AKUWAHARA) {
+                var AKFUniformLoc = this.uniLocations.get("AKF");
+                gl.uniformMatrix4fv(AKFUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(AKFUniformLoc[1], 0);
+                gl.uniform1i(AKFUniformLoc[2], 1);
+                gl.uniform1i(AKFUniformLoc[3], 2);
+                gl.uniform1f(AKFUniformLoc[4], 6.0);
+                gl.uniform1f(AKFUniformLoc[5], 8.0);
+                gl.uniform1f(AKFUniformLoc[6], 1.0);
+                gl.uniform1f(AKFUniformLoc[7], this.canvas.height);
+                gl.uniform1f(AKFUniformLoc[8], this.canvas.width);
+                gl.uniform1i(AKFUniformLoc[9], this.btnStatusList.get("f_AnisotropicKuwahara"));
+            }
+            else if (this.usrFilter == EcognitaWeb3D.Filter.LIC || this.usrFilter == EcognitaWeb3D.Filter.NOISELIC) {
+                var LICUniformLoc = this.uniLocations.get("LIC");
+                gl.uniformMatrix4fv(LICUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(LICUniformLoc[1], 0);
+                gl.uniform1i(LICUniformLoc[2], 1);
+                gl.uniform1f(LICUniformLoc[3], 3.0);
+                gl.uniform1f(LICUniformLoc[4], this.canvas.height);
+                gl.uniform1f(LICUniformLoc[5], this.canvas.width);
+                if (this.usrFilter == EcognitaWeb3D.Filter.LIC) {
+                    gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_LIC"));
+                }
+                else if (this.usrFilter == EcognitaWeb3D.Filter.NOISELIC) {
+                    gl.uniform1i(LICUniformLoc[6], this.btnStatusList.get("f_NoiseLIC"));
+                }
+            }
+            else if (this.usrFilter == EcognitaWeb3D.Filter.FDoG) {
+                var FDoGUniformLoc = this.uniLocations.get("FDoG");
+                gl.uniformMatrix4fv(FDoGUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(FDoGUniformLoc[1], 0);
+                gl.uniform1i(FDoGUniformLoc[2], 1);
+                gl.uniform1f(FDoGUniformLoc[3], 3.0);
+                gl.uniform1f(FDoGUniformLoc[4], 2.0);
+                gl.uniform1f(FDoGUniformLoc[5], this.canvas.height);
+                gl.uniform1f(FDoGUniformLoc[6], this.canvas.width);
+                gl.uniform1i(FDoGUniformLoc[7], this.btnStatusList.get("f_FDoG"));
+            }
+            else if (this.usrFilter == EcognitaWeb3D.Filter.FXDoG) {
+                var FXDoGUniformLoc = this.uniLocations.get("FXDoG");
+                gl.uniformMatrix4fv(FXDoGUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(FXDoGUniformLoc[1], 0);
+                gl.uniform1i(FXDoGUniformLoc[2], 1);
+                gl.uniform1f(FXDoGUniformLoc[3], 4.4);
+                gl.uniform1f(FXDoGUniformLoc[4], 0.017);
+                gl.uniform1f(FXDoGUniformLoc[5], 79.5);
+                gl.uniform1f(FXDoGUniformLoc[6], this.canvas.height);
+                gl.uniform1f(FXDoGUniformLoc[7], this.canvas.width);
+                gl.uniform1i(FXDoGUniformLoc[8], this.btnStatusList.get("f_FXDoG"));
+            }
+            else if (this.usrFilter == EcognitaWeb3D.Filter.ABSTRACTION) {
+                var ABSUniformLoc = this.uniLocations.get("Abstraction");
+                gl.uniformMatrix4fv(ABSUniformLoc[0], false, this.filterMvpMatrix);
+                gl.uniform1i(ABSUniformLoc[1], 1);
+                gl.uniform1i(ABSUniformLoc[2], 3);
+                gl.uniform1i(ABSUniformLoc[3], 4);
+                gl.uniform3fv(ABSUniformLoc[4], [0.0, 0.0, 0.0]);
+                gl.uniform1f(ABSUniformLoc[5], this.canvas.height);
+                gl.uniform1f(ABSUniformLoc[6], this.canvas.width);
+                gl.uniform1i(ABSUniformLoc[7], this.btnStatusList.get("f_Abstraction"));
             }
         };
         FilterViewer.prototype.settingUniform = function (shaderName, uniformIndexArray) {
@@ -2253,33 +4274,55 @@ var EcognitaWeb3DFunction;
             gl.depthFunc(gl.LEQUAL);
             gl.enable(gl.CULL_FACE);
         };
-        FilterViewer.prototype.regisUIEvent = function () {
-            var _this = this;
-            this.uiUtil.uiController.get("f_LaplacianFilter").onChange(function (val) {
-                _this.b_laplacian = val;
-                if (val) {
-                    _this.usrFilter = Filter.LAPLACIAN;
-                    _this.filterShader = _this.shaders.get("laplacianFilter");
-                    if (_this.b_sobel) {
-                        _this.b_sobel = !val;
-                        _this.ui_data.f_SobelFilter = _this.b_sobel;
+        FilterViewer.prototype.usrSelectChange = function (btnName, val, pipeline, filter, filter_name) {
+            this.btnStatusList.set(btnName, val);
+            if (val) {
+                this.usrPipeLine = pipeline;
+                this.usrFilter = filter;
+                this.filterShader = this.shaders.get(filter_name);
+                for (var key in this.ui_data) {
+                    if (key.includes('_')) {
+                        var f_name = key.split("_");
+                        if (f_name[0] == "f" && key != btnName) {
+                            //un select other btn
+                            this.btnStatusList.set(key, !val);
+                            this.ui_data[key] = !val;
+                        }
                     }
                 }
-            });
-            this.uiUtil.uiController.get("f_SobelFilter").onChange(function (val) {
-                _this.b_sobel = val;
-                if (val) {
-                    _this.usrFilter = Filter.SOBEL;
-                    _this.filterShader = _this.shaders.get("sobelFilter");
-                    if (_this.b_laplacian) {
-                        _this.b_laplacian = !val;
-                        _this.ui_data.f_LaplacianFilter = _this.b_laplacian;
-                    }
-                }
-            });
+            }
         };
         FilterViewer.prototype.regisEvent = function () {
             var _this = this;
+            //show tool tip for canvas
+            $('[data-toggle="tooltip"]').tooltip();
+            //select event
+            $("select").imagepicker({
+                hide_select: true,
+                show_label: false,
+                selected: function () {
+                    _this.usrSelected = $("select").val();
+                }
+            });
+            //drop image event 
+            this.canvas.addEventListener('dragover', function (event) {
+                event.preventDefault();
+            });
+            this.canvas.addEventListener('drop', function (event) {
+                event.preventDefault();
+                var fileData = event.dataTransfer.files[0];
+                if (!fileData.type.match('image.*')) {
+                    alert('you should upload a image!');
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = (function () {
+                    _this.loadTexture(reader.result, false, gl.CLAMP_TO_EDGE, gl.LINEAR, false);
+                    _this.usrSelected = reader.result;
+                });
+                reader.readAsDataURL(fileData);
+            });
+            //touch event
             var lastPosX = 0;
             var lastPosY = 0;
             var isDragging = false;
@@ -2312,47 +4355,73 @@ var EcognitaWeb3DFunction;
             };
             hammer.enablePan();
         };
+        FilterViewer.prototype.regisFrameBuffer = function (num) {
+            var fArray = Array(num);
+            for (var i = 0; i < num; i++) {
+                this.settingFrameBuffer("frameBuffer" + i);
+                var fb = this.framebuffers.get("frameBuffer" + i);
+                fArray[i] = fb;
+            }
+            return fArray;
+        };
         FilterViewer.prototype.regisAnimeFunc = function () {
             var _this = this;
+            //fundmental setting and variables
             var cnt = 0;
             var cnt1 = 0;
             var lightDirection = [-0.577, 0.577, 0.577];
             var m = this.matUtil;
             var q = this.quatUtil;
-            var mMatrix = m.identity(m.create());
-            var vMatrix = m.identity(m.create());
-            var pMatrix = m.identity(m.create());
-            var tmpMatrix = m.identity(m.create());
-            var mvpMatrix = m.identity(m.create());
-            var invMatrix = m.identity(m.create());
             this.usrQuaternion = q.identity(q.create());
-            //frame buffer
-            var fBufferWidth = this.canvas.width;
-            var fBufferHeight = this.canvas.height;
-            var frameBuffer = new EcognitaMathLib.WebGL_FrameBuffer(fBufferWidth, fBufferHeight);
-            frameBuffer.bindFrameBuffer();
-            frameBuffer.bindDepthBuffer();
-            frameBuffer.renderToShadowTexure();
-            frameBuffer.release();
+            //init scene and model
             var sceneShader = this.shaders.get("filterScene");
             var sceneUniformLoc = this.uniLocations.get("filterScene");
             var vbo_torus = this.vbo[0];
             var ibo_torus = this.ibo[0];
             var vbo_board = this.vbo[1];
             var ibo_board = this.ibo[1];
+            var mMatrix = this.MATRIX.get("mMatrix");
+            var vMatrix = this.MATRIX.get("vMatrix");
+            var pMatrix = this.MATRIX.get("pMatrix");
+            var vpMatrix = this.MATRIX.get("vpMatrix");
+            var mvpMatrix = this.MATRIX.get("mvpMatrix");
+            var invMatrix = this.MATRIX.get("invMatrix");
+            //------------------------------------user config
+            var specCptShader = this.shaders.get("specCpt");
+            var uniLocation_spec = this.uniLocations.get("specCpt");
+            var synthShader = this.shaders.get("synth");
+            var uniLocation_synth = this.uniLocations.get("synth");
+            var TFShader = this.shaders.get("TF");
+            var uniLocation_TF = this.uniLocations.get("TF");
+            var ETFShader = this.shaders.get("ETF");
+            var uniLocation_ETF = this.uniLocations.get("ETF");
+            //DoG XDoG
+            var PFDoGShader = this.shaders.get("P_FDoG");
+            var uniLocation_PFDoG = this.uniLocations.get("P_FDoG");
+            var PFXDoGShader = this.shaders.get("P_FXDoG");
+            var uniLocation_PFXDoG = this.uniLocations.get("P_FXDoG");
+            var FXDoGShader = this.shaders.get("FXDoG");
+            var uniLocation_FXDoG = this.uniLocations.get("FXDoG");
+            //anisotropic
+            var SSTShader = this.shaders.get("SST");
+            var uniLocation_SST = this.uniLocations.get("SST");
+            var GAUShader = this.shaders.get("Gaussian_K");
+            var uniLocation_GAU = this.uniLocations.get("Gaussian_K");
+            var TFMShader = this.shaders.get("TFM");
+            var uniLocation_TFM = this.uniLocations.get("TFM");
+            var AKFShader = this.shaders.get("AKF");
+            var AKFUniformLoc = this.uniLocations.get("AKF");
+            //-----------------------------------------------
+            //get framebuffer
+            var fb = this.regisFrameBuffer(5);
             var loop = function () {
+                //--------------------------------------animation global variables
                 _this.stats.begin();
                 cnt++;
                 if (cnt % 2 == 0) {
                     cnt1++;
                 }
                 var rad = (cnt % 360) * Math.PI / 180;
-                sceneShader.bind();
-                frameBuffer.bindFrameBuffer();
-                var hsv = EcognitaMathLib.HSV2RGB(cnt1 % 360, 1, 1, 1);
-                gl.clearColor(hsv[0], hsv[1], hsv[2], hsv[3]);
-                gl.clearDepth(1.0);
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 var eyePosition = new Array();
                 var camUpDirection = new Array();
                 eyePosition = q.ToV3([0.0, 20.0, 0.0], _this.usrQuaternion);
@@ -2360,62 +4429,325 @@ var EcognitaWeb3DFunction;
                 //camera setting
                 vMatrix = m.viewMatrix(eyePosition, [0, 0, 0], camUpDirection);
                 pMatrix = m.perspectiveMatrix(90, _this.canvas.width / _this.canvas.height, 0.1, 100);
-                tmpMatrix = m.multiply(pMatrix, vMatrix);
-                //draw torus
-                vbo_torus.bind(sceneShader);
-                ibo_torus.bind();
-                for (var i = 0; i < 9; i++) {
-                    var amb = EcognitaMathLib.HSV2RGB(i * 40, 1, 1, 1);
-                    mMatrix = m.identity(mMatrix);
-                    mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
-                    mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
-                    mMatrix = m.rotate(mMatrix, rad, [1, 1, 0]);
-                    mvpMatrix = m.multiply(tmpMatrix, mMatrix);
-                    invMatrix = m.inverse(mMatrix);
-                    gl.uniformMatrix4fv(sceneUniformLoc[0], false, mvpMatrix);
-                    gl.uniformMatrix4fv(sceneUniformLoc[1], false, invMatrix);
-                    gl.uniform3fv(sceneUniformLoc[2], lightDirection);
-                    gl.uniform3fv(sceneUniformLoc[3], eyePosition);
-                    gl.uniform4fv(sceneUniformLoc[4], amb);
-                    ibo_torus.draw(gl.TRIANGLES);
-                }
-                _this.filterShader.bind();
-                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-                gl.clearColor(0.0, 0.0, 0.0, 1.0);
-                gl.clearDepth(1.0);
-                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                vpMatrix = m.multiply(pMatrix, vMatrix);
                 // orth matrix
                 vMatrix = m.viewMatrix([0.0, 0.0, 0.5], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
                 pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
                 _this.filterMvpMatrix = m.multiply(pMatrix, vMatrix);
-                gl.activeTexture(gl.TEXTURE0);
-                gl.bindTexture(gl.TEXTURE_2D, frameBuffer.targetTexture);
-                //draw filter image into board
-                vbo_board.bind(_this.filterShader);
-                ibo_board.bind();
-                _this.renderFilter();
-                ibo_board.draw(gl.TRIANGLES);
+                //--------------------------------------animation global variables
+                //rendering parts----------------------------------------------------------------------------------
+                var inTex = _this.Texture.get(_this.usrSelected);
+                if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.CONVOLUTION_FILTER) {
+                    //---------------------using framebuffer1 to render scene and save result to texture0
+                    if (inTex != undefined && _this.ui_data.useTexture) {
+                        gl.activeTexture(gl.TEXTURE0);
+                        inTex.bind(inTex.texture);
+                    }
+                    else {
+                        _this.renderSceneByFrameBuffer(fb[0], RenderSimpleScene);
+                    }
+                    _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () { _this.renderFilter(); });
+                }
+                else if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.BLOOM_EFFECT) {
+                    _this.renderSceneByFrameBuffer(fb[0], RenderSimpleSceneSpecularParts);
+                    //horizontal blur, save to frame2
+                    _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
+                        _this.renderGaussianFilter(true, _this.btnStatusList.get("f_BloomEffect"));
+                    }, true, gl.TEXTURE0, fb[1]);
+                    //vertical blur,save to frame1 and render to texture1
+                    _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
+                        _this.renderGaussianFilter(false, _this.btnStatusList.get("f_BloomEffect"));
+                    }, true, gl.TEXTURE1, fb[0]);
+                    //render scene, save to texture0
+                    _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
+                        RenderSimpleScene();
+                    }, true, gl.TEXTURE0, fb[1]);
+                    //synthsis texture0 and texture1
+                    _this.renderBoardByFrameBuffer(synthShader, vbo_board, ibo_board, function () {
+                        gl.uniformMatrix4fv(uniLocation_synth[0], false, _this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_synth[1], 0);
+                        gl.uniform1i(uniLocation_synth[2], 1);
+                        gl.uniform1i(uniLocation_synth[3], _this.btnStatusList.get("f_BloomEffect"));
+                    });
+                }
+                else if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.CONVOLUTION_TWICE) {
+                    //---------------------using framebuffer1 to render scene and save result to texture0
+                    if (inTex != undefined && _this.ui_data.useTexture) {
+                        gl.activeTexture(gl.TEXTURE0);
+                        inTex.bind(inTex.texture);
+                    }
+                    else {
+                        _this.renderSceneByFrameBuffer(fb[0], RenderSimpleScene);
+                    }
+                    //horizontal blur, save to frame2
+                    if (_this.btnStatusList.get("f_GaussianFilter")) {
+                        _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
+                            _this.renderGaussianFilter(true, _this.btnStatusList.get("f_GaussianFilter"));
+                        }, true, gl.TEXTURE0, fb[1]);
+                        _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
+                            _this.renderGaussianFilter(false, _this.btnStatusList.get("f_GaussianFilter"));
+                        });
+                    }
+                    else {
+                        _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
+                            _this.renderGaussianFilter(false, _this.btnStatusList.get("f_GaussianFilter"));
+                        });
+                    }
+                }
+                else if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.ANISTROPIC) {
+                    if (_this.usrFilter == EcognitaWeb3D.Filter.ANISTROPIC) {
+                        var visTex = _this.Texture.get("./image/visual_rgb.png");
+                        if (visTex != undefined) {
+                            gl.activeTexture(gl.TEXTURE2);
+                            visTex.bind(visTex.texture);
+                        }
+                    }
+                    else if (_this.usrFilter == EcognitaWeb3D.Filter.AKUWAHARA) {
+                        //save k0 texture to tex2
+                        var k0Tex = _this.Texture.get("./image/k0.png");
+                        if (k0Tex != undefined) {
+                            gl.activeTexture(gl.TEXTURE2);
+                            k0Tex.bind(k0Tex.texture);
+                        }
+                    }
+                    //render SRC
+                    if (inTex != undefined && _this.ui_data.useTexture) {
+                        gl.activeTexture(gl.TEXTURE0);
+                        inTex.bind(inTex.texture);
+                    }
+                    else {
+                        _this.renderSceneByFrameBuffer(fb[0], RenderSimpleScene);
+                    }
+                    //render SST
+                    _this.renderBoardByFrameBuffer(SSTShader, vbo_board, ibo_board, function () {
+                        gl.uniformMatrix4fv(uniLocation_SST[0], false, _this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_SST[1], 0);
+                        gl.uniform1f(uniLocation_SST[2], _this.canvas.height);
+                        gl.uniform1f(uniLocation_SST[3], _this.canvas.width);
+                    }, true, gl.TEXTURE0, fb[1]);
+                    //render Gaussian
+                    _this.renderBoardByFrameBuffer(GAUShader, vbo_board, ibo_board, function () {
+                        gl.uniformMatrix4fv(uniLocation_GAU[0], false, _this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_GAU[1], 0);
+                        gl.uniform1f(uniLocation_GAU[2], 2.0);
+                        gl.uniform1f(uniLocation_GAU[3], _this.canvas.height);
+                        gl.uniform1f(uniLocation_GAU[4], _this.canvas.width);
+                    }, true, gl.TEXTURE0, fb[0]);
+                    //render TFM
+                    _this.renderBoardByFrameBuffer(TFMShader, vbo_board, ibo_board, function () {
+                        gl.uniformMatrix4fv(uniLocation_TFM[0], false, _this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_TFM[1], 0);
+                        gl.uniform1f(uniLocation_TFM[2], _this.canvas.height);
+                        gl.uniform1f(uniLocation_TFM[3], _this.canvas.width);
+                    }, true, gl.TEXTURE0, fb[1]);
+                    if (_this.usrFilter == EcognitaWeb3D.Filter.NOISELIC) {
+                        gl.activeTexture(gl.TEXTURE1);
+                        var noiseTex = _this.Texture.get("./image/noise.png");
+                        if (noiseTex != undefined) {
+                            noiseTex.bind(noiseTex.texture);
+                        }
+                    }
+                    else {
+                        if (inTex != undefined && _this.ui_data.useTexture) {
+                            gl.activeTexture(gl.TEXTURE1);
+                            inTex.bind(inTex.texture);
+                        }
+                        else {
+                            _this.renderSceneByFrameBuffer(fb[0], RenderSimpleScene, gl.TEXTURE1);
+                        }
+                    }
+                    //FDoG pre-calculation
+                    if (_this.usrFilter == EcognitaWeb3D.Filter.FDoG) {
+                        _this.renderBoardByFrameBuffer(PFDoGShader, vbo_board, ibo_board, function () {
+                            gl.uniformMatrix4fv(uniLocation_PFDoG[0], false, _this.filterMvpMatrix);
+                            gl.uniform1i(uniLocation_PFDoG[1], 0);
+                            gl.uniform1i(uniLocation_PFDoG[2], 1);
+                            gl.uniform1f(uniLocation_PFDoG[3], 1.0);
+                            gl.uniform1f(uniLocation_PFDoG[4], 1.6);
+                            gl.uniform1f(uniLocation_PFDoG[5], 0.99);
+                            gl.uniform1f(uniLocation_PFDoG[6], _this.canvas.height);
+                            gl.uniform1f(uniLocation_PFDoG[7], _this.canvas.width);
+                            gl.uniform1i(uniLocation_PFDoG[8], _this.btnStatusList.get("f_FDoG"));
+                        }, true, gl.TEXTURE1, fb[2]);
+                    }
+                    else if (_this.usrFilter == EcognitaWeb3D.Filter.FXDoG) {
+                        _this.renderBoardByFrameBuffer(PFXDoGShader, vbo_board, ibo_board, function () {
+                            gl.uniformMatrix4fv(uniLocation_PFXDoG[0], false, _this.filterMvpMatrix);
+                            gl.uniform1i(uniLocation_PFXDoG[1], 0);
+                            gl.uniform1i(uniLocation_PFXDoG[2], 1);
+                            gl.uniform1f(uniLocation_PFXDoG[3], 1.4);
+                            gl.uniform1f(uniLocation_PFXDoG[4], 1.6);
+                            gl.uniform1f(uniLocation_PFXDoG[5], 21.7);
+                            gl.uniform1f(uniLocation_PFXDoG[6], _this.canvas.height);
+                            gl.uniform1f(uniLocation_PFXDoG[7], _this.canvas.width);
+                            gl.uniform1i(uniLocation_PFXDoG[8], _this.btnStatusList.get("f_FXDoG"));
+                        }, true, gl.TEXTURE1, fb[2]);
+                    }
+                    //render Filter
+                    _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
+                        _this.renderFilter();
+                    });
+                }
+                else if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.ABSTRACTION) {
+                    //get k0 texture
+                    var k0Tex = _this.Texture.get("./image/k0.png");
+                    if (k0Tex != undefined) {
+                        gl.activeTexture(gl.TEXTURE2);
+                        k0Tex.bind(k0Tex.texture);
+                    }
+                    //tex0/f2: render TFM
+                    if (inTex != undefined && _this.ui_data.useTexture) {
+                        gl.activeTexture(gl.TEXTURE0);
+                        inTex.bind(inTex.texture);
+                    }
+                    else {
+                        _this.renderSceneByFrameBuffer(fb[0], RenderSimpleScene);
+                    }
+                    //render SST
+                    _this.renderBoardByFrameBuffer(SSTShader, vbo_board, ibo_board, function () {
+                        gl.uniformMatrix4fv(uniLocation_SST[0], false, _this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_SST[1], 0);
+                        gl.uniform1f(uniLocation_SST[2], _this.canvas.height);
+                        gl.uniform1f(uniLocation_SST[3], _this.canvas.width);
+                    }, true, gl.TEXTURE0, fb[1]);
+                    //render Gaussian
+                    _this.renderBoardByFrameBuffer(GAUShader, vbo_board, ibo_board, function () {
+                        gl.uniformMatrix4fv(uniLocation_GAU[0], false, _this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_GAU[1], 0);
+                        gl.uniform1f(uniLocation_GAU[2], 2.0);
+                        gl.uniform1f(uniLocation_GAU[3], _this.canvas.height);
+                        gl.uniform1f(uniLocation_GAU[4], _this.canvas.width);
+                    }, true, gl.TEXTURE0, fb[0]);
+                    //render TFM
+                    _this.renderBoardByFrameBuffer(TFMShader, vbo_board, ibo_board, function () {
+                        gl.uniformMatrix4fv(uniLocation_TFM[0], false, _this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_TFM[1], 0);
+                        gl.uniform1f(uniLocation_TFM[2], _this.canvas.height);
+                        gl.uniform1f(uniLocation_TFM[3], _this.canvas.width);
+                    }, true, gl.TEXTURE0, fb[1]);
+                    //tex1/f1:src
+                    if (inTex != undefined && _this.ui_data.useTexture) {
+                        gl.activeTexture(gl.TEXTURE1);
+                        inTex.bind(inTex.texture);
+                    }
+                    else {
+                        _this.renderSceneByFrameBuffer(fb[0], RenderSimpleScene, gl.TEXTURE1);
+                    }
+                    //tex3/f3:akf
+                    _this.renderBoardByFrameBuffer(AKFShader, vbo_board, ibo_board, function () {
+                        gl.uniformMatrix4fv(AKFUniformLoc[0], false, _this.filterMvpMatrix);
+                        gl.uniform1i(AKFUniformLoc[1], 0);
+                        gl.uniform1i(AKFUniformLoc[2], 1);
+                        gl.uniform1i(AKFUniformLoc[3], 2);
+                        gl.uniform1f(AKFUniformLoc[4], 6.0);
+                        gl.uniform1f(AKFUniformLoc[5], 8.0);
+                        gl.uniform1f(AKFUniformLoc[6], 1.0);
+                        gl.uniform1f(AKFUniformLoc[7], _this.canvas.height);
+                        gl.uniform1f(AKFUniformLoc[8], _this.canvas.width);
+                        gl.uniform1i(AKFUniformLoc[9], _this.btnStatusList.get("f_Abstraction"));
+                    }, true, gl.TEXTURE3, fb[2]);
+                    //tex4/f4:fxdog
+                    _this.renderBoardByFrameBuffer(PFXDoGShader, vbo_board, ibo_board, function () {
+                        gl.uniformMatrix4fv(uniLocation_PFXDoG[0], false, _this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_PFXDoG[1], 0);
+                        gl.uniform1i(uniLocation_PFXDoG[2], 1);
+                        gl.uniform1f(uniLocation_PFXDoG[3], 1.4);
+                        gl.uniform1f(uniLocation_PFXDoG[4], 1.6);
+                        gl.uniform1f(uniLocation_PFXDoG[5], 21.7);
+                        gl.uniform1f(uniLocation_PFXDoG[6], _this.canvas.height);
+                        gl.uniform1f(uniLocation_PFXDoG[7], _this.canvas.width);
+                        gl.uniform1i(uniLocation_PFXDoG[8], _this.btnStatusList.get("f_Abstraction"));
+                    }, true, gl.TEXTURE4, fb[3]);
+                    _this.renderBoardByFrameBuffer(FXDoGShader, vbo_board, ibo_board, function () {
+                        gl.uniformMatrix4fv(uniLocation_FXDoG[0], false, _this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_FXDoG[1], 0);
+                        gl.uniform1i(uniLocation_FXDoG[2], 4);
+                        gl.uniform1f(uniLocation_FXDoG[3], 4.4);
+                        gl.uniform1f(uniLocation_FXDoG[4], 0.017);
+                        gl.uniform1f(uniLocation_FXDoG[5], 79.5);
+                        gl.uniform1f(uniLocation_FXDoG[6], _this.canvas.height);
+                        gl.uniform1f(uniLocation_FXDoG[7], _this.canvas.width);
+                        gl.uniform1i(uniLocation_FXDoG[8], _this.btnStatusList.get("f_Abstraction"));
+                    }, true, gl.TEXTURE4, fb[4]);
+                    //render Abstratcion Filter
+                    _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
+                        _this.renderFilter();
+                    });
+                }
+                //rendering parts----------------------------------------------------------------------------------
+                //--------------------------------------animation global variables
                 gl.flush();
                 _this.stats.end();
                 requestAnimationFrame(loop);
+                function RenderSimpleScene() {
+                    sceneShader.bind();
+                    var hsv = EcognitaMathLib.HSV2RGB(cnt1 % 360, 1, 1, 1);
+                    gl.clearColor(hsv[0], hsv[1], hsv[2], hsv[3]);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_torus.bind(sceneShader);
+                    ibo_torus.bind();
+                    for (var i = 0; i < 9; i++) {
+                        var amb = EcognitaMathLib.HSV2RGB(i * 40, 1, 1, 1);
+                        mMatrix = m.identity(mMatrix);
+                        mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
+                        mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
+                        mMatrix = m.rotate(mMatrix, rad, [1, 1, 0]);
+                        mvpMatrix = m.multiply(vpMatrix, mMatrix);
+                        invMatrix = m.inverse(mMatrix);
+                        gl.uniformMatrix4fv(sceneUniformLoc[0], false, mvpMatrix);
+                        gl.uniformMatrix4fv(sceneUniformLoc[1], false, invMatrix);
+                        gl.uniform3fv(sceneUniformLoc[2], lightDirection);
+                        gl.uniform3fv(sceneUniformLoc[3], eyePosition);
+                        gl.uniform4fv(sceneUniformLoc[4], amb);
+                        ibo_torus.draw(gl.TRIANGLES);
+                    }
+                }
+                function RenderSimpleSceneSpecularParts() {
+                    specCptShader.bind();
+                    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+                    gl.clearDepth(1.0);
+                    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+                    vbo_torus.bind(specCptShader);
+                    ibo_torus.bind();
+                    for (var i = 0; i < 9; i++) {
+                        mMatrix = m.identity(mMatrix);
+                        mMatrix = m.rotate(mMatrix, i * 2 * Math.PI / 9, [0, 1, 0]);
+                        mMatrix = m.translate(mMatrix, [0.0, 0.0, 10.0]);
+                        mMatrix = m.rotate(mMatrix, rad, [1, 1, 0]);
+                        mvpMatrix = m.multiply(vpMatrix, mMatrix);
+                        invMatrix = m.inverse(mMatrix);
+                        gl.uniformMatrix4fv(uniLocation_spec[0], false, mvpMatrix);
+                        gl.uniformMatrix4fv(uniLocation_spec[1], false, invMatrix);
+                        gl.uniform3fv(uniLocation_spec[2], lightDirection);
+                        gl.uniform3fv(uniLocation_spec[3], eyePosition);
+                        ibo_torus.draw(gl.TRIANGLES);
+                    }
+                }
+                //--------------------------------------animation global variables
             };
             loop();
         };
         return FilterViewer;
-    }(InitWeb3DEnv));
-    EcognitaWeb3DFunction.FilterViewer = FilterViewer;
-})(EcognitaWeb3DFunction || (EcognitaWeb3DFunction = {}));
-/* =========================================================================
- *
- *  FilterViewer.ts
- *  tool for test filter in WebGL
- *  filter viewer
- *
- * ========================================================================= */
+    }(EcognitaWeb3D.WebGLEnv));
+    EcognitaWeb3D.FilterViewer = FilterViewer;
+})(EcognitaWeb3D || (EcognitaWeb3D = {}));
 /// <reference path="../ts_scripts/package/pkg_FilterViewHub.ts" />
-var viewer = document.createElement('canvas');
-document.body.appendChild(viewer);
-viewer.id = "canvas_viewer";
-viewer.width = window.innerWidth;
-viewer.height = window.innerHeight;
-var filterViewer = new EcognitaWeb3DFunction.FilterViewer(viewer);
+var viewer = document.getElementById("canvas_viewer");
+viewer.width = 512;
+viewer.height = 512;
+//load data
+$.getJSON("./config/ui.json", function (ui_data) {
+    //console.log( "loaded UI data");
+    $.getJSON("./config/shader.json", function (shader_data) {
+        //console.log( "loaded shader data");
+        $.getJSON("./config/button.json", function (button_data) {
+            //console.log( "loaded button data");
+            $.getJSON("./config/user_config.json", function (user_config) {
+                //console.log( "loaded user config data");
+                var filterViewer = new EcognitaWeb3D.FilterViewer(viewer);
+                filterViewer.initialize(ui_data, shader_data, button_data, user_config);
+            });
+        });
+    });
+});
