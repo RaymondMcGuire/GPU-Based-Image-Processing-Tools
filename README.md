@@ -24,7 +24,7 @@ I'd like to use "http-server" to view this project.
 
 You also can use anyway you like to run this project in local environment.
 
-### Run Demo
+### Online Demo
 
 You also can view this project's online demo in [URL](https://raymondmcguire.github.io/project/FilterViewer/).
 
