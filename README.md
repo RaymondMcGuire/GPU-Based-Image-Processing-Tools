@@ -28,6 +28,9 @@ You also can use anyway you like to run this project in local environment.
 
 You also can view this project's online demo in [URL](https://raymondmcguire.github.io/project/FilterViewer/).
 
+### Preview
+![Input Image](./tools_webgl/FilterViewer/image/anim.png?raw=true "Input Image")
+
 ## Papers implemented
 
  * "Imaging Vector Fields Using Line Integral Convolution" by Brian Cabral Leith (Casey) Leedom
