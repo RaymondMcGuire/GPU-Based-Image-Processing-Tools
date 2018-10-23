@@ -24,6 +24,10 @@ I'd like to use "http-server" to view this project.
 
 You also can use anyway you like to run this project in local environment.
 
+### Run Demo
+
+You also can view this project's online demo in [URL](https://raymondmcguire.github.io/project/FilterViewer/).
+
 ## Papers implemented
 
  * "Imaging Vector Fields Using Line Integral Convolution" by Brian Cabral Leith (Casey) Leedom
@@ -32,7 +36,7 @@ You also can use anyway you like to run this project in local environment.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) file for details
 
 ## Acknowledgments
 
