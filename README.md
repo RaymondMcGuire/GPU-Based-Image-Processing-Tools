@@ -52,9 +52,9 @@ You also can view this project's online demo in [URL](https://raymondmcguire.git
 
 ## Papers implemented
 
- * "Imaging Vector Fields Using Line Integral Convolution" by Brian Cabral Leith (Casey) Leedom
- * "Image and video abstraction by anisotropic Kuwahara filtering" by Kyprianidis, Jan Eric etc.
- * "XDoG: an extended difference-of-Gaussians compendium including advanced image stylization." by Winnemöller, Holger etc.
+ * Imaging Vector Fields Using Line Integral Convolution
+ * Image and video abstraction by anisotropic Kuwahara filtering
+ * XDoG: an extended difference-of-Gaussians compendium including advanced image stylization
 
 ## License
 
@@ -62,5 +62,5 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) f
 
 ## Acknowledgments
 
-* Some shaders source code from Kyprianidis, Jan Eric. You can find it in http://www.kyprianidis.com
+* Some shaders source code from Kyprianidis, Jan Eric. You can find it in [http://www.kyprianidis.com](http://www.kyprianidis.com)
 
