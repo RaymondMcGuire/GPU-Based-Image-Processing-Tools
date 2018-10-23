@@ -29,19 +29,19 @@ You also can use anyway you like to run this project in local environment.
 You also can view this project's online demo in [URL](https://raymondmcguire.github.io/project/FilterViewer/).
 
 ### Preview
-Image
+*Image
 ![Input Image](./tools_webgl/FilterViewer/image/anim.png?raw=true "Input Image")
 
-Line Integral Convolution
+*Line Integral Convolution
 ![LIC](./tools_webgl/FilterViewer/image/LIC.png?raw=true "LIC")
 
-Flow eXtend Difference of Gaussian
+*Flow eXtend Difference of Gaussian
 ![FXDoG](./tools_webgl/FilterViewer/image/FXDoG.png?raw=true "FXDoG")
 
-Anisotropic KUWAHARA Filter
+*Anisotropic KUWAHARA Filter
 ![AKF](./tools_webgl/FilterViewer/image/AKF.png?raw=true "AKF")
 
-Mix Anisotropic KUWAHARA Filter and Flow eXtend Difference of Gaussian
+*Mix Anisotropic KUWAHARA Filter and Flow eXtend Difference of Gaussian
 ![FXDoG&AKF](./tools_webgl/FilterViewer/image/FXDoG&AKF.png?raw=true "FXDoG&AKF")
 
 ## Papers implemented
