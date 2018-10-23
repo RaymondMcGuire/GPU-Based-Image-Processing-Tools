@@ -1,8 +1,8 @@
 # NPR-WebGL
 
-A tool for viewing image filter online.
+A tool for viewing image filters online.
 
-This project has implemented some NPR algorithms you can use it directly and don't need other packages.
+This project has implemented some NPR algorithms you can use it directly and don't need additional packages.
 
 ## Getting Started
 
@@ -22,7 +22,7 @@ Enter the path ".\tools_webgl\FilterViewer\"
 
 I'd like to use "http-server" to view this project. 
 
-You also can use anyway you like to run this project in local environment.
+You also can use anyway you like to run this project in the local environment.
 
 ### Online Demo
 
@@ -62,5 +62,5 @@ This project is licensed under the MIT License - see the [LICENSE.md](LICENSE) f
 
 ## Acknowledgments
 
-* Some shaders source code from Kyprianidis, Jan Eric. You can find it in [http://www.kyprianidis.com](http://www.kyprianidis.com)
+* Some shaders' source code from Kyprianidis, Jan Eric. You can find it in [http://www.kyprianidis.com](http://www.kyprianidis.com)
 
