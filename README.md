@@ -16,6 +16,8 @@ And then install the Typescript by using this command
 npm install -g typescript
 ```
 
+### Compile
+
 After editing the source code,you should compile this project through
 
 .\tools_webgl\FilterViewer\ts_scripts\build\build-tools.bat (For Windows)
@@ -23,7 +25,7 @@ After editing the source code,you should compile this project through
 .\tools_webgl\FilterViewer\ts_scripts\build\readme-mac.md  (For Mac)
 
 
-### Installing
+### Usage
 
 Enter the path ".\tools_webgl\FilterViewer\"
 
