@@ -10,11 +10,18 @@ This project has implemented some NPR algorithms you can use it directly and don
 
 This project is developed by Typescript, so you should construct the Node.js environment.
 
-And then install the Typescript by using the command
+And then install the Typescript by using this command
 
 ```
 npm install -g typescript
 ```
+
+After editing the source code,you should compile this project through
+
+.\tools_webgl\FilterViewer\ts_scripts\build\build-tools.bat (For Windows)
+
+.\tools_webgl\FilterViewer\ts_scripts\build\readme-mac.md  (For Mac)
+
 
 ### Installing
 
