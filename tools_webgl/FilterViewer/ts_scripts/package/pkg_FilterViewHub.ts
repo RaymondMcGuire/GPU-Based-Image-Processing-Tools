@@ -39,7 +39,6 @@ module EcognitaWeb3D {
             this.loadTexture("./image/lion.png", false);
             this.loadTexture("./image/anim.png", false);
             this.loadTexture("./image/cat.jpg", false);
-            this.loadTexture("./image/man.png", false);
             this.loadTexture("./image/woman.png", false, gl.CLAMP_TO_EDGE, gl.LINEAR,false);
             this.loadTexture("./image/noise.png", false);
         }
