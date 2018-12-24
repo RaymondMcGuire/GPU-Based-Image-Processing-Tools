@@ -9,7 +9,7 @@ void main(void){
 	vec4  destColor = texture2D(texture1, vTexCoord);
 	vec4  smpColor  = texture2D(texture2, vec2(vTexCoord.s, 1.0 - vTexCoord.t));
 	if(glare){
-		destColor += smpColor * 2.0;
+		destColor += smpColor * 0.4;
 	}
 	gl_FragColor = destColor;
 }

@@ -200,6 +200,14 @@
             ]
         },
         {
+            "name": "luminance",
+            "uniforms": [
+                "mvpMatrix",
+                "texture",
+                "threshold"
+            ]
+        },
+        {
             "name": "laplacianFilter",
             "uniforms": [
                 "mvpMatrix",

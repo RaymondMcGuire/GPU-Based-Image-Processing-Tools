@@ -1,7 +1,10 @@
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -2670,6 +2673,29 @@ var Shaders = {
         '	vTexCoord   = texCoord;\n' +
         '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'luminance-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'uniform float threshold;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'const float redScale   = 0.298912;\n' +
+        'const float greenScale = 0.586611;\n' +
+        'const float blueScale  = 0.114478;\n' +
+        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
+        'void main(void){\n\n' +
+        '	vec4 smpColor = texture2D(texture, vec2(vTexCoord.s, 1.0 - vTexCoord.t));\n' +
+        '	float luminance = dot(smpColor.rgb, monochromeScale);\n' +
+        '	if(luminance<threshold){luminance = 0.0;}\n\n' +
+        '	smpColor = vec4(vec3(luminance), 1.0);\n' +
+        '	gl_FragColor =smpColor;\n' +
+        '}\n',
+    'luminance-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'phong-frag': 'precision mediump float;\n\n' +
         'uniform mat4 invMatrix;\n' +
         'uniform vec3 lightDirection;\n' +
@@ -3275,7 +3301,7 @@ var Shaders = {
         '	vec4  destColor = texture2D(texture1, vTexCoord);\n' +
         '	vec4  smpColor  = texture2D(texture2, vec2(vTexCoord.s, 1.0 - vTexCoord.t));\n' +
         '	if(glare){\n' +
-        '		destColor += smpColor * 2.0;\n' +
+        '		destColor += smpColor * 0.4;\n' +
         '	}\n' +
         '	gl_FragColor = destColor;\n' +
         '}\n',
@@ -4005,7 +4031,6 @@ var EcognitaWeb3D;
             this.loadTexture("./image/lion.png", false);
             this.loadTexture("./image/anim.png", false);
             this.loadTexture("./image/cat.jpg", false);
-            this.loadTexture("./image/man.png", false);
             this.loadTexture("./image/woman.png", false, gl.CLAMP_TO_EDGE, gl.LINEAR, false);
             this.loadTexture("./image/noise.png", false);
         };
@@ -4116,10 +4141,11 @@ var EcognitaWeb3D;
             vbo_board.copy(boardData.data);
             ibo_board.init(boardData.index);
         };
-        FilterViewer.prototype.renderGaussianFilter = function (horizontal, b_gaussian) {
+        FilterViewer.prototype.renderGaussianFilter = function (horizontal, b_gaussian, tex_num) {
+            if (tex_num === void 0) { tex_num = 0; }
             var GaussianFilterUniformLoc = this.uniLocations.get("gaussianFilter");
             gl.uniformMatrix4fv(GaussianFilterUniformLoc[0], false, this.filterMvpMatrix);
-            gl.uniform1i(GaussianFilterUniformLoc[1], 0);
+            gl.uniform1i(GaussianFilterUniformLoc[1], tex_num);
             gl.uniform1fv(GaussianFilterUniformLoc[2], this.usrParams.gaussianWeight);
             gl.uniform1i(GaussianFilterUniformLoc[3], horizontal);
             gl.uniform1f(GaussianFilterUniformLoc[4], this.canvas.height);
@@ -4391,6 +4417,9 @@ var EcognitaWeb3D;
             var uniLocation_spec = this.uniLocations.get("specCpt");
             var synthShader = this.shaders.get("synth");
             var uniLocation_synth = this.uniLocations.get("synth");
+            //get luminance
+            var luminanceShader = this.shaders.get("luminance");
+            var uniLocation_luminance = this.uniLocations.get("luminance");
             var TFShader = this.shaders.get("TF");
             var uniLocation_TF = this.uniLocations.get("TF");
             var ETFShader = this.shaders.get("ETF");
@@ -4449,19 +4478,43 @@ var EcognitaWeb3D;
                     _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () { _this.renderFilter(); });
                 }
                 else if (_this.usrPipeLine == EcognitaWeb3D.RenderPipeLine.BLOOM_EFFECT) {
-                    _this.renderSceneByFrameBuffer(fb[0], RenderSimpleSceneSpecularParts);
-                    //horizontal blur, save to frame2
-                    _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
-                        _this.renderGaussianFilter(true, _this.btnStatusList.get("f_BloomEffect"));
-                    }, true, gl.TEXTURE0, fb[1]);
-                    //vertical blur,save to frame1 and render to texture1
-                    _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
-                        _this.renderGaussianFilter(false, _this.btnStatusList.get("f_BloomEffect"));
-                    }, true, gl.TEXTURE1, fb[0]);
+                    if (inTex != undefined && _this.ui_data.useTexture) {
+                        //get texture
+                        gl.activeTexture(gl.TEXTURE0);
+                        inTex.bind(inTex.texture);
+                    }
+                    else {
+                        //render scene specular parts
+                        // this.renderSceneByFrameBuffer(fb[0],RenderSimpleSceneSpecularParts);
+                        _this.renderSceneByFrameBuffer(fb[0], RenderSimpleScene);
+                    }
+                    //get brightness parts
+                    _this.renderBoardByFrameBuffer(luminanceShader, vbo_board, ibo_board, function () {
+                        gl.uniformMatrix4fv(uniLocation_luminance[0], false, _this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_luminance[1], 0);
+                        gl.uniform1f(uniLocation_luminance[2], 0.5);
+                    }, true, gl.TEXTURE1, fb[1]);
+                    var sample_count = 9;
+                    for (var _i = 0; _i < sample_count; _i++) {
+                        //horizontal blur, save to frame2
+                        _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
+                            _this.renderGaussianFilter(true, _this.btnStatusList.get("f_BloomEffect"), 1);
+                        }, true, gl.TEXTURE0, fb[0]);
+                        //vertical blur,save to frame1 and render to texture1
+                        _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
+                            _this.renderGaussianFilter(false, _this.btnStatusList.get("f_BloomEffect"));
+                        }, true, gl.TEXTURE1, fb[1]);
+                    }
                     //render scene, save to texture0
-                    _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
-                        RenderSimpleScene();
-                    }, true, gl.TEXTURE0, fb[1]);
+                    if (inTex != undefined && _this.ui_data.useTexture) {
+                        gl.activeTexture(gl.TEXTURE0);
+                        inTex.bind(inTex.texture);
+                    }
+                    else {
+                        _this.renderBoardByFrameBuffer(_this.filterShader, vbo_board, ibo_board, function () {
+                            RenderSimpleScene();
+                        }, true, gl.TEXTURE0, fb[0]);
+                    }
                     //synthsis texture0 and texture1
                     _this.renderBoardByFrameBuffer(synthShader, vbo_board, ibo_board, function () {
                         gl.uniformMatrix4fv(uniLocation_synth[0], false, _this.filterMvpMatrix);

@@ -2591,6 +2591,29 @@ var Shaders = {
         '	vTexCoord   = texCoord;\n' +
         '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
         '}\n',
+    'luminance-frag': 'precision mediump float;\n\n' +
+        'uniform sampler2D texture;\n' +
+        'uniform float threshold;\n' +
+        'varying vec2 vTexCoord;\n\n' +
+        'const float redScale   = 0.298912;\n' +
+        'const float greenScale = 0.586611;\n' +
+        'const float blueScale  = 0.114478;\n' +
+        'const vec3  monochromeScale = vec3(redScale, greenScale, blueScale);\n\n' +
+        'void main(void){\n\n' +
+        '	vec4 smpColor = texture2D(texture, vec2(vTexCoord.s, 1.0 - vTexCoord.t));\n' +
+        '	float luminance = dot(smpColor.rgb, monochromeScale);\n' +
+        '	if(luminance<threshold){luminance = 0.0;}\n\n' +
+        '	smpColor = vec4(vec3(luminance), 1.0);\n' +
+        '	gl_FragColor =smpColor;\n' +
+        '}\n',
+    'luminance-vert': 'attribute vec3 position;\n' +
+        'attribute vec2 texCoord;\n' +
+        'uniform   mat4 mvpMatrix;\n' +
+        'varying   vec2 vTexCoord;\n\n' +
+        'void main(void){\n' +
+        '	vTexCoord   = texCoord;\n' +
+        '	gl_Position = mvpMatrix * vec4(position, 1.0);\n' +
+        '}\n',
     'phong-frag': 'precision mediump float;\n\n' +
         'uniform mat4 invMatrix;\n' +
         'uniform vec3 lightDirection;\n' +
@@ -3196,7 +3219,7 @@ var Shaders = {
         '	vec4  destColor = texture2D(texture1, vTexCoord);\n' +
         '	vec4  smpColor  = texture2D(texture2, vec2(vTexCoord.s, 1.0 - vTexCoord.t));\n' +
         '	if(glare){\n' +
-        '		destColor += smpColor * 2.0;\n' +
+        '		destColor += smpColor * 0.4;\n' +
         '	}\n' +
         '	gl_FragColor = destColor;\n' +
         '}\n',

@@ -170,10 +170,10 @@ module EcognitaWeb3D {
             ibo_board.init(boardData.index);
         }
 
-        renderGaussianFilter(horizontal: boolean, b_gaussian: boolean) {
+        renderGaussianFilter(horizontal: boolean, b_gaussian: boolean, tex_num:number = 0) {
             var GaussianFilterUniformLoc = this.uniLocations.get("gaussianFilter");
             gl.uniformMatrix4fv(GaussianFilterUniformLoc[0], false, this.filterMvpMatrix);
-            gl.uniform1i(GaussianFilterUniformLoc[1], 0);
+            gl.uniform1i(GaussianFilterUniformLoc[1], tex_num);
             gl.uniform1fv(GaussianFilterUniformLoc[2], this.usrParams.gaussianWeight);
             gl.uniform1i(GaussianFilterUniformLoc[3], horizontal);
             gl.uniform1f(GaussianFilterUniformLoc[4], this.canvas.height);
@@ -377,7 +377,7 @@ module EcognitaWeb3D {
             
                 var reader = new FileReader();
                 reader.onload = (() =>{
-                        this.loadTexture(reader.result, false, gl.CLAMP_TO_EDGE, gl.LINEAR,false);
+                        this.loadTexture(<any>reader.result, false, gl.CLAMP_TO_EDGE, gl.LINEAR,false);
                         this.usrSelected = reader.result;
                 });
                 reader.readAsDataURL(fileData);
@@ -467,6 +467,10 @@ module EcognitaWeb3D {
             var synthShader = this.shaders.get("synth");
             var uniLocation_synth = this.uniLocations.get("synth");
 
+            //get luminance
+            var luminanceShader = this.shaders.get("luminance");
+            var uniLocation_luminance = this.uniLocations.get("luminance");
+
             var TFShader = this.shaders.get("TF");
             var uniLocation_TF = this.uniLocations.get("TF");
 
@@ -541,22 +545,50 @@ module EcognitaWeb3D {
                     this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{this.renderFilter();});
                  } else if (this.usrPipeLine == RenderPipeLine.BLOOM_EFFECT) {
 
-                    this.renderSceneByFrameBuffer(fb[0],RenderSimpleSceneSpecularParts);
+                    if (inTex != undefined && this.ui_data.useTexture) {
+                        //get texture
+                        gl.activeTexture(gl.TEXTURE0);
+                        inTex.bind(inTex.texture);
+                    } else {
+                        //render scene specular parts
+                       // this.renderSceneByFrameBuffer(fb[0],RenderSimpleSceneSpecularParts);
 
-                    //horizontal blur, save to frame2
-                    this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
-                        this.renderGaussianFilter(true, this.btnStatusList.get("f_BloomEffect"));
-                    },true,gl.TEXTURE0,fb[1]);
+                       this.renderSceneByFrameBuffer(fb[0],RenderSimpleScene);
+                    }
+                    
+                    //get brightness parts
+                    this.renderBoardByFrameBuffer(luminanceShader,vbo_board,ibo_board,()=>{
+                        gl.uniformMatrix4fv(uniLocation_luminance[0], false, this.filterMvpMatrix);
+                        gl.uniform1i(uniLocation_luminance[1], 0);
+                        gl.uniform1f(uniLocation_luminance[2], 0.5);
+                    },true,gl.TEXTURE1,fb[1]);
 
-                    //vertical blur,save to frame1 and render to texture1
-                    this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
-                        this.renderGaussianFilter(false, this.btnStatusList.get("f_BloomEffect"));
-                    },true,gl.TEXTURE1,fb[0]);
+                    let sample_count = 9;
+
+                    for(var _i=0;_i<sample_count;_i++){
+                        //horizontal blur, save to frame2
+                        this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
+                            this.renderGaussianFilter(true, this.btnStatusList.get("f_BloomEffect"),1);
+                        },true,gl.TEXTURE0,fb[0]);
+
+                        //vertical blur,save to frame1 and render to texture1
+                        this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
+                            this.renderGaussianFilter(false, this.btnStatusList.get("f_BloomEffect"));
+                        },true,gl.TEXTURE1,fb[1]);
+                    }
+
 
                     //render scene, save to texture0
-                    this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
-                        RenderSimpleScene();
-                    },true,gl.TEXTURE0,fb[1]);
+                    if (inTex != undefined && this.ui_data.useTexture) {
+                        gl.activeTexture(gl.TEXTURE0);
+                        inTex.bind(inTex.texture);
+                    }
+                    else{
+                        this.renderBoardByFrameBuffer(this.filterShader,vbo_board,ibo_board,()=>{
+                            RenderSimpleScene();
+                        },true,gl.TEXTURE0,fb[0]);
+                    }
+
 
                     //synthsis texture0 and texture1
                     this.renderBoardByFrameBuffer(synthShader,vbo_board,ibo_board,()=>{

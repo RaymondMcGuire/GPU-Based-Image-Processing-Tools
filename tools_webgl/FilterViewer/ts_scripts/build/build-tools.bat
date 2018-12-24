@@ -34,3 +34,5 @@ POPD
 
 echo.
 echo Finished Environment Setting
+
+pause
