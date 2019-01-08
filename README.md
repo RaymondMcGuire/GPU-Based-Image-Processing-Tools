@@ -1,4 +1,4 @@
-# NPR-WebGL
+# GPU Based Image Processing Tools
 
 A tool for viewing image filters online.
 
