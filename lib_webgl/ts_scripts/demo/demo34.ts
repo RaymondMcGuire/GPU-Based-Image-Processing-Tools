@@ -198,7 +198,6 @@ for(i = 0; i < weight.length; i++){
 		pMatrix = m.orthoMatrix(-1.0, 1.0, 1.0, -1.0, 0.1, 1);
 		b_tmpMatrix = m.multiply(pMatrix, vMatrix);
 
-
 		//render torus specular component
 		specCptShader.bind();
 		frameBuffer1.bindFrameBuffer();
@@ -233,8 +232,6 @@ for(i = 0; i < weight.length; i++){
 		gl.bindTexture(gl.TEXTURE_2D, frameBuffer1.targetTexture);
 
 		//render horizontal direction
-
-
 		gl.clearColor(0.0, 0.0, 0.0, 1.0);
 		gl.clearDepth(1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
