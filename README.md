@@ -35,7 +35,7 @@ You also can use anyway you like to run this project in the local environment.
 
 ### Online Demo
 
-You also can view this project's online demo in [URL](https://raymondmcguire.github.io/project/FilterViewer/).
+You also can view this project's online demo in [URL](https://raymondmcguire.github.io/FilterViewer/).
 
 ### Preview
 
